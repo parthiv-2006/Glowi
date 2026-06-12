@@ -1,18 +1,26 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
-    "version": "1.0.0",
+    "name": "Glowi",
+    "slug": "glowi",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
-    "userInterfaceStyle": "automatic",
+    "scheme": "glowi",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#07090B",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.glowi.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Glowi uses the camera to photograph skin concerns for AI analysis.",
+        "NSPhotoLibraryUsageDescription": "Glowi lets you pick an existing photo of a skin concern for AI analysis."
+      }
     },
     "android": {
+      "package": "com.glowi.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#07090B",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -25,17 +33,23 @@
     },
     "plugins": [
       "expo-router",
+      "expo-secure-store",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#07090B",
           "android": {
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
           }
         }
       ],
-      "expo-secure-store"
+      [
+        "expo-notifications",
+        {
+          "color": "#2DD4BF"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
