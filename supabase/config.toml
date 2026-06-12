@@ -1,0 +1,16 @@
+# Supabase project configuration (functions deploy settings).
+project_id = "glowi"
+
+# auth-signup is a pre-auth endpoint (guest/email account creation via admin
+# API); it is protected by the platform anon-key requirement instead of a JWT.
+[functions.auth-signup]
+verify_jwt = false
+
+[functions.analyze-skin]
+verify_jwt = true
+
+[functions.chat]
+verify_jwt = true
+
+[functions.extract-memories]
+verify_jwt = true
