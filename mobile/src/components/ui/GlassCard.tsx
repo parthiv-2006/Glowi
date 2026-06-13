@@ -1,11 +1,11 @@
 import type { PropsWithChildren } from 'react';
-import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
 
 import { palette, radii, spacing } from '@/theme';
 
 interface GlassCardProps extends PropsWithChildren {
-  style?: ViewStyle | ViewStyle[];
+  style?: StyleProp<ViewStyle>;
   /** Stronger surface for emphasized cards. */
   emphasized?: boolean;
   /** Jade glow halo (hero cards, active states). */

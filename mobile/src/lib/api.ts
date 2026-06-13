@@ -1,0 +1,242 @@
+/**
+ * Data access layer — thin typed wrappers over Supabase queries.
+ * Feature screens consume these via the react-query hooks in hooks.ts;
+ * nothing in the UI talks to the `supabase` client directly.
+ */
+import { supabase } from './supabase';
+import type {
+  Article,
+  ChatMessage,
+  ChatSession,
+  Concern,
+  AiMemory,
+  NutritionGuide,
+  Product,
+  ProductForConcern,
+  Routine,
+  RoutineCheckin,
+  RoutineStep,
+  Scan,
+  Tip,
+} from './types';
+
+function unwrap<T>(res: { data: T | null; error: { message: string } | null }): T {
+  if (res.error) throw new Error(res.error.message);
+  return res.data as T;
+}
+
+// ─────────────── Catalog ───────────────
+
+export async function getConcerns(): Promise<Concern[]> {
+  return unwrap(await supabase.from('concerns').select('*').order('name'));
+}
+
+export async function getConcern(slug: string): Promise<Concern> {
+  return unwrap(await supabase.from('concerns').select('*').eq('slug', slug).single());
+}
+
+export async function getProductsForConcern(slug: string): Promise<ProductForConcern[]> {
+  const rows = unwrap(
+    await supabase
+      .from('product_concerns')
+      .select('relevance, rationale, products(*)')
+      .eq('concern_slug', slug)
+      .order('relevance', { ascending: false }),
+  ) as unknown as { relevance: number; rationale: string | null; products: Product }[];
+  return rows
+    .filter((r) => r.products)
+    .map((r) => ({ ...r.products, relevance: r.relevance, rationale: r.rationale }));
+}
+
+export async function getProductsBySlug(slugs: string[]): Promise<Product[]> {
+  if (!slugs.length) return [];
+  return unwrap(await supabase.from('products').select('*').in('slug', slugs));
+}
+
+export async function getNutritionGuide(slug: string): Promise<NutritionGuide | null> {
+  return unwrap(
+    await supabase.from('nutrition_guides').select('*').eq('concern_slug', slug).maybeSingle(),
+  );
+}
+
+export async function getTips(slug: string): Promise<Tip[]> {
+  return unwrap(await supabase.from('tips').select('*').eq('concern_slug', slug));
+}
+
+export async function getArticles(): Promise<Article[]> {
+  return unwrap(
+    await supabase
+      .from('articles')
+      .select('id, slug, title, category, read_minutes, hero_gradient, excerpt, published_at')
+      .order('published_at', { ascending: false }),
+  ) as unknown as Article[];
+}
+
+export async function getArticle(slug: string): Promise<Article> {
+  return unwrap(await supabase.from('articles').select('*').eq('slug', slug).single());
+}
+
+// ─────────────── Scans ───────────────
+
+export async function getScans(): Promise<Scan[]> {
+  return unwrap(
+    await supabase.from('scans').select('*').order('created_at', { ascending: false }),
+  );
+}
+
+export async function getScan(id: string): Promise<Scan> {
+  return unwrap(await supabase.from('scans').select('*').eq('id', id).single());
+}
+
+export async function createScan(userId: string, input: { area?: string; notes?: string }): Promise<Scan> {
+  return unwrap(
+    await supabase
+      .from('scans')
+      .insert({ user_id: userId, status: 'pending', area: input.area, notes: input.notes })
+      .select()
+      .single(),
+  );
+}
+
+export async function attachScanImage(id: string, imagePath: string): Promise<void> {
+  unwrap(await supabase.from('scans').update({ image_path: imagePath }).eq('id', id).select());
+}
+
+export async function deleteScan(id: string): Promise<void> {
+  const { error } = await supabase.from('scans').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+/** Signed URL for a private scan image (1h). */
+export async function getScanImageUrl(imagePath: string): Promise<string | null> {
+  const { data } = await supabase.storage.from('scan-images').createSignedUrl(imagePath, 3600);
+  return data?.signedUrl ?? null;
+}
+
+// ─────────────── Chat ───────────────
+
+export async function getSessions(): Promise<ChatSession[]> {
+  return unwrap(
+    await supabase
+      .from('chat_sessions')
+      .select('id, title, summary, last_message_at, created_at')
+      .order('last_message_at', { ascending: false }),
+  );
+}
+
+export async function createSession(userId: string): Promise<ChatSession> {
+  return unwrap(
+    await supabase.from('chat_sessions').insert({ user_id: userId }).select().single(),
+  );
+}
+
+export async function getMessages(sessionId: string): Promise<ChatMessage[]> {
+  return unwrap(
+    await supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true }),
+  );
+}
+
+export async function deleteSession(id: string): Promise<void> {
+  const { error } = await supabase.from('chat_sessions').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+// ─────────────── Memories ───────────────
+
+export async function getMemories(): Promise<AiMemory[]> {
+  return unwrap(
+    await supabase
+      .from('ai_memories')
+      .select('id, type, content, importance, source, created_at, updated_at')
+      .eq('status', 'active')
+      .order('importance', { ascending: false })
+      .order('updated_at', { ascending: false }),
+  );
+}
+
+export async function addMemory(
+  userId: string,
+  m: { type: AiMemory['type']; content: string; importance: number; source?: AiMemory['source'] },
+): Promise<void> {
+  unwrap(
+    await supabase
+      .from('ai_memories')
+      .insert({ user_id: userId, source: m.source ?? 'onboarding', ...m })
+      .select(),
+  );
+}
+
+export async function deleteMemory(id: string): Promise<void> {
+  const { error } = await supabase.from('ai_memories').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+// ─────────────── Routines ───────────────
+
+export async function getRoutines(): Promise<(Routine & { steps: RoutineStep[] })[]> {
+  const routines = unwrap(
+    await supabase.from('routines').select('*'),
+  ) as Routine[];
+  const withSteps = await Promise.all(
+    routines.map(async (r) => {
+      const steps = unwrap(
+        await supabase
+          .from('routine_steps')
+          .select('*, product:products(*)')
+          .eq('routine_id', r.id)
+          .order('position'),
+      ) as RoutineStep[];
+      return { ...r, steps };
+    }),
+  );
+  return withSteps.sort((a) => (a.period === 'am' ? -1 : 1));
+}
+
+export async function saveRoutine(
+  userId: string,
+  period: 'am' | 'pm',
+  scanId: string | null,
+  steps: Omit<RoutineStep, 'id' | 'routine_id' | 'product'>[],
+): Promise<void> {
+  const routine = unwrap(
+    await supabase
+      .from('routines')
+      .upsert({ user_id: userId, period, generated_from_scan: scanId }, { onConflict: 'user_id,period' })
+      .select()
+      .single(),
+  ) as Routine;
+  await supabase.from('routine_steps').delete().eq('routine_id', routine.id);
+  if (steps.length) {
+    unwrap(
+      await supabase
+        .from('routine_steps')
+        .insert(steps.map((s) => ({ ...s, routine_id: routine.id, user_id: userId })))
+        .select(),
+    );
+  }
+}
+
+export async function getCheckins(sinceISO: string): Promise<RoutineCheckin[]> {
+  return unwrap(
+    await supabase
+      .from('routine_checkins')
+      .select('id, routine_id, checkin_date')
+      .gte('checkin_date', sinceISO)
+      .order('checkin_date', { ascending: false }),
+  );
+}
+
+export async function checkInRoutine(userId: string, routineId: string): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { error } = await supabase
+    .from('routine_checkins')
+    .upsert(
+      { user_id: userId, routine_id: routineId, checkin_date: today },
+      { onConflict: 'user_id,routine_id,checkin_date' },
+    );
+  if (error) throw new Error(error.message);
+}

@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import { Pressable, type PressableProps, type ViewStyle } from 'react-native';
+import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -13,7 +13,7 @@ import { motion } from '@/theme';
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface PressableScaleProps extends PropsWithChildren<Omit<PressableProps, 'style'>> {
-  style?: ViewStyle | ViewStyle[];
+  style?: StyleProp<ViewStyle>;
   /** Scale at full press. */
   pressedScale?: number;
   haptic?: boolean;
