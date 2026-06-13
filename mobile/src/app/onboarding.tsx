@@ -17,7 +17,7 @@ import { haptics } from '@/lib/haptics';
 import { supabase } from '@/lib/supabase';
 import type { SkinType } from '@/lib/types';
 import { useAuth } from '@/stores/auth';
-import { motion, palette, radii, spacing } from '@/theme';
+import { motion, palette, spacing } from '@/theme';
 
 type Step = 0 | 1 | 2 | 3;
 const STEPS = 4;

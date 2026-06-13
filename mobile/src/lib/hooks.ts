@@ -73,8 +73,11 @@ export function useRoutines() {
 
 /** Check-ins from the last 60 days — enough for the streak + grid. */
 export function useRecentCheckins() {
-  const since = new Date(Date.now() - 60 * 86_400_000).toISOString().slice(0, 10);
-  return useQuery({ queryKey: qk.checkins, queryFn: () => api.getCheckins(since) });
+  return useQuery({
+    queryKey: qk.checkins,
+    // `since` is computed in the queryFn (not during render) to stay pure.
+    queryFn: () => api.getCheckins(new Date(Date.now() - 60 * 86_400_000).toISOString().slice(0, 10)),
+  });
 }
 
 export function useCheckIn() {
