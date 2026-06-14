@@ -83,6 +83,25 @@ See [README.md](README.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and
   the code or git history. Don't record what the repo already states.
 - Documentation should read at a senior level: explain the *why*, not just the *what*.
 
+### 7. Plan before you build
+- For any new feature or non-trivial change, **produce a plan and confirm it before
+  writing code.** Lay out the approach, the files you'll touch, the data/schema
+  changes, and the trade-offs — then execute once it's agreed.
+- Trivial, single-file, or obvious fixes don't need a formal plan; use judgment.
+- Planning surfaces wrong assumptions early and keeps changes small and reviewable.
+
+### 8. Model orchestration and delegation
+- When running on a strong model, **the strongest model acts as the orchestrator.** It
+  owns planning, architecture, security-sensitive work, final review, and the overall
+  thread of the task.
+- **Delegate execution to more cost-effective models based on task complexity** —
+  route straightforward, well-scoped work (lookups, mechanical edits, boilerplate,
+  routine implementation) to cheaper models, and reserve the strongest model for
+  architecture, ambiguous problems, deep debugging, and verification.
+- Match the model to the job; don't default to the strongest model for everything.
+- The orchestrator stays responsible for verifying delegated work before declaring it
+  done — a cheaper model doing the work doesn't lower the quality bar.
+
 ---
 
 ## Quality gate
