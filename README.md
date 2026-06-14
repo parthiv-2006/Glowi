@@ -87,7 +87,7 @@ mobile/                 Expo app
   src/
     app/                expo-router routes (auth, onboarding, tabs, scan, results, …)
     components/         design-system primitives (ui/) + feature components
-    features/lib/       supabase client, AI providers, data hooks, domain types
+    lib/                supabase client, AI providers, data hooks, domain types
     stores/             zustand stores (auth, settings)
     theme/              design tokens — "clinical luxe"
 supabase/
