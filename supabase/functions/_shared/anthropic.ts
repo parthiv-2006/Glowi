@@ -47,8 +47,11 @@ export async function callClaude(opts: ClaudeOptions): Promise<string> {
   });
 
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Anthropic API ${res.status}: ${body.slice(0, 300)}`);
+    // Log the upstream body server-side for debugging, but never fold it into
+    // the thrown message — callers surface or persist these and the body can
+    // echo request content.
+    console.error(`Anthropic API ${res.status}:`, (await res.text()).slice(0, 500));
+    throw new Error(`Anthropic API error (${res.status})`);
   }
 
   const data = await res.json();
