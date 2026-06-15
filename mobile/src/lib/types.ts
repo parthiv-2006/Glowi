@@ -173,3 +173,82 @@ export interface ReminderSettings {
   pm_time: string;
   enabled: boolean;
 }
+
+export type PollenLevel = 'low' | 'moderate' | 'high' | 'very-high';
+
+/** Today's environmental readings that drive a Skin Weather forecast. */
+export interface ForecastEnvironment {
+  /** UV index, 0–11+. */
+  uv_index: number;
+  /** Relative humidity, 0–100%. */
+  humidity: number;
+  /** Current temperature, °C. */
+  temp_c: number;
+  /** Day high − low, °C — large swings stress the barrier. */
+  temp_swing_c: number;
+  /** US AQI, 0–500. */
+  air_quality_index: number;
+  pollen_level: PollenLevel;
+  /** Plain-language sky condition, e.g. "Clear", "Overcast". */
+  condition: string;
+}
+
+/** A single actionable routine adjustment for today. */
+export type ForecastActionKind = 'add' | 'swap' | 'skip' | 'maintain';
+
+export interface ForecastGuidance {
+  kind: ForecastActionKind;
+  text: string;
+}
+
+/** A personalized environmental skin forecast — one per user per day. */
+export interface SkinForecast {
+  id: string;
+  forecast_date: string;
+  location_label: string;
+  environment: ForecastEnvironment;
+  headline: string;
+  summary: string;
+  guidance: ForecastGuidance[];
+  created_at: string;
+}
+
+export type ShelfItemStatus = 'active' | 'finished' | 'archived';
+
+/** A product the user owns — one row in their Shelf inventory. */
+export interface ShelfItem {
+  id: string;
+  product_id: string | null;
+  name: string;
+  brand: string | null;
+  category: ProductCategory | null;
+  image_path: string | null;
+  size_label: string | null;
+  /** ISO date the product was opened — drives PAO expiry. */
+  opened_at: string | null;
+  shelf_life_months: number | null;
+  /** Rough percentage left, 0–100. */
+  amount_remaining: number;
+  times_used: number;
+  last_used_at: string | null;
+  status: ShelfItemStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** What the AI reads off a product label when adding to the Shelf. */
+export interface ProductIdentification {
+  /** True when the image is not a skincare product. */
+  not_product: boolean;
+  reject_reason: string | null;
+  name: string;
+  brand: string | null;
+  category: ProductCategory | null;
+  key_ingredients: string[];
+  /** Typical period-after-opening for this product type, in months. */
+  shelf_life_months: number | null;
+  /** Catalog slug when the label matches a known product, else null. */
+  matched_slug: string | null;
+  confidence: number;
+}

@@ -29,4 +29,6 @@ export const qk = {
   routines: ['routines'] as const,
   checkins: ['routine-checkins'] as const,
   reminders: ['reminders'] as const,
+  forecast: (date: string) => ['skin-forecast', date] as const,
+  shelf: ['shelf-items'] as const,
 };

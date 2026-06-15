@@ -17,6 +17,7 @@ import type {
   RoutineCheckin,
   RoutineStep,
   Scan,
+  ShelfItem,
   Tip,
 } from './types';
 
@@ -79,16 +80,17 @@ export async function getArticle(slug: string): Promise<Article> {
 // ─────────────── Scans ───────────────
 
 export async function getScans(): Promise<Scan[]> {
-  return unwrap(
-    await supabase.from('scans').select('*').order('created_at', { ascending: false }),
-  );
+  return unwrap(await supabase.from('scans').select('*').order('created_at', { ascending: false }));
 }
 
 export async function getScan(id: string): Promise<Scan> {
   return unwrap(await supabase.from('scans').select('*').eq('id', id).single());
 }
 
-export async function createScan(userId: string, input: { area?: string; notes?: string }): Promise<Scan> {
+export async function createScan(
+  userId: string,
+  input: { area?: string; notes?: string },
+): Promise<Scan> {
   return unwrap(
     await supabase
       .from('scans')
@@ -125,9 +127,7 @@ export async function getSessions(): Promise<ChatSession[]> {
 }
 
 export async function createSession(userId: string): Promise<ChatSession> {
-  return unwrap(
-    await supabase.from('chat_sessions').insert({ user_id: userId }).select().single(),
-  );
+  return unwrap(await supabase.from('chat_sessions').insert({ user_id: userId }).select().single());
 }
 
 export async function getMessages(sessionId: string): Promise<ChatMessage[]> {
@@ -178,9 +178,7 @@ export async function deleteMemory(id: string): Promise<void> {
 // ─────────────── Routines ───────────────
 
 export async function getRoutines(): Promise<(Routine & { steps: RoutineStep[] })[]> {
-  const routines = unwrap(
-    await supabase.from('routines').select('*'),
-  ) as Routine[];
+  const routines = unwrap(await supabase.from('routines').select('*')) as Routine[];
   const withSteps = await Promise.all(
     routines.map(async (r) => {
       const steps = unwrap(
@@ -205,7 +203,10 @@ export async function saveRoutine(
   const routine = unwrap(
     await supabase
       .from('routines')
-      .upsert({ user_id: userId, period, generated_from_scan: scanId }, { onConflict: 'user_id,period' })
+      .upsert(
+        { user_id: userId, period, generated_from_scan: scanId },
+        { onConflict: 'user_id,period' },
+      )
       .select()
       .single(),
   ) as Routine;
@@ -239,4 +240,101 @@ export async function checkInRoutine(userId: string, routineId: string): Promise
       { onConflict: 'user_id,routine_id,checkin_date' },
     );
   if (error) throw new Error(error.message);
+}
+
+// ─────────────── Shelf (product inventory) ───────────────
+
+/** Editable fields when creating or updating a shelf item. */
+export type ShelfItemInput = Partial<
+  Pick<
+    ShelfItem,
+    | 'product_id'
+    | 'name'
+    | 'brand'
+    | 'category'
+    | 'image_path'
+    | 'size_label'
+    | 'opened_at'
+    | 'shelf_life_months'
+    | 'amount_remaining'
+    | 'status'
+    | 'notes'
+  >
+>;
+
+const SHELF_COLS =
+  'id, product_id, name, brand, category, image_path, size_label, opened_at, shelf_life_months, amount_remaining, times_used, last_used_at, status, notes, created_at, updated_at';
+
+export async function getShelfItems(): Promise<ShelfItem[]> {
+  return unwrap(
+    await supabase
+      .from('shelf_items')
+      .select(SHELF_COLS)
+      .neq('status', 'archived')
+      .order('created_at', { ascending: false }),
+  );
+}
+
+export async function addShelfItem(
+  userId: string,
+  input: ShelfItemInput & { name: string },
+): Promise<ShelfItem> {
+  return unwrap(
+    await supabase
+      .from('shelf_items')
+      .insert({ user_id: userId, ...input })
+      .select(SHELF_COLS)
+      .single(),
+  );
+}
+
+export async function updateShelfItem(id: string, patch: ShelfItemInput): Promise<ShelfItem> {
+  return unwrap(
+    await supabase.from('shelf_items').update(patch).eq('id', id).select(SHELF_COLS).single(),
+  );
+}
+
+export async function deleteShelfItem(id: string): Promise<void> {
+  const { error } = await supabase.from('shelf_items').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+/** Logs a use: bumps the counter + date and nudges the remaining amount down. */
+export async function markShelfItemUsed(id: string): Promise<ShelfItem> {
+  const current = unwrap(
+    await supabase.from('shelf_items').select('amount_remaining, times_used').eq('id', id).single(),
+  ) as Pick<ShelfItem, 'amount_remaining' | 'times_used'>;
+  return unwrap(
+    await supabase
+      .from('shelf_items')
+      .update({
+        times_used: current.times_used + 1,
+        last_used_at: new Date().toISOString().slice(0, 10),
+        amount_remaining: Math.max(0, current.amount_remaining - 2),
+      })
+      .eq('id', id)
+      .select(SHELF_COLS)
+      .single(),
+  );
+}
+
+/** Uploads a product photo to the private bucket under {user}/shelf/{item}.jpg. */
+export async function uploadShelfImage(
+  userId: string,
+  itemId: string,
+  uri: string,
+): Promise<string> {
+  const path = `${userId}/shelf/${itemId}.jpg`;
+  const arrayBuffer = await fetch(uri).then((r) => r.arrayBuffer());
+  const { error } = await supabase.storage
+    .from('scan-images')
+    .upload(path, arrayBuffer, { contentType: 'image/jpeg', upsert: true });
+  if (error) throw new Error(error.message);
+  return path;
+}
+
+/** Signed URL for a private product image (1h). */
+export async function getShelfImageUrl(imagePath: string): Promise<string | null> {
+  const { data } = await supabase.storage.from('scan-images').createSignedUrl(imagePath, 3600);
+  return data?.signedUrl ?? null;
 }

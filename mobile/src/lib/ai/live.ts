@@ -1,12 +1,14 @@
 /** Live provider — the deployed Claude edge functions do the thinking. */
 import { supabase } from '../supabase';
-import type { Scan } from '../types';
+import type { ProductIdentification, Scan, SkinForecast } from '../types';
 import type {
   AIProvider,
   AnalyzeScanInput,
   ChatInput,
   ChatResult,
   ExtractResult,
+  IdentifyProductInput,
+  SkinForecastInput,
 } from './types';
 
 async function invoke<T>(name: string, body: Record<string, unknown>): Promise<T> {
@@ -45,5 +47,14 @@ export const liveProvider: AIProvider = {
 
   async extractMemories(sessionId: string): Promise<ExtractResult> {
     return invoke<ExtractResult>('extract-memories', { sessionId });
+  },
+
+  async skinForecast(input: SkinForecastInput = {}): Promise<SkinForecast> {
+    // The function generates-or-returns today's forecast and persists it.
+    return invoke<SkinForecast>('skin-forecast', { ...input });
+  },
+
+  async identifyProduct(input: IdentifyProductInput): Promise<ProductIdentification> {
+    return invoke<ProductIdentification>('identify-product', { imageBase64: input.imageBase64 });
   },
 };

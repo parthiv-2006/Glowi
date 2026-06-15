@@ -14,7 +14,8 @@ import {
   Skeleton,
   Stagger,
 } from '@/components/ui';
-import { useScans } from '@/lib/hooks';
+import { SkinWeatherCard } from '@/components/SkinWeatherCard';
+import { useScans, useSkinForecast } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/stores/auth';
 import { palette, radii, scoreColor, severityColor, spacing } from '@/theme';
@@ -30,6 +31,7 @@ export default function Home() {
   const router = useRouter();
   const profile = useAuth((s) => s.profile);
   const { data: scans, isLoading } = useScans();
+  const { data: forecast, isLoading: forecastLoading } = useSkinForecast();
 
   const latest = useMemo(() => scans?.find((s) => s.status === 'complete'), [scans]);
   const firstName = profile?.display_name?.split(' ')[0];
@@ -44,6 +46,19 @@ export default function Home() {
       </Animated.View>
 
       <Stagger delay={120}>
+        {/* Skin Weather — the proactive morning forecast */}
+        {forecastLoading ? (
+          <GlassCard emphasized style={styles.forecastSkeleton}>
+            <Skeleton width="40%" height={14} />
+            <View style={{ height: spacing(2) }} />
+            <Skeleton width="85%" height={20} />
+            <View style={{ height: spacing(3) }} />
+            <Skeleton width="100%" height={36} />
+          </GlassCard>
+        ) : forecast ? (
+          <SkinWeatherCard forecast={forecast} onPress={() => router.push('/forecast')} />
+        ) : null}
+
         {/* Hero scan CTA */}
         <PressableScale
           onPress={() => {
@@ -100,7 +115,9 @@ export default function Home() {
                   <View style={styles.concernChips}>
                     {latest.concerns.slice(0, 3).map((c) => (
                       <View key={c.concern_slug} style={styles.chip}>
-                        <View style={[styles.chipDot, { backgroundColor: severityColor(c.severity) }]} />
+                        <View
+                          style={[styles.chipDot, { backgroundColor: severityColor(c.severity) }]}
+                        />
                         <AppText variant="caption" color={palette.textSecondary}>
                           {c.display_name}
                         </AppText>
@@ -146,6 +163,9 @@ export default function Home() {
             onPress={() => router.push('/(tabs)/learn')}
           />
         </View>
+        <View style={styles.actionsRow}>
+          <QuickAction icon="cube-outline" label="My shelf" onPress={() => router.push('/shelf')} />
+        </View>
       </Stagger>
     </Screen>
   );
@@ -174,6 +194,7 @@ function QuickAction({
 
 const styles = StyleSheet.create({
   name: { fontSize: 32, marginTop: spacing(1) },
+  forecastSkeleton: { marginBottom: spacing(1) },
   heroWrap: { marginTop: spacing(5) },
   hero: {
     borderRadius: radii.xl,
@@ -215,5 +236,10 @@ const styles = StyleSheet.create({
   chipDot: { width: 7, height: 7, borderRadius: 4 },
   actionsRow: { flexDirection: 'row', gap: spacing(4), marginTop: spacing(4) },
   actionWrap: { flex: 1 },
-  action: { flexDirection: 'row', alignItems: 'center', gap: spacing(3), paddingVertical: spacing(4) },
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    paddingVertical: spacing(4),
+  },
 });

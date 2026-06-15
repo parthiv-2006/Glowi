@@ -10,108 +10,165 @@
  * identically. See docs/adr/0003.
  */
 import { supabase } from '../supabase';
-import type { Scan, ScanConcern } from '../types';
-import type { AIProvider, AnalyzeScanInput, ChatInput, ChatResult, ExtractResult } from './types';
+import type {
+  ProductCategory,
+  ProductIdentification,
+  Scan,
+  ScanConcern,
+  SkinForecast,
+  SkinType,
+} from '../types';
+import type {
+  AIProvider,
+  AnalyzeScanInput,
+  ChatInput,
+  ChatResult,
+  ExtractResult,
+  IdentifyProductInput,
+  SkinForecastInput,
+} from './types';
+import { DEFAULT_LOCATION, deriveForecast, synthesizeEnvironment } from './forecast';
+
+/** Plausible label reads for offline Shelf demos — rotate per add. */
+const MOCK_IDENTIFICATIONS: Omit<
+  ProductIdentification,
+  'not_product' | 'reject_reason' | 'confidence'
+>[] = [
+  {
+    name: 'Moisturizing Cream',
+    brand: 'CeraVe',
+    category: 'moisturizer',
+    key_ingredients: ['ceramides', 'hyaluronic acid'],
+    shelf_life_months: 12,
+    matched_slug: 'cerave-moisturizing-cream',
+  },
+  {
+    name: 'UV Clear SPF 46',
+    brand: 'EltaMD',
+    category: 'spf',
+    key_ingredients: ['zinc oxide', 'niacinamide'],
+    shelf_life_months: 12,
+    matched_slug: 'eltamd-uv-clear',
+  },
+  {
+    name: '2% BHA Liquid Exfoliant',
+    brand: "Paula's Choice",
+    category: 'exfoliant',
+    key_ingredients: ['salicylic acid'],
+    shelf_life_months: 12,
+    matched_slug: 'paulas-choice-2-bha',
+  },
+  {
+    name: 'Hyaluronic Acid 2% + B5',
+    brand: 'The Ordinary',
+    category: 'serum',
+    key_ingredients: ['hyaluronic acid', 'vitamin b5'],
+    shelf_life_months: 6,
+    matched_slug: 'to-hyaluronic',
+  },
+];
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Scan scenarios rotate by scan count; scores drift upward on repeat scans. */
-const SCENARIOS: { summary: string; type: Scan['skin_type_estimate']; concerns: ScanConcern[] }[] = [
-  {
-    summary:
-      'Your skin looks fundamentally healthy, with congestion concentrated around the nose and some mild breakout activity on the chin. The texture elsewhere reflects good hydration — targeted pore care and consistent cleansing should move things quickly.',
-    type: 'combination',
-    concerns: [
-      {
-        concern_slug: 'blackheads-congestion',
-        display_name: 'Congestion around the nose',
-        severity: 52,
-        confidence: 0.91,
-        areas: ['nose', 'inner cheeks'],
-        observations:
-          'Clustered open comedones across the nostril creases with mild surrounding texture.',
-        caution: null,
-      },
-      {
-        concern_slug: 'acne',
-        display_name: 'Mild breakouts on the chin',
-        severity: 38,
-        confidence: 0.84,
-        areas: ['chin'],
-        observations: 'A few small inflamed papules along the chin line, no cystic involvement.',
-        caution: null,
-      },
-      {
-        concern_slug: 'enlarged-pores',
-        display_name: 'Visible pores in the T-zone',
-        severity: 41,
-        confidence: 0.78,
-        areas: ['nose', 'forehead'],
-        observations: 'Pore visibility consistent with combination-type oil distribution.',
-        caution: null,
-      },
-    ],
-  },
-  {
-    summary:
-      'Noticeable progress — congestion is clearing and inflammation is down. The main opportunities now are evening out tone where older breakouts left marks, and restoring glow with gentle exfoliation.',
-    type: 'combination',
-    concerns: [
-      {
-        concern_slug: 'hyperpigmentation',
-        display_name: 'Post-breakout marks',
-        severity: 44,
-        confidence: 0.87,
-        areas: ['chin', 'cheeks'],
-        observations: 'Flat brownish macules where previous blemishes resolved — classic PIH.',
-        caution: null,
-      },
-      {
-        concern_slug: 'blackheads-congestion',
-        display_name: 'Residual nose congestion',
-        severity: 33,
-        confidence: 0.88,
-        areas: ['nose'],
-        observations: 'Markedly fewer comedones than typical baseline; mostly sebaceous filaments.',
-        caution: null,
-      },
-      {
-        concern_slug: 'dullness',
-        display_name: 'Mild surface dullness',
-        severity: 36,
-        confidence: 0.74,
-        areas: ['cheeks', 'forehead'],
-        observations: 'Slightly uneven light reflection suggesting dead-cell buildup.',
-        caution: null,
-      },
-    ],
-  },
-  {
-    summary:
-      'Strong, settled skin this scan. Tone is more even, congestion is minimal, and what remains is maintenance: hydration depth and protecting the progress with daily SPF.',
-    type: 'normal',
-    concerns: [
-      {
-        concern_slug: 'dryness',
-        display_name: 'Mild dehydration on the cheeks',
-        severity: 28,
-        confidence: 0.8,
-        areas: ['cheeks'],
-        observations: 'Fine surface lines that read as dehydration rather than structural.',
-        caution: null,
-      },
-      {
-        concern_slug: 'hyperpigmentation',
-        display_name: 'Fading post-breakout marks',
-        severity: 26,
-        confidence: 0.85,
-        areas: ['chin'],
-        observations: 'Previous marks visibly lighter; consistent with healthy turnover.',
-        caution: null,
-      },
-    ],
-  },
-];
+const SCENARIOS: { summary: string; type: Scan['skin_type_estimate']; concerns: ScanConcern[] }[] =
+  [
+    {
+      summary:
+        'Your skin looks fundamentally healthy, with congestion concentrated around the nose and some mild breakout activity on the chin. The texture elsewhere reflects good hydration — targeted pore care and consistent cleansing should move things quickly.',
+      type: 'combination',
+      concerns: [
+        {
+          concern_slug: 'blackheads-congestion',
+          display_name: 'Congestion around the nose',
+          severity: 52,
+          confidence: 0.91,
+          areas: ['nose', 'inner cheeks'],
+          observations:
+            'Clustered open comedones across the nostril creases with mild surrounding texture.',
+          caution: null,
+        },
+        {
+          concern_slug: 'acne',
+          display_name: 'Mild breakouts on the chin',
+          severity: 38,
+          confidence: 0.84,
+          areas: ['chin'],
+          observations: 'A few small inflamed papules along the chin line, no cystic involvement.',
+          caution: null,
+        },
+        {
+          concern_slug: 'enlarged-pores',
+          display_name: 'Visible pores in the T-zone',
+          severity: 41,
+          confidence: 0.78,
+          areas: ['nose', 'forehead'],
+          observations: 'Pore visibility consistent with combination-type oil distribution.',
+          caution: null,
+        },
+      ],
+    },
+    {
+      summary:
+        'Noticeable progress — congestion is clearing and inflammation is down. The main opportunities now are evening out tone where older breakouts left marks, and restoring glow with gentle exfoliation.',
+      type: 'combination',
+      concerns: [
+        {
+          concern_slug: 'hyperpigmentation',
+          display_name: 'Post-breakout marks',
+          severity: 44,
+          confidence: 0.87,
+          areas: ['chin', 'cheeks'],
+          observations: 'Flat brownish macules where previous blemishes resolved — classic PIH.',
+          caution: null,
+        },
+        {
+          concern_slug: 'blackheads-congestion',
+          display_name: 'Residual nose congestion',
+          severity: 33,
+          confidence: 0.88,
+          areas: ['nose'],
+          observations:
+            'Markedly fewer comedones than typical baseline; mostly sebaceous filaments.',
+          caution: null,
+        },
+        {
+          concern_slug: 'dullness',
+          display_name: 'Mild surface dullness',
+          severity: 36,
+          confidence: 0.74,
+          areas: ['cheeks', 'forehead'],
+          observations: 'Slightly uneven light reflection suggesting dead-cell buildup.',
+          caution: null,
+        },
+      ],
+    },
+    {
+      summary:
+        'Strong, settled skin this scan. Tone is more even, congestion is minimal, and what remains is maintenance: hydration depth and protecting the progress with daily SPF.',
+      type: 'normal',
+      concerns: [
+        {
+          concern_slug: 'dryness',
+          display_name: 'Mild dehydration on the cheeks',
+          severity: 28,
+          confidence: 0.8,
+          areas: ['cheeks'],
+          observations: 'Fine surface lines that read as dehydration rather than structural.',
+          caution: null,
+        },
+        {
+          concern_slug: 'hyperpigmentation',
+          display_name: 'Fading post-breakout marks',
+          severity: 26,
+          confidence: 0.85,
+          areas: ['chin'],
+          observations: 'Previous marks visibly lighter; consistent with healthy turnover.',
+          caution: null,
+        },
+      ],
+    },
+  ];
 
 const BASE_SCORES = [68, 74, 81];
 
@@ -167,7 +224,7 @@ const CHAT_SCRIPT: { match: RegExp; reply: string; products?: string[] }[] = [
   {
     match: /routine|order|layer|steps?/i,
     reply:
-      'The complete, evidence-supported routine is shorter than social media wants you to believe:\n\n**AM:** gentle cleanse → vitamin C (optional) → moisturizer → SPF\n**PM:** cleanse → your one workhorse active (retinoid *or* exfoliating acid, not both) → moisturizer\n\nThat\'s it. Four to five products. Add anything new one at a time, two weeks apart, so when something goes wrong you know exactly what did it. Consistency with a modest routine beats sporadic ambition every time.',
+      "The complete, evidence-supported routine is shorter than social media wants you to believe:\n\n**AM:** gentle cleanse → vitamin C (optional) → moisturizer → SPF\n**PM:** cleanse → your one workhorse active (retinoid *or* exfoliating acid, not both) → moisturizer\n\nThat's it. Four to five products. Add anything new one at a time, two weeks apart, so when something goes wrong you know exactly what did it. Consistency with a modest routine beats sporadic ambition every time.",
   },
   {
     match: /diet|food|eat|nutrition/i,
@@ -277,6 +334,82 @@ export const mockProvider: AIProvider = {
     return { message: reply, productRefs };
   },
 
+  async skinForecast(input: SkinForecastInput = {}): Promise<SkinForecast> {
+    const userId = await requireUserId();
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (!input.refresh) {
+      const { data: existing } = await supabase
+        .from('skin_forecasts')
+        .select('*')
+        .eq('forecast_date', today)
+        .maybeSingle();
+      if (existing) return existing as SkinForecast;
+    }
+
+    await wait(700 + Math.random() * 600);
+
+    // Personalize against the most recent completed scan, mirroring how the
+    // live provider grounds the forecast in the memory system.
+    const { data: latestScan } = await supabase
+      .from('scans')
+      .select('skin_type_estimate, concerns')
+      .eq('status', 'complete')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // The forecast routes through what the user owns (The Shelf).
+    const { data: shelf } = await supabase
+      .from('shelf_items')
+      .select('name, brand, category')
+      .eq('status', 'active');
+    const owned = (shelf ?? []).map((s) => ({
+      category: s.category as ProductCategory | null,
+      label: [s.brand, s.name].filter(Boolean).join(' ').trim() || (s.name as string),
+    }));
+
+    const concerns = (latestScan?.concerns ?? []) as ScanConcern[];
+    const env = synthesizeEnvironment(new Date());
+    const { headline, summary, guidance } = deriveForecast(env, {
+      skinType: (latestScan?.skin_type_estimate as SkinType | null) ?? null,
+      topConcern: concerns[0]?.display_name ?? null,
+      owned,
+    });
+
+    const row = {
+      user_id: userId,
+      forecast_date: today,
+      location_label: input.locationLabel ?? DEFAULT_LOCATION.label,
+      environment: env,
+      headline,
+      summary,
+      guidance,
+    };
+    const { data, error } = await supabase
+      .from('skin_forecasts')
+      .upsert(row, { onConflict: 'user_id,forecast_date' })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+
+    return data as SkinForecast;
+  },
+
+  async identifyProduct(_input: IdentifyProductInput): Promise<ProductIdentification> {
+    await requireUserId();
+    await wait(1400 + Math.random() * 900);
+
+    // Rotate through plausible products by current shelf size, so repeated adds
+    // in a demo surface different items.
+    const { count } = await supabase
+      .from('shelf_items')
+      .select('id', { count: 'exact', head: true });
+    const pick = MOCK_IDENTIFICATIONS[(count ?? 0) % MOCK_IDENTIFICATIONS.length];
+
+    return { ...pick, not_product: false, reject_reason: null, confidence: 0.92 };
+  },
+
   async extractMemories(sessionId: string): Promise<ExtractResult> {
     const userId = await requireUserId();
 
@@ -295,7 +428,10 @@ export const mockProvider: AIProvider = {
     if (fresh.length < 2) return { extracted: 0, summaryUpdated: false };
 
     // Heuristic extraction — enough to demonstrate the memory system offline.
-    const rules: { match: RegExp; build: (m: string) => { type: string; content: string; importance: number } }[] = [
+    const rules: {
+      match: RegExp;
+      build: (m: string) => { type: string; content: string; importance: number };
+    }[] = [
       {
         match: /allergic to ([\w\s-]+)|(\b[\w-]+) (?:broke me out|made me break ?out|irritated)/i,
         build: (m) => ({

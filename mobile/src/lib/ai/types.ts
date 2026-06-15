@@ -3,12 +3,21 @@
  * intelligence is the deployed Claude edge functions (live) or the on-device
  * simulator (mock) is a runtime configuration detail. See docs/adr/0003.
  */
-import type { Scan } from '../types';
+import type { ProductIdentification, Scan, SkinForecast } from '../types';
 
 export interface AnalyzeScanInput {
   scanId: string;
   /** Base64 image — used by the mock provider; live mode reads from storage. */
   imageBase64?: string;
+}
+
+export interface SkinForecastInput {
+  /** Location to forecast for. Defaults to DEFAULT_LOCATION when omitted. */
+  latitude?: number;
+  longitude?: number;
+  locationLabel?: string;
+  /** Force regeneration even if today's forecast already exists. */
+  refresh?: boolean;
 }
 
 export interface ChatInput {
@@ -34,4 +43,19 @@ export interface AIProvider {
   chat(input: ChatInput): Promise<ChatResult>;
   /** Consolidates session turns into long-term memories + a summary. */
   extractMemories(sessionId: string): Promise<ExtractResult>;
+  /**
+   * Returns today's personalized environmental skin forecast, generating and
+   * persisting it on first request of the day. Idempotent per day.
+   */
+  skinForecast(input?: SkinForecastInput): Promise<SkinForecast>;
+  /**
+   * Reads a product photo and returns structured details for adding it to the
+   * Shelf — does not persist anything. The caller saves the confirmed item.
+   */
+  identifyProduct(input: IdentifyProductInput): Promise<ProductIdentification>;
+}
+
+export interface IdentifyProductInput {
+  /** Base64-encoded product photo (no data: prefix). */
+  imageBase64: string;
 }

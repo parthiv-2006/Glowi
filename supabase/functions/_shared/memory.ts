@@ -19,7 +19,9 @@ export async function assembleMemoryContext(
   userId: string,
   opts: { excludeSessionId?: string } = {},
 ): Promise<MemoryContext> {
-  const [profileRes, gotchaRes, rankedRes, scanRes, sessionRes] = await Promise.all([
+  const today = new Date().toISOString().slice(0, 10);
+  const [profileRes, gotchaRes, rankedRes, scanRes, sessionRes, forecastRes, shelfRes] =
+    await Promise.all([
     svc.from('profiles').select('display_name, skin_type, goals').eq('id', userId).maybeSingle(),
     // Gotchas (allergies, bad reactions) are safety-relevant: always included.
     svc
@@ -56,6 +58,19 @@ export async function assembleMemoryContext(
       if (opts.excludeSessionId) q = q.neq('id', opts.excludeSessionId);
       return q.maybeSingle();
     })(),
+    svc
+      .from('skin_forecasts')
+      .select('headline, summary, location_label')
+      .eq('user_id', userId)
+      .eq('forecast_date', today)
+      .maybeSingle(),
+    svc
+      .from('shelf_items')
+      .select('name, brand, category, amount_remaining')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(20),
   ]);
 
   const lines: string[] = [];
@@ -106,6 +121,25 @@ export async function assembleMemoryContext(
 
   if (sessionRes.data?.summary) {
     lines.push(`LAST CONVERSATION SUMMARY: ${sessionRes.data.summary}`);
+  }
+
+  const forecast = forecastRes.data;
+  if (forecast?.headline) {
+    lines.push(
+      `TODAY'S SKIN WEATHER (${forecast.location_label}) — ${forecast.headline}` +
+        (forecast.summary ? `. ${forecast.summary}` : ''),
+    );
+  }
+
+  if (shelfRes.data?.length) {
+    const items = shelfRes.data
+      .map((s: { name: string; brand: string | null; category: string | null; amount_remaining: number }) => {
+        const label = [s.brand, s.name].filter(Boolean).join(' ');
+        const low = s.amount_remaining <= 20 ? ', running low' : '';
+        return `${label} (${s.category ?? 'product'}${low})`;
+      })
+      .join('; ');
+    lines.push(`PRODUCTS ON THEIR SHELF (recommend what they own): ${items}`);
   }
 
   return {
