@@ -10,6 +10,7 @@
 import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, extractJson, MODELS } from '../_shared/anthropic.ts';
+import { base64Prefix, sniffImageMediaType } from '../_shared/images.ts';
 
 interface IdentifyBody {
   imageBase64?: string;
@@ -54,6 +55,9 @@ serve(async (req) => {
   }
   // Guard against oversized payloads (~8MB of base64).
   if (imageBase64.length > 8_000_000) throw new HttpError(413, 'Image too large');
+  // Validate the bytes are a real, supported image before forwarding upstream.
+  const mediaType = sniffImageMediaType(base64Prefix(imageBase64));
+  if (!mediaType) throw new HttpError(400, 'Image must be a JPEG, PNG, WebP, or GIF photo');
 
   const svc = serviceClient();
   const { data: products } = await svc.from('products').select('slug, brand, name, category');
@@ -92,7 +96,7 @@ ${catalog}`;
         {
           role: 'user',
           content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } },
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
             { type: 'text', text: 'Identify this skincare product.' },
           ],
         },

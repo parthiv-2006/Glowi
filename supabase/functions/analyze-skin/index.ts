@@ -10,6 +10,7 @@
 import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, extractJson, MODELS } from '../_shared/anthropic.ts';
+import { sniffImageMediaType } from '../_shared/images.ts';
 
 interface AnalyzeBody {
   scanId?: string;
@@ -70,13 +71,16 @@ serve(async (req) => {
     .download(scan.image_path);
   if (dlErr || !blob) return await fail('Could not read the scan image', 500);
   const bytes = new Uint8Array(await blob.arrayBuffer());
+  // Trust the bytes, not the stored content type — confirm this is a real,
+  // supported image before base64-ing it for the vision call.
+  const mediaType = sniffImageMediaType(bytes);
+  if (!mediaType) return await fail('That file is not a supported image — use a JPEG or PNG photo.', 400);
   let binary = '';
   const CHUNK = 0x8000;
   for (let i = 0; i < bytes.length; i += CHUNK) {
     binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
   }
   const base64 = btoa(binary);
-  const mediaType = blob.type && blob.type.startsWith('image/') ? blob.type : 'image/jpeg';
 
   const { data: taxonomy } = await svc.from('concerns').select('slug, name');
   const slugList = (taxonomy ?? []).map((c) => `- ${c.slug} (${c.name})`).join('\n');
