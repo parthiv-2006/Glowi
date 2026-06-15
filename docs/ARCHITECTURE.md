@@ -75,8 +75,10 @@ Two families of tables (full DDL in `supabase/migrations/0001_core_tables.sql`):
 Every user table has `enable row level security` with a policy scoping all access to
 `auth.uid() = user_id` (`profiles` keys on `id`). Catalog tables allow `select` to
 `authenticated` only. The `scan-images` storage bucket is private with policies that
-restrict each user to their own `{user_id}/…` prefix. RLS — not application code — is
-the authorization boundary, so it is covered explicitly
+restrict each user to their own `{user_id}/…` prefix. Despite the name, this bucket also
+holds The Shelf's product photos under `{user_id}/shelf/…`; the per-user prefix policy
+secures both equally, so they share one private bucket rather than two. RLS — not
+application code — is the authorization boundary, so it is covered explicitly
 ([ADR-0001](adr/0001-supabase-backend.md)).
 
 A `handle_new_user` trigger creates a `profiles` row on signup (honoring the guest

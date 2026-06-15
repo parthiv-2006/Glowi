@@ -45,8 +45,10 @@ The client caches guest credentials in SecureStore so they persist across app re
 
 **Security Considerations:**
 
-- The function runs without `verify_jwt`, so it's protected only by the anon API key requirement and rate-limiting
+- The function runs without `verify_jwt`, so it's protected only by the anon API key requirement and rate-limiting. **Rate-limiting is enforced in-function**: each request is counted per caller IP via the `check_rate_limit` Postgres function (migration `0007`), capped at 10 attempts/hour, failing open if the limiter itself errors so an infra hiccup can't lock users out.
+- The admin-API error message is never returned to the client — failures surface as generic copy and the real error is logged server-side — so account enumeration and internals don't leak.
 - Scope the edge function's admin key to a minimal Postgres role (create users only, no data access)
-- Log all signup requests (guest and email) for audit trails
 - Monitor for abuse (e.g., rapid guest account creation from a single IP)
+
+**Guest credentials are returned in plaintext, by design.** The guest password is a 64-hex-char cryptographically random value the client must hold to (a) sign in immediately and (b) silently restore the guest across app restarts (`auth.ts` caches it in `expo-secure-store`). It is therefore returned in the response body — accepted because: transport is HTTPS-only, the value is high-entropy and single-account, and it is stored in the OS keystore at rest, never in plain `AsyncStorage`. Returning a server-minted session instead would break offline restore (refresh tokens expire) and is deferred with the password-reset work.
 
