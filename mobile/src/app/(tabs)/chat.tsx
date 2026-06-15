@@ -92,7 +92,11 @@ export default function ChatTab() {
       ) : sessions?.length ? (
         <Stagger delay={60}>
           {sessions.map((s) => (
-            <PressableScale key={s.id} onPress={() => router.push(`/chat/${s.id}`)} style={styles.row}>
+            <PressableScale
+              key={s.id}
+              onPress={() => router.push(`/chat/${s.id}`)}
+              style={styles.row}
+            >
               <GlassCard style={styles.sessionCard}>
                 <View style={{ flex: 1 }}>
                   <AppText variant="heading" numberOfLines={1} style={styles.sessionTitle}>
@@ -124,7 +128,12 @@ export default function ChatTab() {
 const styles = StyleSheet.create({
   sub: { marginTop: spacing(1) },
   actions: { gap: spacing(3), marginTop: spacing(5) },
-  memoryCard: { flexDirection: 'row', alignItems: 'center', gap: spacing(3), paddingVertical: spacing(3.5) },
+  memoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    paddingVertical: spacing(3.5),
+  },
   memoryIcon: {
     width: 38,
     height: 38,
@@ -136,7 +145,12 @@ const styles = StyleSheet.create({
   recentLabel: { marginTop: spacing(7), marginBottom: spacing(3) },
   skeletons: { gap: spacing(3) },
   row: { marginBottom: spacing(3) },
-  sessionCard: { flexDirection: 'row', alignItems: 'center', gap: spacing(3), paddingVertical: spacing(4) },
+  sessionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    paddingVertical: spacing(4),
+  },
   sessionTitle: { fontSize: 16, marginBottom: spacing(1) },
   emptyCard: { paddingVertical: spacing(6) },
   emptyText: { textAlign: 'center', lineHeight: 22 },

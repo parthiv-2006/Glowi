@@ -28,7 +28,9 @@ interface AuthState {
   init: () => Promise<void>;
 }
 
-async function callSignup(body: Record<string, unknown>): Promise<{ email: string; password?: string }> {
+async function callSignup(
+  body: Record<string, unknown>,
+): Promise<{ email: string; password?: string }> {
   const res = await fetch(`${env.supabaseUrl}/functions/v1/auth-signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: env.supabaseAnonKey },

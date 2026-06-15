@@ -81,7 +81,12 @@ export default function Onboarding() {
   return (
     <View style={styles.root}>
       <AuroraBackground intensity={0.7} />
-      <View style={[styles.content, { paddingTop: insets.top + spacing(4), paddingBottom: insets.bottom + spacing(6) }]}>
+      <View
+        style={[
+          styles.content,
+          { paddingTop: insets.top + spacing(4), paddingBottom: insets.bottom + spacing(6) },
+        ]}
+      >
         {/* Progress dots */}
         <View style={styles.progress}>
           {Array.from({ length: STEPS }).map((_, i) => (
@@ -123,7 +128,10 @@ export default function Onboarding() {
                       <GlassCard emphasized={active} glow={active} style={styles.optionCard}>
                         <View style={styles.optionRow}>
                           <View style={{ flex: 1 }}>
-                            <AppText variant="heading" color={active ? palette.accentBright : palette.text}>
+                            <AppText
+                              variant="heading"
+                              color={active ? palette.accentBright : palette.text}
+                            >
                               {opt.label}
                             </AppText>
                             <AppText variant="caption">{opt.blurb}</AppText>
@@ -155,8 +163,17 @@ export default function Onboarding() {
                 {GOAL_OPTIONS.map((opt) => {
                   const active = goals.includes(opt.id);
                   return (
-                    <PressableScale key={opt.id} onPress={() => toggleGoal(opt.id)} style={styles.goalWrap}>
-                      <GlassCard emphasized={active} glow={active} padded={false} style={styles.goalCard}>
+                    <PressableScale
+                      key={opt.id}
+                      onPress={() => toggleGoal(opt.id)}
+                      style={styles.goalWrap}
+                    >
+                      <GlassCard
+                        emphasized={active}
+                        glow={active}
+                        padded={false}
+                        style={styles.goalCard}
+                      >
                         <View style={styles.goalInner}>
                           <Ionicons
                             name={opt.icon}
@@ -220,7 +237,12 @@ export default function Onboarding() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.bg },
   content: { flex: 1, paddingHorizontal: spacing(6) },
-  progress: { flexDirection: 'row', gap: spacing(2), justifyContent: 'center', marginBottom: spacing(8) },
+  progress: {
+    flexDirection: 'row',
+    gap: spacing(2),
+    justifyContent: 'center',
+    marginBottom: spacing(8),
+  },
   pip: { height: 4, width: 28, borderRadius: 2, backgroundColor: palette.surfaceStrong },
   pipActive: { backgroundColor: palette.accent },
   pipCurrent: { width: 40, backgroundColor: palette.accentBright },

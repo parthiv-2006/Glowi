@@ -56,7 +56,12 @@ export function GlowButton({
     <PressableScale
       onPress={onPress}
       disabled={inactive}
-      style={[styles.base, variant === 'primary' && styles.glow, inactive && styles.disabled, style]}
+      style={[
+        styles.base,
+        variant === 'primary' && styles.glow,
+        inactive && styles.disabled,
+        style,
+      ]}
       accessibilityRole="button"
       accessibilityLabel={label}
     >

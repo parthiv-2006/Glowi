@@ -4,7 +4,15 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { AppText, Badge, GlassCard, GlowButton, PressableScale, Screen, Stagger } from '@/components/ui';
+import {
+  AppText,
+  Badge,
+  GlassCard,
+  GlowButton,
+  PressableScale,
+  Screen,
+  Stagger,
+} from '@/components/ui';
 import { DISCLAIMER } from '@/lib/constants';
 import { haptics } from '@/lib/haptics';
 import {
@@ -76,7 +84,11 @@ export default function ProfileTab() {
           <AppText variant="subheading" style={styles.guestText}>
             Create an account to keep your scans, routines, and memory if you switch devices.
           </AppText>
-          <GlowButton label="Create account" onPress={() => router.push('/(auth)/sign-up')} style={styles.guestBtn} />
+          <GlowButton
+            label="Create account"
+            onPress={() => router.push('/(auth)/sign-up')}
+            style={styles.guestBtn}
+          />
         </GlassCard>
       ) : null}
 
@@ -197,7 +209,12 @@ function Row({
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing(3.5), marginBottom: spacing(5) },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3.5),
+    marginBottom: spacing(5),
+  },
   avatar: {
     width: 60,
     height: 60,
@@ -218,11 +235,21 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
     padding: spacing(1),
   },
-  segmentBtn: { flex: 1, alignItems: 'center', paddingVertical: spacing(2.5), borderRadius: radii.full },
+  segmentBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing(2.5),
+    borderRadius: radii.full,
+  },
   segmentActive: { backgroundColor: palette.accent },
   reminderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowWrap: { marginBottom: spacing(3) },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing(3), paddingVertical: spacing(3.5) },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    paddingVertical: spacing(3.5),
+  },
   rowIcon: {
     width: 38,
     height: 38,

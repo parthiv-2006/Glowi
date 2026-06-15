@@ -29,7 +29,12 @@ export default function Welcome() {
   return (
     <View style={styles.root}>
       <AuroraBackground />
-      <View style={[styles.content, { paddingTop: insets.top + spacing(14), paddingBottom: insets.bottom + spacing(6) }]}>
+      <View
+        style={[
+          styles.content,
+          { paddingTop: insets.top + spacing(14), paddingBottom: insets.bottom + spacing(6) },
+        ]}
+      >
         <Animated.View entering={FadeInDown.duration(motion.slow)}>
           <View style={styles.markRow}>
             <View style={styles.dot} />

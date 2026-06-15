@@ -16,7 +16,10 @@ function Dot({ delay }: { delay: number }) {
   useEffect(() => {
     y.value = withDelay(
       delay,
-      withRepeat(withSequence(withTiming(-4, { duration: 360 }), withTiming(0, { duration: 360 })), -1),
+      withRepeat(
+        withSequence(withTiming(-4, { duration: 360 }), withTiming(0, { duration: 360 })),
+        -1,
+      ),
     );
   }, [y, delay]);
   const style = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));

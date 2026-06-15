@@ -51,7 +51,12 @@ export default function ArticleScreen() {
 
   // Parallax translate + subtle scale for hero
   const heroStyle = useAnimatedStyle(() => {
-    const translateY = interpolate(scrollY.value, [0, HERO_HEIGHT], [0, -HERO_HEIGHT * PARALLAX_RATIO], 'clamp');
+    const translateY = interpolate(
+      scrollY.value,
+      [0, HERO_HEIGHT],
+      [0, -HERO_HEIGHT * PARALLAX_RATIO],
+      'clamp',
+    );
     const scale = interpolate(scrollY.value, [-80, 0], [1.08, 1], 'clamp');
     return { transform: [{ translateY }, { scale }] };
   });
@@ -89,9 +94,7 @@ export default function ArticleScreen() {
       {/* ------------------------------------------------------------------ */}
       {/* Back button (fixed, always on top of hero)                          */}
       {/* ------------------------------------------------------------------ */}
-      <Animated.View
-        style={[styles.backBtn, { top: insets.top + spacing(3) }, backOpacityStyle]}
-      >
+      <Animated.View style={[styles.backBtn, { top: insets.top + spacing(3) }, backOpacityStyle]}>
         <PressableScale
           onPress={() => {
             haptics.tap();
@@ -189,11 +192,19 @@ export default function ArticleScreen() {
                       <GlassCard style={styles.citationCard}>
                         <View style={styles.citationRow}>
                           <View style={styles.citationText}>
-                            <AppText variant="caption" color={palette.textTertiary} style={styles.citationLabel}>
+                            <AppText
+                              variant="caption"
+                              color={palette.textTertiary}
+                              style={styles.citationLabel}
+                            >
                               [{i + 1}]
                             </AppText>
                             <View style={styles.citationDetails}>
-                              <AppText variant="subheading" color={palette.text} style={styles.citationSource}>
+                              <AppText
+                                variant="subheading"
+                                color={palette.text}
+                                style={styles.citationSource}
+                              >
                                 {cit.label}
                               </AppText>
                               <AppText variant="caption" color={palette.textTertiary}>

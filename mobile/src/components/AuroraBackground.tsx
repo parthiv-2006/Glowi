@@ -20,7 +20,11 @@ export function AuroraBackground({ intensity = 1 }: { intensity?: number }) {
   const t = useSharedValue(0);
 
   useEffect(() => {
-    t.value = withRepeat(withTiming(1, { duration: 14000, easing: Easing.inOut(Easing.sin) }), -1, true);
+    t.value = withRepeat(
+      withTiming(1, { duration: 14000, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
   }, [t]);
 
   const c1x = useDerivedValue(() => width * 0.28 + Math.sin(t.value * Math.PI * 2) * 50);

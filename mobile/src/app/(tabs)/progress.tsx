@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import Animated, {
   FadeIn,
   useAnimatedStyle,
@@ -25,6 +24,7 @@ import {
   Skeleton,
   Stagger,
 } from '@/components/ui';
+import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { ScoreTrend } from '@/components/ScoreTrend';
 import { useCheckIn, useRecentCheckins, useRoutines, useScans } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
@@ -36,7 +36,11 @@ import type { Scan } from '@/lib/types';
 // ─── helpers ───────────────────────────────────────────────────────────────
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 function formatShortDate(iso: string): string {
@@ -102,13 +106,7 @@ function ScanRow({ scan, onPress }: { scan: Scan; onPress: () => void }) {
   return (
     <PressableScale onPress={onPress} style={styles.scanRowWrap}>
       <GlassCard style={styles.scanRow}>
-        <ProgressRing
-          value={score}
-          size={52}
-          strokeWidth={5}
-          color={scoreColor(score)}
-          delay={0}
-        />
+        <ProgressRing value={score} size={52} strokeWidth={5} color={scoreColor(score)} delay={0} />
         <View style={styles.scanRowBody}>
           <AppText variant="overline">{formatDate(scan.created_at)}</AppText>
           <AppText variant="subheading" numberOfLines={2} style={styles.scanRowSummary}>
@@ -127,27 +125,6 @@ function ScanRow({ scan, onPress }: { scan: Scan; onPress: () => void }) {
   );
 }
 
-// ─── placeholder tile ────────────────────────────────────────────────────────
-
-function PlaceholderTile({ score, label }: { score: number | null; label: string }) {
-  return (
-    <View style={styles.imageTile}>
-      <View style={styles.imagePlaceholder}>
-        <ProgressRing
-          value={score ?? 0}
-          size={56}
-          strokeWidth={5}
-          color={scoreColor(score ?? 0)}
-        />
-      </View>
-      <AppText variant="caption" style={styles.imageLabel}>{label}</AppText>
-      <AppText variant="overline" color={scoreColor(score ?? 0)}>
-        {score != null ? `Score ${score}` : '—'}
-      </AppText>
-    </View>
-  );
-}
-
 // ─── main screen ─────────────────────────────────────────────────────────────
 
 export default function ProgressScreen() {
@@ -161,10 +138,7 @@ export default function ProgressScreen() {
   const justCheckedIn = useRef(false);
 
   // Derive unique checkin dates
-  const dates = useMemo(
-    () => [...new Set(checkins.map((c) => c.checkin_date))],
-    [checkins],
-  );
+  const dates = useMemo(() => [...new Set(checkins.map((c) => c.checkin_date))], [checkins]);
   const checkinSet = useMemo(() => new Set(dates), [dates]);
 
   const streak = computeStreak(dates);
@@ -181,13 +155,9 @@ export default function ProgressScreen() {
     [scans],
   );
 
-  // Before / after: oldest and newest with image_path
-  const scansWithImage = useMemo(
-    () => completedScans.filter((s) => s.image_path),
-    [completedScans],
-  );
-  const beforeScan = scansWithImage[0] ?? null;
-  const afterScan = scansWithImage.length > 1 ? scansWithImage[scansWithImage.length - 1] : null;
+  // Before / after: oldest and newest completed scans
+  const beforeScan = completedScans[0] ?? null;
+  const afterScan = completedScans.length > 1 ? completedScans[completedScans.length - 1] : null;
 
   const [baUrls, setBaUrls] = useState<BeforeAfterUrls>({ before: null, after: null });
 
@@ -201,7 +171,9 @@ export default function ProgressScreen() {
       if (!cancelled) setBaUrls({ before: b, after: a });
     }
     if (beforeScan || afterScan) void fetchUrls();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [beforeScan?.id, afterScan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Score delta
@@ -240,7 +212,9 @@ export default function ProgressScreen() {
       <Screen bottomInset={spacing(20)}>
         <Animated.View entering={FadeIn.duration(300)}>
           <AppText variant="overline">Your journey</AppText>
-          <AppText variant="display" style={styles.headerTitle}>Progress</AppText>
+          <AppText variant="display" style={styles.headerTitle}>
+            Progress
+          </AppText>
         </Animated.View>
         <View style={styles.gap5}>
           <Skeleton width="100%" height={140} />
@@ -261,7 +235,9 @@ export default function ProgressScreen() {
       <Screen bottomInset={spacing(20)}>
         <Animated.View entering={FadeIn.duration(300)}>
           <AppText variant="overline">Your journey</AppText>
-          <AppText variant="display" style={styles.headerTitle}>Progress</AppText>
+          <AppText variant="display" style={styles.headerTitle}>
+            Progress
+          </AppText>
         </Animated.View>
         <EmptyState
           icon="analytics-outline"
@@ -281,7 +257,9 @@ export default function ProgressScreen() {
       <Stagger delay={0}>
         <Animated.View entering={FadeIn.duration(300)}>
           <AppText variant="overline">Your journey</AppText>
-          <AppText variant="display" style={styles.headerTitle}>Progress</AppText>
+          <AppText variant="display" style={styles.headerTitle}>
+            Progress
+          </AppText>
           <AppText variant="subheading" style={styles.headerSub}>
             Track your streak, score, and skin evolution.
           </AppText>
@@ -342,7 +320,8 @@ export default function ProgressScreen() {
                     color={scoreDelta >= 0 ? palette.success : palette.warning}
                     style={styles.deltaText}
                   >
-                    {scoreDelta >= 0 ? '+' : ''}{scoreDelta} since last scan
+                    {scoreDelta >= 0 ? '+' : ''}
+                    {scoreDelta} since last scan
                   </AppText>
                 </View>
               )}
@@ -352,75 +331,18 @@ export default function ProgressScreen() {
         )}
 
         {/* 4. Before / after */}
-        {scansWithImage.length >= 2 && beforeScan && afterScan && (
-          <GlassCard style={styles.section}>
-            <SectionHeader
-              overline="Transformation"
-              title="Before & after"
-            />
-            <AppText variant="caption" color={palette.textTertiary} style={styles.sinceCaption}>
-              Since {formatShortDate(beforeScan.created_at)}
-            </AppText>
-            <View style={styles.baRow}>
-              {/* Before */}
-              {baUrls.before ? (
-                <View style={styles.imageTile}>
-                  <Image
-                    source={{ uri: baUrls.before }}
-                    style={styles.baImage}
-                    contentFit="cover"
-                  />
-                  <AppText variant="caption" style={styles.imageLabel}>
-                    {formatShortDate(beforeScan.created_at)}
-                  </AppText>
-                  <AppText variant="overline" color={scoreColor(beforeScan.skin_score ?? 0)}>
-                    Score {beforeScan.skin_score ?? '—'}
-                  </AppText>
-                </View>
-              ) : (
-                <PlaceholderTile
-                  score={beforeScan.skin_score}
-                  label={formatShortDate(beforeScan.created_at)}
-                />
-              )}
-
-              {/* Divider arrow */}
-              <View style={styles.baArrow}>
-                <Ionicons name="arrow-forward" size={22} color={palette.accentBright} />
-              </View>
-
-              {/* After */}
-              {baUrls.after ? (
-                <View style={styles.imageTile}>
-                  <Image
-                    source={{ uri: baUrls.after }}
-                    style={styles.baImage}
-                    contentFit="cover"
-                  />
-                  <AppText variant="caption" style={styles.imageLabel}>
-                    {formatShortDate(afterScan.created_at)}
-                  </AppText>
-                  <AppText variant="overline" color={scoreColor(afterScan.skin_score ?? 0)}>
-                    Score {afterScan.skin_score ?? '—'}
-                  </AppText>
-                </View>
-              ) : (
-                <PlaceholderTile
-                  score={afterScan.skin_score}
-                  label={formatShortDate(afterScan.created_at)}
-                />
-              )}
-            </View>
-          </GlassCard>
-        )}
-
-        {/* If only one scan has image, still show it with the placeholder pattern */}
-        {scansWithImage.length === 1 && beforeScan && completedScans.length >= 2 && (
+        {completedScans.length >= 2 && beforeScan && afterScan && (
           <GlassCard style={styles.section}>
             <SectionHeader overline="Transformation" title="Before & after" />
             <AppText variant="caption" color={palette.textTertiary} style={styles.sinceCaption}>
-              Add a photo to your next scan to compare
+              Since {formatShortDate(beforeScan.created_at)}
             </AppText>
+            <BeforeAfterSlider
+              beforeScan={beforeScan}
+              afterScan={afterScan}
+              beforeUrl={baUrls.before}
+              afterUrl={baUrls.after}
+            />
           </GlassCard>
         )}
 
@@ -482,7 +404,11 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
   },
   gridCellActive: { backgroundColor: palette.accent },
-  gridCellDim: { backgroundColor: palette.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: palette.border },
+  gridCellDim: {
+    backgroundColor: palette.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.border,
+  },
 
   // Check-in
   checkInWrap: { marginTop: spacing(1) },
@@ -506,38 +432,6 @@ const styles = StyleSheet.create({
 
   // Before / after
   sinceCaption: { marginTop: -spacing(2), marginBottom: spacing(3) },
-  baRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing(3),
-  },
-  imageTile: {
-    flex: 1,
-    alignItems: 'center',
-    gap: spacing(1.5),
-  },
-  baImage: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: radii.md,
-    backgroundColor: palette.surfaceStrong,
-  },
-  imagePlaceholder: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: radii.md,
-    backgroundColor: palette.surfaceStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.border,
-  },
-  imageLabel: { textAlign: 'center' },
-  baArrow: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: spacing(6),
-  },
 
   // Scan rows
   scanRowWrap: { marginBottom: spacing(3) },

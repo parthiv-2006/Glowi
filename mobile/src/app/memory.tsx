@@ -19,7 +19,10 @@ import { haptics } from '@/lib/haptics';
 import type { AiMemory, MemoryType } from '@/lib/types';
 import { palette, radii, spacing } from '@/theme';
 
-const TYPE_META: Record<MemoryType, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = {
+const TYPE_META: Record<
+  MemoryType,
+  { label: string; icon: keyof typeof Ionicons.glyphMap; color: string }
+> = {
   gotcha: { label: 'Safety note', icon: 'warning-outline', color: palette.warning },
   profile_fact: { label: 'About you', icon: 'person-outline', color: palette.accent },
   goal: { label: 'Goal', icon: 'flag-outline', color: palette.accentBright },
@@ -83,7 +86,11 @@ export default function MemoryScreen() {
         grouped.map((group) => (
           <View key={group.type} style={styles.group}>
             <View style={styles.groupHeader}>
-              <Ionicons name={TYPE_META[group.type].icon} size={15} color={TYPE_META[group.type].color} />
+              <Ionicons
+                name={TYPE_META[group.type].icon}
+                size={15}
+                color={TYPE_META[group.type].color}
+              />
               <AppText variant="overline" color={TYPE_META[group.type].color}>
                 {TYPE_META[group.type].label}
               </AppText>
@@ -127,7 +134,12 @@ const styles = StyleSheet.create({
   introSub: { lineHeight: 22 },
   skeletons: { gap: spacing(3) },
   group: { marginBottom: spacing(6) },
-  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing(2), marginBottom: spacing(3) },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(2),
+    marginBottom: spacing(3),
+  },
   memoryWrap: { marginBottom: spacing(3) },
   memoryCard: { gap: spacing(3) },
   memoryText: { lineHeight: 22 },

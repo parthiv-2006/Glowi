@@ -14,7 +14,13 @@ interface ScreenProps extends PropsWithChildren {
   bottomInset?: number;
 }
 
-export function Screen({ children, scroll = true, padded = true, style, bottomInset = 0 }: ScreenProps) {
+export function Screen({
+  children,
+  scroll = true,
+  padded = true,
+  style,
+  bottomInset = 0,
+}: ScreenProps) {
   const insets = useSafeAreaInsets();
   const base: ViewStyle = {
     paddingTop: insets.top + spacing(3),

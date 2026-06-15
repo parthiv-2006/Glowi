@@ -41,7 +41,11 @@ export function ScoreTrend({ scans }: ScoreTrendProps) {
   const toX = (i: number) =>
     sorted.length === 1 ? PAD_X + plotW / 2 : PAD_X + (i / (sorted.length - 1)) * plotW;
 
-  const points = sorted.map((s, i) => ({ x: toX(i), y: toY(s.skin_score ?? 0), score: s.skin_score ?? 0 }));
+  const points = sorted.map((s, i) => ({
+    x: toX(i),
+    y: toY(s.skin_score ?? 0),
+    score: s.skin_score ?? 0,
+  }));
   const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
 
   // Gridline at score 50
@@ -120,22 +124,23 @@ export function ScoreTrend({ scans }: ScoreTrendProps) {
         })}
 
         {/* Score label on latest dot */}
-        {points.length > 0 && (() => {
-          const last = points[points.length - 1];
-          const labelY = last.y > PAD_Y + 14 ? last.y - 10 : last.y + 18;
-          return (
-            <SvgText
-              x={last.x}
-              y={labelY}
-              fontSize={10}
-              fill={palette.accentBright}
-              textAnchor="middle"
-              fontWeight="600"
-            >
-              {last.score}
-            </SvgText>
-          );
-        })()}
+        {points.length > 0 &&
+          (() => {
+            const last = points[points.length - 1];
+            const labelY = last.y > PAD_Y + 14 ? last.y - 10 : last.y + 18;
+            return (
+              <SvgText
+                x={last.x}
+                y={labelY}
+                fontSize={10}
+                fill={palette.accentBright}
+                textAnchor="middle"
+                fontWeight="600"
+              >
+                {last.score}
+              </SvgText>
+            );
+          })()}
 
         {/* Date labels: first and last */}
         {sorted.length > 1 && (
@@ -147,7 +152,10 @@ export function ScoreTrend({ scans }: ScoreTrendProps) {
               fill={palette.textTertiary}
               textAnchor="middle"
             >
-              {new Date(sorted[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {new Date(sorted[0].created_at).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
             </SvgText>
             <SvgText
               x={points[points.length - 1].x}
@@ -156,7 +164,10 @@ export function ScoreTrend({ scans }: ScoreTrendProps) {
               fill={palette.textTertiary}
               textAnchor="middle"
             >
-              {new Date(sorted[sorted.length - 1].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {new Date(sorted[sorted.length - 1].created_at).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
             </SvgText>
           </>
         )}

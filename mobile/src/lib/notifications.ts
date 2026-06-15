@@ -33,11 +33,19 @@ export async function scheduleRoutineReminders(amTime: string, pmTime: string): 
 
   await Notifications.scheduleNotificationAsync({
     content: { title: 'Good morning ☀️', body: 'Time for your AM skincare routine.' },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: am.hour, minute: am.minute },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: am.hour,
+      minute: am.minute,
+    },
   });
   await Notifications.scheduleNotificationAsync({
     content: { title: 'Wind down 🌙', body: 'Your PM routine is waiting — keep the streak alive.' },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: pm.hour, minute: pm.minute },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: pm.hour,
+      minute: pm.minute,
+    },
   });
 }
 

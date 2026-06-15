@@ -47,7 +47,10 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
 
   if (isUser) {
     return (
-      <Animated.View entering={FadeInDown.duration(260).springify().damping(18)} style={styles.userRow}>
+      <Animated.View
+        entering={FadeInDown.duration(260).springify().damping(18)}
+        style={styles.userRow}
+      >
         <LinearGradient
           colors={[palette.accentBright, palette.accent]}
           start={{ x: 0, y: 0 }}
@@ -65,13 +68,18 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
   // Assistant: split into paragraphs for readable spacing.
   const paragraphs = message.content.split(/\n{2,}/).filter((p) => p.trim());
   return (
-    <Animated.View entering={FadeInDown.duration(300).springify().damping(18)} style={styles.assistantRow}>
+    <Animated.View
+      entering={FadeInDown.duration(300).springify().damping(18)}
+      style={styles.assistantRow}
+    >
       <View style={styles.assistantBubble}>
         {paragraphs.map((p, i) => (
           <RichText key={i} text={p.trim()} />
         ))}
       </View>
-      {message.product_refs.length > 0 ? <ProductRecommendations slugs={message.product_refs} /> : null}
+      {message.product_refs.length > 0 ? (
+        <ProductRecommendations slugs={message.product_refs} />
+      ) : null}
     </Animated.View>
   );
 }

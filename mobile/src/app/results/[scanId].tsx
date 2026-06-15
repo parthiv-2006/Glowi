@@ -20,14 +20,7 @@ import { useScan } from '@/lib/hooks';
 import { DISCLAIMER } from '@/lib/constants';
 import { haptics } from '@/lib/haptics';
 import type { ScanConcern } from '@/lib/types';
-import {
-  palette,
-  radii,
-  scoreColor,
-  severityColor,
-  severityLabel,
-  spacing,
-} from '@/theme';
+import { palette, radii, scoreColor, severityColor, severityLabel, spacing } from '@/theme';
 
 export default function ResultsScreen() {
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
@@ -69,7 +62,9 @@ export default function ResultsScreen() {
         <EmptyState
           icon="alert-circle-outline"
           title="Analysis didn't complete"
-          body={scan?.summary ?? 'Something went wrong while analyzing your skin. Please try again.'}
+          body={
+            scan?.summary ?? 'Something went wrong while analyzing your skin. Please try again.'
+          }
           actionLabel="Try another scan"
           onAction={() => router.replace('/scan')}
         />
@@ -100,7 +95,10 @@ export default function ResultsScreen() {
       </Animated.View>
 
       {/* Hero */}
-      <Animated.View entering={FadeInDown.delay(80).duration(460).springify().damping(16)} style={styles.hero}>
+      <Animated.View
+        entering={FadeInDown.delay(80).duration(460).springify().damping(16)}
+        style={styles.hero}
+      >
         <ProgressRing
           value={skinScore}
           size={140}
@@ -192,10 +190,7 @@ function ConcernCard({ concern, onPress }: { concern: ScanConcern; onPress: () =
             </AppText>
             <View style={styles.concernBadgeRow}>
               <Badge label={`${sLabel} · ${concern.severity}/100`} color={sColor} />
-              <Badge
-                label={`${confidencePct}% confidence`}
-                color={palette.textSecondary}
-              />
+              <Badge label={`${confidencePct}% confidence`} color={palette.textSecondary} />
             </View>
           </View>
         </View>
@@ -214,7 +209,12 @@ function ConcernCard({ concern, onPress }: { concern: ScanConcern; onPress: () =
         )}
 
         {/* Observations */}
-        <AppText variant="caption" numberOfLines={2} color={palette.textSecondary} style={styles.observations}>
+        <AppText
+          variant="caption"
+          numberOfLines={2}
+          color={palette.textSecondary}
+          style={styles.observations}
+        >
           {concern.observations}
         </AppText>
 

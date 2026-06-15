@@ -8,12 +8,7 @@
  *  4. No scan   — EmptyState prompting to scan first
  */
 import { useMemo, useState, useCallback } from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -51,13 +46,7 @@ import { motion, palette, radii, spacing } from '@/theme';
 
 type Period = 'am' | 'pm';
 
-function PeriodToggle({
-  value,
-  onChange,
-}: {
-  value: Period;
-  onChange: (p: Period) => void;
-}) {
+function PeriodToggle({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
   const pillX = useSharedValue(value === 'am' ? 0 : 1);
 
   const pillStyle = useAnimatedStyle(() => ({
@@ -203,9 +192,7 @@ function StepRow({
             </AppText>
             <View style={styles.stepMeta}>
               <Badge label={FREQ_LABEL[step.frequency]} color={palette.accent} />
-              {categoryLabel ? (
-                <Badge label={categoryLabel} color={palette.textTertiary} />
-              ) : null}
+              {categoryLabel ? <Badge label={categoryLabel} color={palette.textTertiary} /> : null}
             </View>
           </View>
 
@@ -239,10 +226,7 @@ export default function RoutineScreen() {
   });
 
   // Derived
-  const latestScan = useMemo(
-    () => scans?.find((s) => s.status === 'complete') ?? null,
-    [scans],
-  );
+  const latestScan = useMemo(() => scans?.find((s) => s.status === 'complete') ?? null, [scans]);
 
   const amRoutine = useMemo(
     () => routinesRaw?.find((r) => r.period === 'am') ?? null,
@@ -284,18 +268,17 @@ export default function RoutineScreen() {
       // Fetch products for every concern in parallel
       const results = await Promise.all(
         concerns.map((c) =>
-          getProductsForConcern(c.concern_slug).then(
-            (products): [string, ProductForConcern[]] => [c.concern_slug, products],
-          ),
+          getProductsForConcern(c.concern_slug).then((products): [string, ProductForConcern[]] => [
+            c.concern_slug,
+            products,
+          ]),
         ),
       );
       const productsByConcern = Object.fromEntries(results);
 
       const { am, pm } = generateRoutineSteps(concerns, productsByConcern);
 
-      const toSaveSteps = (
-        steps: ReturnType<typeof generateRoutineSteps>['am'],
-      ) =>
+      const toSaveSteps = (steps: ReturnType<typeof generateRoutineSteps>['am']) =>
         steps.map((s, i) => ({
           position: i,
           product_id: s.product.id,
@@ -358,9 +341,7 @@ export default function RoutineScreen() {
             Your routine
           </AppText>
           <AppText variant="subheading" color={palette.textSecondary}>
-            {hasRoutine
-              ? 'Tailored to your skin analysis'
-              : 'Generate a routine from your scan'}
+            {hasRoutine ? 'Tailored to your skin analysis' : 'Generate a routine from your scan'}
           </AppText>
         </View>
       </Animated.View>
@@ -457,11 +438,7 @@ function RoutineContent({
         <Stagger delay={60}>
           {steps.map((step, idx) => (
             <View key={step.id ?? `step-${idx}`} style={styles.stepSpacing}>
-              <StepRow
-                step={step}
-                index={idx}
-                onRemove={() => onRemoveStep(idx)}
-              />
+              <StepRow step={step} index={idx} onRemove={() => onRemoveStep(idx)} />
             </View>
           ))}
         </Stagger>
@@ -524,8 +501,8 @@ function GenerateFromScanCard({
             Ready to build your routine
           </AppText>
           <AppText variant="subheading" color={palette.textSecondary} style={styles.heroBody}>
-            Glowi will match products to your scan results and build a step-by-step
-            AM and PM routine personalised to your skin.
+            Glowi will match products to your scan results and build a step-by-step AM and PM
+            routine personalised to your skin.
           </AppText>
 
           <View style={styles.pillRow}>

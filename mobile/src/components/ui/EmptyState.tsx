@@ -13,7 +13,13 @@ interface EmptyStateProps {
   onAction?: () => void;
 }
 
-export function EmptyState({ icon = 'sparkles-outline', title, body, actionLabel, onAction }: EmptyStateProps) {
+export function EmptyState({
+  icon = 'sparkles-outline',
+  title,
+  body,
+  actionLabel,
+  onAction,
+}: EmptyStateProps) {
   return (
     <View style={styles.wrap}>
       <View style={styles.iconHalo}>

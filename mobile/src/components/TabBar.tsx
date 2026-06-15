@@ -12,7 +12,10 @@ import Animated, {
 import { haptics } from '@/lib/haptics';
 import { palette, radii, spacing } from '@/theme';
 
-const ICONS: Record<string, { on: keyof typeof Ionicons.glyphMap; off: keyof typeof Ionicons.glyphMap }> = {
+const ICONS: Record<
+  string,
+  { on: keyof typeof Ionicons.glyphMap; off: keyof typeof Ionicons.glyphMap }
+> = {
   index: { on: 'home', off: 'home-outline' },
   chat: { on: 'chatbubble', off: 'chatbubble-outline' },
   progress: { on: 'analytics', off: 'analytics-outline' },
@@ -20,7 +23,15 @@ const ICONS: Record<string, { on: keyof typeof Ionicons.glyphMap; off: keyof typ
   profile: { on: 'person', off: 'person-outline' },
 };
 
-function TabButton({ focused, name, onPress }: { focused: boolean; name: string; onPress: () => void }) {
+function TabButton({
+  focused,
+  name,
+  onPress,
+}: {
+  focused: boolean;
+  name: string;
+  onPress: () => void;
+}) {
   const scale = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const icons = ICONS[name] ?? ICONS.index;
@@ -67,7 +78,10 @@ export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.wrap, { paddingBottom: insets.bottom || spacing(3) }]} pointerEvents="box-none">
+    <View
+      style={[styles.wrap, { paddingBottom: insets.bottom || spacing(3) }]}
+      pointerEvents="box-none"
+    >
       <View style={styles.barShadow}>
         <BlurView intensity={Platform.OS === 'ios' ? 40 : 0} tint="dark" style={styles.bar}>
           {state.routes.map((route, index) => {
@@ -78,7 +92,11 @@ export function TabBar({ state, navigation }: TabBarProps) {
                 name={route.name}
                 focused={focused}
                 onPress={() => {
-                  const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                  const event = navigation.emit({
+                    type: 'tabPress',
+                    target: route.key,
+                    canPreventDefault: true,
+                  });
                   if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
                 }}
               />

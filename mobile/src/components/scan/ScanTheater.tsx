@@ -30,7 +30,15 @@ interface ParticleSpec {
 }
 
 /** One drifting particle — its own component so hooks aren't called in a loop. */
-function Particle({ p, drift, height }: { p: ParticleSpec; drift: SharedValue<number>; height: number }) {
+function Particle({
+  p,
+  drift,
+  height,
+}: {
+  p: ParticleSpec;
+  drift: SharedValue<number>;
+  height: number;
+}) {
   const cy = useDerivedValue(() => {
     const prog = (drift.value * p.speed + p.phase) % 1;
     return height - prog * height;
@@ -61,7 +69,11 @@ export function ScanTheater({ width, height, active = true }: ScanTheaterProps) 
   const drift = useSharedValue(0); // particle clock
 
   useEffect(() => {
-    t.value = withRepeat(withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.ease) }), -1, false);
+    t.value = withRepeat(
+      withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      false,
+    );
     drift.value = withRepeat(withTiming(1, { duration: 4200, easing: Easing.linear }), -1, false);
   }, [t, drift]);
 
@@ -107,13 +119,21 @@ export function ScanTheater({ width, height, active = true }: ScanTheaterProps) 
     const p = Skia.Path.Make();
     const m = 6;
     // top-left
-    p.moveTo(m, m + bracket); p.lineTo(m, m); p.lineTo(m + bracket, m);
+    p.moveTo(m, m + bracket);
+    p.lineTo(m, m);
+    p.lineTo(m + bracket, m);
     // top-right
-    p.moveTo(width - m - bracket, m); p.lineTo(width - m, m); p.lineTo(width - m, m + bracket);
+    p.moveTo(width - m - bracket, m);
+    p.lineTo(width - m, m);
+    p.lineTo(width - m, m + bracket);
     // bottom-left
-    p.moveTo(m, height - m - bracket); p.lineTo(m, height - m); p.lineTo(m + bracket, height - m);
+    p.moveTo(m, height - m - bracket);
+    p.lineTo(m, height - m);
+    p.lineTo(m + bracket, height - m);
     // bottom-right
-    p.moveTo(width - m - bracket, height - m); p.lineTo(width - m, height - m); p.lineTo(width - m, height - m - bracket);
+    p.moveTo(width - m - bracket, height - m);
+    p.lineTo(width - m, height - m);
+    p.lineTo(width - m, height - m - bracket);
     return p;
   }, [width, height]);
 
@@ -157,7 +177,13 @@ export function ScanTheater({ width, height, active = true }: ScanTheaterProps) 
       </Group>
 
       {/* corner reticles */}
-      <Path path={corners} style="stroke" strokeWidth={2.5} color={palette.accentBright} opacity={0.9} />
+      <Path
+        path={corners}
+        style="stroke"
+        strokeWidth={2.5}
+        color={palette.accentBright}
+        opacity={0.9}
+      />
     </Canvas>
   );
 }

@@ -28,8 +28,24 @@ function pfc(
 }
 
 const concerns: ScanConcern[] = [
-  { concern_slug: 'acne', display_name: 'Acne', severity: 60, confidence: 0.9, areas: [], observations: '', caution: null },
-  { concern_slug: 'dryness', display_name: 'Dryness', severity: 30, confidence: 0.8, areas: [], observations: '', caution: null },
+  {
+    concern_slug: 'acne',
+    display_name: 'Acne',
+    severity: 60,
+    confidence: 0.9,
+    areas: [],
+    observations: '',
+    caution: null,
+  },
+  {
+    concern_slug: 'dryness',
+    display_name: 'Dryness',
+    severity: 30,
+    confidence: 0.8,
+    areas: [],
+    observations: '',
+    caution: null,
+  },
 ];
 
 describe('generateRoutineSteps', () => {

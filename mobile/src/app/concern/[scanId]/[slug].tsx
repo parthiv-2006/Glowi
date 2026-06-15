@@ -32,13 +32,7 @@ import {
 import { DISCLAIMER, concernIcon } from '@/lib/constants';
 import { haptics } from '@/lib/haptics';
 import type { NutritionGuide, ProductForConcern, Tip } from '@/lib/types';
-import {
-  palette,
-  radii,
-  severityColor,
-  severityLabel,
-  spacing,
-} from '@/theme';
+import { palette, radii, severityColor, severityLabel, spacing } from '@/theme';
 
 /* ── Tab definitions ─────────────────────────────────────────────────── */
 
@@ -103,11 +97,7 @@ export default function ConcernDetailScreen() {
         >
           {/* Icon halo */}
           <View style={styles.iconHalo}>
-            <Ionicons
-              name={concernIcon(concern.icon)}
-              size={28}
-              color={palette.accentBright}
-            />
+            <Ionicons name={concernIcon(concern.icon)} size={28} color={palette.accentBright} />
           </View>
 
           <View style={styles.headerText}>
@@ -156,12 +146,8 @@ export default function ConcernDetailScreen() {
       {activeTab === 'Products' && (
         <ProductsTab products={products ?? []} isLoading={productsLoading} />
       )}
-      {activeTab === 'Nutrition' && (
-        <NutritionTab guide={guide ?? null} isLoading={guideLoading} />
-      )}
-      {activeTab === 'Tips' && (
-        <TipsTab tips={tips ?? []} isLoading={tipsLoading} />
-      )}
+      {activeTab === 'Nutrition' && <NutritionTab guide={guide ?? null} isLoading={guideLoading} />}
+      {activeTab === 'Tips' && <TipsTab tips={tips ?? []} isLoading={tipsLoading} />}
 
       {/* Disclaimer */}
       <AppText variant="caption" color={palette.textTertiary} style={styles.disclaimer}>
@@ -275,13 +261,7 @@ function ProductsTab({
 
 /* ── Nutrition Tab ───────────────────────────────────────────────────── */
 
-function NutritionTab({
-  guide,
-  isLoading,
-}: {
-  guide: NutritionGuide | null;
-  isLoading: boolean;
-}) {
+function NutritionTab({ guide, isLoading }: { guide: NutritionGuide | null; isLoading: boolean }) {
   if (isLoading) {
     return (
       <Animated.View entering={FadeIn.duration(220)} style={styles.tabContent}>

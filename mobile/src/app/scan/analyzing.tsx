@@ -47,7 +47,11 @@ async function uploadImage(userId: string, scanId: string, uri: string): Promise
 export default function Analyzing() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { uri, area, notes } = useLocalSearchParams<{ uri: string; area?: string; notes?: string }>();
+  const { uri, area, notes } = useLocalSearchParams<{
+    uri: string;
+    area?: string;
+    notes?: string;
+  }>();
   const userId = useAuth((s) => s.session?.user.id);
 
   const [stage, setStage] = useState(0);
@@ -92,7 +96,10 @@ export default function Analyzing() {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    pulse.value = withRepeat(withSequence(withTiming(1, { duration: 900 }), withTiming(0.4, { duration: 900 })), -1);
+    pulse.value = withRepeat(
+      withSequence(withTiming(1, { duration: 900 }), withTiming(0.4, { duration: 900 })),
+      -1,
+    );
     void run();
   }, [run, pulse]);
 
@@ -110,7 +117,12 @@ export default function Analyzing() {
   const progress = done ? 1 : (stage + 1) / STAGES.length;
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + spacing(6), paddingBottom: insets.bottom + spacing(6) }]}>
+    <View
+      style={[
+        styles.root,
+        { paddingTop: insets.top + spacing(6), paddingBottom: insets.bottom + spacing(6) },
+      ]}
+    >
       <View style={styles.header}>
         <View style={styles.markDot} />
         <AppText variant="overline" color={palette.accentBright}>
@@ -121,7 +133,9 @@ export default function Analyzing() {
       <View style={styles.stageWrap}>
         <View
           style={styles.frame}
-          onLayout={(e) => setFrame({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}
+          onLayout={(e) =>
+            setFrame({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })
+          }
         >
           {uri ? <Image source={{ uri }} style={styles.photo} resizeMode="cover" /> : null}
           <View style={styles.scrim} />
@@ -142,7 +156,11 @@ export default function Analyzing() {
           <AppText variant="subheading" style={styles.center}>
             {error}
           </AppText>
-          <GlowButton label="Try again" onPress={() => router.replace('/scan')} style={styles.retry} />
+          <GlowButton
+            label="Try again"
+            onPress={() => router.replace('/scan')}
+            style={styles.retry}
+          />
         </Animated.View>
       ) : (
         <View style={styles.statusArea}>
@@ -157,7 +175,11 @@ export default function Analyzing() {
               </AppText>
             </Animated.View>
           ) : (
-            <Animated.View key={stage} entering={FadeIn.duration(motion.base)} exiting={FadeOut.duration(120)}>
+            <Animated.View
+              key={stage}
+              entering={FadeIn.duration(motion.base)}
+              exiting={FadeOut.duration(120)}
+            >
               <Animated.View style={[styles.statusRow, pulseStyle]}>
                 <View style={styles.spinnerDot} />
                 <AppText variant="heading">{STAGES[stage]}…</AppText>
@@ -174,7 +196,12 @@ export default function Analyzing() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: palette.bg, paddingHorizontal: spacing(6), justifyContent: 'space-between' },
+  root: {
+    flex: 1,
+    backgroundColor: palette.bg,
+    paddingHorizontal: spacing(6),
+    justifyContent: 'space-between',
+  },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing(2), justifyContent: 'center' },
   markDot: {
     width: 8,

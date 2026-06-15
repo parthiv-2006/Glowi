@@ -72,10 +72,7 @@ function parseInline(text: string, baseKey: string): ReactNode {
           return (
             <Text
               key={`${baseKey}-s${i}`}
-              style={[
-                isBold && styles.bold,
-                isItalic && styles.italic,
-              ]}
+              style={[isBold && styles.bold, isItalic && styles.italic]}
             >
               {p.text}
             </Text>
@@ -265,9 +262,7 @@ export function Markdown({ source }: MarkdownProps) {
         break;
 
       case 'table':
-        elements.push(
-          <TableBlock key={key} lines={block.lines} startKey={key} />,
-        );
+        elements.push(<TableBlock key={key} lines={block.lines} startKey={key} />);
         break;
 
       case 'para':

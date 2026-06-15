@@ -12,7 +12,9 @@ interface BadgeProps {
 
 export function Badge({ label, color = palette.accent, style }: BadgeProps) {
   return (
-    <View style={[styles.base, { backgroundColor: `${color}22`, borderColor: `${color}44` }, style]}>
+    <View
+      style={[styles.base, { backgroundColor: `${color}22`, borderColor: `${color}44` }, style]}
+    >
       <AppText variant="caption" style={styles.text} color={color}>
         {label}
       </AppText>

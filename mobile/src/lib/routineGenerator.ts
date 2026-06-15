@@ -24,18 +24,10 @@ const AM_PREFERRED_CATEGORIES = new Set([
 ]);
 
 /** Categories that default to PM when a product is marked 'both'. */
-const PM_PREFERRED_CATEGORIES = new Set([
-  'treatment',
-  'exfoliant',
-  'mask',
-]);
+const PM_PREFERRED_CATEGORIES = new Set(['treatment', 'exfoliant', 'mask']);
 
 /** Categories that use a reduced application frequency. */
-const REDUCED_FREQUENCY_CATEGORIES = new Set([
-  'exfoliant',
-  'treatment',
-  'mask',
-]);
+const REDUCED_FREQUENCY_CATEGORIES = new Set(['exfoliant', 'treatment', 'mask']);
 
 // ─── Instruction library ─────────────────────────────────────────────────────
 
@@ -51,8 +43,13 @@ function instructionFor(product: Product): string {
       // Distinguish vitamin-C / brightening serums (AM) vs treatment serums
       const name = product.name.toLowerCase();
       const brand = product.brand.toLowerCase();
-      if (name.includes('vitamin c') || name.includes('vit c') || name.includes('ascorbic') ||
-          brand.includes('vitamin c') || name.includes('brightening')) {
+      if (
+        name.includes('vitamin c') ||
+        name.includes('vit c') ||
+        name.includes('ascorbic') ||
+        brand.includes('vitamin c') ||
+        name.includes('brightening')
+      ) {
         return 'Pat a few drops onto clean skin each morning; let absorb before moisturiser.';
       }
       return 'Pat a few drops onto clean skin; let fully absorb before the next step.';
@@ -98,9 +95,7 @@ function assignToPeriod(product: Product): ('am' | 'pm')[] {
 // ─── One product per category enforcement ────────────────────────────────────
 
 /** A routine should have at most one product per category. Keep highest relevance. */
-function dedupeByCategory(
-  candidates: ProductForConcern[],
-): ProductForConcern[] {
+function dedupeByCategory(candidates: ProductForConcern[]): ProductForConcern[] {
   const best = new Map<string, ProductForConcern>();
   for (const p of candidates) {
     const existing = best.get(p.category);
@@ -114,10 +109,7 @@ function dedupeByCategory(
 // ─── SPF guard ────────────────────────────────────────────────────────────────
 
 /** Ensure SPF only appears in the AM routine. */
-function filterForPeriod(
-  steps: GeneratedStep[],
-  period: 'am' | 'pm',
-): GeneratedStep[] {
+function filterForPeriod(steps: GeneratedStep[], period: 'am' | 'pm'): GeneratedStep[] {
   if (period === 'am') return steps;
   return steps.filter((s) => s.product.category !== 'spf');
 }
@@ -143,9 +135,7 @@ export function generateRoutineSteps(
   }
 
   // 2. All unique candidates sorted by relevance desc
-  const allCandidates = Array.from(seenIds.values()).sort(
-    (a, b) => b.relevance - a.relevance,
-  );
+  const allCandidates = Array.from(seenIds.values()).sort((a, b) => b.relevance - a.relevance);
 
   // 3. One product per category
   const dedupedCandidates = dedupeByCategory(allCandidates);
@@ -162,10 +152,7 @@ export function generateRoutineSteps(
 
   // 5. Ensure essentials: cleanser + moisturizer in each period if not present
   //    We pull from all candidates (ignoring period filter) only when truly absent
-  function ensureCategory(
-    pool: ProductForConcern[],
-    category: string,
-  ): ProductForConcern[] {
+  function ensureCategory(pool: ProductForConcern[], category: string): ProductForConcern[] {
     if (pool.some((p) => p.category === category)) return pool;
     // Try to find any candidate with this category not already in the pool
     const fallback = allCandidates.find(
