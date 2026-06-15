@@ -147,8 +147,13 @@ serve(async (req) => {
     if (existing) return json(existing);
   }
 
-  const lat = typeof body.latitude === 'number' ? body.latitude : DEFAULT_LOCATION.latitude;
-  const lon = typeof body.longitude === 'number' ? body.longitude : DEFAULT_LOCATION.longitude;
+  // Validate coordinates before they reach the upstream URL — accept only
+  // finite values in the real lat/lon ranges, else fall back to the default.
+  const inRange = (n: unknown, lo: number, hi: number): n is number =>
+    typeof n === 'number' && Number.isFinite(n) && n >= lo && n <= hi;
+  const hasCoords = inRange(body.latitude, -90, 90) && inRange(body.longitude, -180, 180);
+  const lat = hasCoords ? (body.latitude as number) : DEFAULT_LOCATION.latitude;
+  const lon = hasCoords ? (body.longitude as number) : DEFAULT_LOCATION.longitude;
   const locationLabel = body.locationLabel?.slice(0, 80) || DEFAULT_LOCATION.label;
 
   let env: Environment;
