@@ -46,6 +46,12 @@ injected into the system prompt for both `chat` and (future) scan interpretation
    recent completed scan.
 5. **Last session summary** — the one-paragraph recap written when the previous
    conversation ended.
+6. **Today's Skin Weather** — if a forecast exists for today, its headline and summary
+   are appended, so the coach can answer "what should I change today?" against the same
+   environmental read the home screen shows (see [ADR-0005](adr/0005-skin-weather-forecasting.md)).
+7. **The Shelf** — the products the user owns (with low-stock flags), so the coach
+   recommends what's already in their cabinet rather than sending them shopping (see
+   [ADR-0006](adr/0006-the-shelf-inventory.md)).
 
 The assembled block is prepended to the system prompt as a "what you know about this
 user" section, framed as ground truth. Retrieved memory ids are then **touched**
@@ -61,6 +67,8 @@ WHAT YOU REMEMBER ABOUT THIS USER (most important first):
   • [preference] Prefers cheaper drugstore products and a short routine.
 LATEST SKIN SCAN (Tue Jun 09 2026) — score 74/100 … Concerns: Congestion (52/100), …
 LAST CONVERSATION SUMMARY: Discussed starting a BHA; agreed to 2 nights/week …
+TODAY'S SKIN WEATHER (San Francisco, CA) — High UV and low humidity. Skin like yours …
+PRODUCTS ON THEIR SHELF (recommend what they own): EltaMD UV Clear SPF 46 (spf, running low); …
 ```
 
 ## Write path — extraction

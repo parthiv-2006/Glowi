@@ -29,8 +29,10 @@ behind a provider seam that also supports a fully on-device mock.
 │  Auth (email + pre-confirmed guest)                       │
 │  Storage: private scan-images bucket (per-user prefix)    │
 │  Edge Functions (Deno):                                   │
-│    analyze-skin · chat · extract-memories · auth-signup   │
-│        └──────────► Anthropic Claude API (secret key)     │
+│    analyze-skin · chat · extract-memories ·               │
+│    skin-forecast · identify-product · auth-signup         │
+│        ├──────────► Anthropic Claude API (secret key)     │
+│        └──────────► Open-Meteo (keyless weather)          │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -62,7 +64,8 @@ Two families of tables (full DDL in `supabase/migrations/0001_core_tables.sql`):
   `articles`.
 - **User-owned** (RLS: owner only): `profiles`, `scans`, `chat_sessions`,
   `chat_messages`, `ai_memories`, `routines`, `routine_steps`, `routine_checkins`,
-  `reminder_settings`.
+  `reminder_settings`, `skin_forecasts` (one Skin Weather forecast per user per day),
+  `shelf_items` (The Shelf — the products a user owns).
 
 ### Security boundary — RLS
 
@@ -79,8 +82,8 @@ flag); `set_updated_at` triggers maintain timestamps.
 ## AI pipeline
 
 The app depends only on the `AIProvider` interface (`lib/ai/types.ts`):
-`analyzeScan`, `chat`, `extractMemories`. Two implementations
-([ADR-0003](adr/0003-ai-provider-seam.md)):
+`analyzeScan`, `chat`, `extractMemories`, `skinForecast`, `identifyProduct`. Two
+implementations ([ADR-0003](adr/0003-ai-provider-seam.md)):
 
 - **Live** (`lib/ai/live.ts`) invokes edge functions.
 - **Mock** (`lib/ai/mock.ts`) runs on-device with realistic, staged behavior and writes
@@ -93,11 +96,14 @@ The app depends only on the `AIProvider` interface (`lib/ai/types.ts`):
 | `analyze-skin` | Downloads the private scan image, runs Claude vision constrained to the concern taxonomy, **validates** the JSON server-side, persists the result, and writes a scan-event memory. Rejects non-skin images. |
 | `chat` | Assembles memory context + the product catalog into the system prompt, generates a reply, extracts an optional inline product-recommendation block (validated against the catalog), persists both turns. |
 | `extract-memories` | Mines new conversation turns for durable memories (add/update/supersede ops) and refreshes the session summary. Idempotent per turn via `memory_extracted_until`. |
+| `skin-forecast` | Fetches today's local weather + air quality from Open-Meteo (keyless), assembles memory context (incl. the user's shelf), asks Claude for environment-grounded routine guidance that **names products the user owns**, **validates** it against the action enum, and upserts the day's forecast. Falls back to a deterministic forecast if Open-Meteo or Claude is unavailable. Idempotent per user per day ([ADR-0005](adr/0005-skin-weather-forecasting.md)). |
+| `identify-product` | Reads a product photo with Claude vision and returns structured details (name, brand, category, key ingredients, PAO, catalog match) for The Shelf, **validated** against the category enum and catalog. Persists nothing — the client confirms before saving ([ADR-0006](adr/0006-the-shelf-inventory.md)). |
 | `auth-signup` | Creates pre-confirmed email and guest users via the admin API ([ADR-0002](adr/0002-prefilled-auth-signup-function.md)). |
 
 A `_shared` module holds the Anthropic client (with balanced-JSON extraction), the
-memory context assembler, RLS-scoped vs service clients, and HTTP/CORS helpers. All AI
-functions require a valid JWT.
+memory context assembler (which also surfaces today's Skin Weather forecast and the
+user's shelf, so the coach is weather- and cabinet-aware), RLS-scoped vs service
+clients, and HTTP/CORS helpers. All AI functions require a valid JWT.
 
 ## Request flow: a scan
 
@@ -114,7 +120,7 @@ functions require a valid JWT.
 ## Quality & tooling
 
 - TypeScript strict; ESLint (expo flat config); Jest unit tests for the pure logic
-  (streak math, routine generation).
+  (streak math, routine generation, Skin Weather forecast derivation, Shelf expiry/stock).
 - The React Compiler `immutability`/`purity` lint rules are scoped off because they
   don't model Reanimated's `sharedValue.value` API; `rules-of-hooks`, dependency checks,
   and type safety remain enforced.
