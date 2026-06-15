@@ -2,6 +2,7 @@ import type { PropsWithChildren } from 'react';
 import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useResponsive } from '@/lib/responsive';
 import { palette, spacing } from '@/theme';
 
 interface ScreenProps extends PropsWithChildren {
@@ -22,10 +23,11 @@ export function Screen({
   bottomInset = 0,
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
+  const { hPadding } = useResponsive();
   const base: ViewStyle = {
     paddingTop: insets.top + spacing(3),
     paddingBottom: insets.bottom + spacing(4) + bottomInset,
-    ...(padded ? { paddingHorizontal: spacing(5) } : null),
+    ...(padded ? { paddingHorizontal: hPadding } : null),
   };
 
   if (!scroll) {

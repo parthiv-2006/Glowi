@@ -1,4 +1,4 @@
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -76,6 +76,9 @@ interface TabBarProps {
 /** Floating glass tab bar. */
 export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  // Cap the pill width so it never overflows narrow phones (SE = 375px).
+  const barWidth = Math.min(width - spacing(8), 360);
 
   return (
     <View
@@ -83,7 +86,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
       pointerEvents="box-none"
     >
       <View style={styles.barShadow}>
-        <BlurView intensity={Platform.OS === 'ios' ? 40 : 0} tint="dark" style={styles.bar}>
+        <BlurView intensity={Platform.OS === 'ios' ? 40 : 0} tint="dark" style={[styles.bar, { width: barWidth }]}>
           {state.routes.map((route, index) => {
             const focused = state.index === index;
             return (
@@ -129,7 +132,7 @@ const styles = StyleSheet.create({
     backgroundColor: Platform.OS === 'ios' ? 'rgba(12,15,19,0.6)' : palette.bgElevated,
     overflow: 'hidden',
   },
-  tab: { paddingHorizontal: spacing(4) },
+  tab: { flex: 1, alignItems: 'center' },
   tabInner: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   activeGlow: {
     position: 'absolute',

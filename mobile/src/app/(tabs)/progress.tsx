@@ -28,6 +28,7 @@ import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { ScoreTrend } from '@/components/ScoreTrend';
 import { useCheckIn, useRecentCheckins, useRoutines, useScans } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
+import { useResponsive } from '@/lib/responsive';
 import { checkedInToday, computeStreak, lastNDays } from '@/lib/streak';
 import { getScanImageUrl } from '@/lib/api';
 import { palette, radii, scoreColor, spacing } from '@/theme';
@@ -83,16 +84,22 @@ function useCelebration() {
 
 // ─── activity grid ───────────────────────────────────────────────────────────
 
-function ActivityGrid({ days, checkinSet }: { days: string[]; checkinSet: Set<string> }) {
+function ActivityGrid({
+  days,
+  checkinSet,
+  cellSize,
+}: {
+  days: string[];
+  checkinSet: Set<string>;
+  cellSize: number;
+}) {
+  const cell = { width: cellSize, height: cellSize, borderRadius: radii.sm };
   return (
     <View style={styles.gridWrap}>
       {days.map((day) => (
         <View
           key={day}
-          style={[
-            styles.gridCell,
-            checkinSet.has(day) ? styles.gridCellActive : styles.gridCellDim,
-          ]}
+          style={[cell, checkinSet.has(day) ? styles.gridCellActive : styles.gridCellDim]}
         />
       ))}
     </View>
@@ -136,6 +143,10 @@ export default function ProgressScreen() {
 
   const { celebrate, animatedStyle: celebAnim } = useCelebration();
   const justCheckedIn = useRef(false);
+
+  const { width, hPadding } = useResponsive();
+  // 6 columns × cellSize + 5 gaps of spacing(1) fit within the GlassCard's content area.
+  const cellSize = Math.floor((width - 2 * hPadding - 2 * spacing(4) - 5 * spacing(1)) / 6);
 
   // Derive unique checkin dates
   const dates = useMemo(() => [...new Set(checkins.map((c) => c.checkin_date))], [checkins]);
@@ -282,7 +293,7 @@ export default function ProgressScreen() {
             </View>
           </View>
 
-          <ActivityGrid days={gridDays} checkinSet={checkinSet} />
+          <ActivityGrid days={gridDays} checkinSet={checkinSet} cellSize={cellSize} />
 
           <View style={styles.checkInWrap}>
             {alreadyCheckedIn ? (
@@ -397,11 +408,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing(1),
     marginBottom: spacing(4),
-  },
-  gridCell: {
-    width: 20,
-    height: 20,
-    borderRadius: radii.sm,
   },
   gridCellActive: { backgroundColor: palette.accent },
   gridCellDim: {

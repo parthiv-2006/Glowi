@@ -50,7 +50,10 @@ contains it; the app reaches AI exclusively through authenticated function calls
 - **Design system** — `theme/index.ts` holds every token (palette, spacing, radii,
   type ramp, motion curves, severity/score color logic, gradients). `components/ui`
   are the primitives (GlassCard, GlowButton, ProgressRing, Stagger, …). No screen uses
-  ad-hoc colors.
+  ad-hoc colors. `lib/responsive.ts` exposes `useResponsive()` — a single hook that
+  derives screen-adaptive values (`hPadding`, `isTablet`) from `useWindowDimensions`.
+  `Screen` and `TabBar` consume it so all tabs adapt from iPhone SE (375 px) through
+  iPad (820 px) without per-screen breakpoint logic.
 - **Animation** — Reanimated 4 for transitions and the staggered reveals; React Native
   Skia for the scan theater (`components/scan/ScanTheater.tsx`) and the aurora
   background. Haptics fire only on meaningful moments.
