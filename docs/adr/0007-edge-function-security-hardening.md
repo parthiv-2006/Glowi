@@ -77,13 +77,22 @@ change that closes the gap:
 
 ## Deployment status
 
-Applied to project `rfuuznnbctfyqttslrbv` on 2026-06-15: migrations `0007`/`0008`
+Applied to project `rfuuznnbctfyqttslrbv` on 2026-06-15: migrations `0007`/`0008`/`0009`
 applied; all six edge functions redeployed (they share `_shared/*`). `verify_jwt`
 unchanged per function (`auth-signup` off, all others on). Guest signup smoke-tested
 end-to-end (HTTP 200) and the limiter confirmed recording hits.
 
-## Out of scope (pre-existing, tracked separately)
+## Follow-up (post-review advisor findings)
 
-- `handle_new_user()` is an `anon`/`authenticated`-executable `SECURITY DEFINER`
-  function (advisor warning) — a pre-existing trigger function also exposed via RPC.
-- Supabase Auth "leaked password protection" is disabled (dashboard toggle).
+- **Fixed (migration `0009`).** `handle_new_user()` (and `set_updated_at()`) lived in
+  the `public` schema and were therefore RPC-callable; `handle_new_user` is
+  `SECURITY DEFINER`, so a caller could invoke the profile-insert path directly.
+  `EXECUTE` is now revoked from `public`/`anon`/`authenticated`. Triggers fire under
+  the table owner regardless of caller EXECUTE, so signup and `updated_at` upkeep are
+  unaffected — verified by a guest-signup smoke test (profile row still created) and a
+  clean advisor run.
+- **Open (dashboard / Management API only).** Supabase Auth "leaked password
+  protection" (HaveIBeenPwned check) is disabled. It is not exposed through the tooling
+  used here; enable it in **Authentication → Sign In / Providers → Password**, or via
+  `PATCH /v1/projects/{ref}/config/auth { "password_hibp_enabled": true }` with a
+  personal access token.
