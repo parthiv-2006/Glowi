@@ -180,7 +180,6 @@ ${slugList}`;
     skin_type_estimate: skinTypes.has(result.skin_type_estimate) ? result.skin_type_estimate : null,
     summary: String(result.summary ?? '').slice(0, 1000),
     concerns,
-    raw_model_output: result as unknown as Record<string, unknown>,
   };
 
   const { error: updErr } = await svc.from('scans').update(update).eq('id', scan.id);
@@ -200,5 +199,5 @@ ${slugList}`;
     source_ref: scan.id,
   });
 
-  return json({ scanId: scan.id, ...update, raw_model_output: undefined });
+  return json({ scanId: scan.id, ...update });
 });
