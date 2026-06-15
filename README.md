@@ -95,6 +95,9 @@ supabase db push                      # apply migrations in supabase/migrations
 # seed catalog: run the SQL files in supabase/seed in order
 supabase functions deploy             # analyze-skin, chat, extract-memories, skin-forecast, identify-product, auth-signup
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+# optional: lock edge-function CORS to specific browser origins (comma-separated).
+# Unset → '*', which is fine for native clients. See ADR-0007.
+supabase secrets set GLOWI_ALLOWED_ORIGINS=https://app.glowi.example
 ```
 
 ## Repository layout
