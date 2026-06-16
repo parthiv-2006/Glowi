@@ -11,6 +11,7 @@
  */
 import { supabase } from '../supabase';
 import type {
+  ConflictReport,
   ProductCategory,
   ProductIdentification,
   Scan,
@@ -394,6 +395,36 @@ export const mockProvider: AIProvider = {
     if (error) throw new Error(error.message);
 
     return data as SkinForecast;
+  },
+
+  async checkConflicts(): Promise<ConflictReport> {
+    await requireUserId();
+    await wait(1200 + Math.random() * 800);
+    return {
+      checkedAt: new Date().toISOString(),
+      conflicts: [
+        {
+          severity: 'caution',
+          ingredients: ['salicylic acid', 'retinol'],
+          products: ["Paula's Choice 2% BHA Liquid Exfoliant", 'Differin Gel'],
+          reason:
+            'Both are exfoliants that increase cell turnover. Layering them nightly raises irritation risk significantly, especially on sensitive or barrier-compromised skin.',
+          citation:
+            'Kligman AM et al., J Am Acad Dermatol, 1984; Draelos ZD, Cosmetic Dermatology, 2010.',
+          recommendation:
+            'Use salicylic acid in the AM routine and retinol PM-only, or alternate nights.',
+        },
+        {
+          severity: 'time_of_day',
+          ingredients: ['retinol'],
+          products: ['Differin Gel'],
+          reason:
+            'Retinoids degrade under UV exposure and increase photosensitivity, reducing both efficacy and safety if applied in the morning without high SPF.',
+          citation: 'Mukherjee S et al., Clin Interv Aging, 2006.',
+          recommendation: 'Apply Differin Gel at night only. Follow with SPF ≥ 30 every morning.',
+        },
+      ],
+    };
   },
 
   async identifyProduct(_input: IdentifyProductInput): Promise<ProductIdentification> {

@@ -252,6 +252,7 @@ export type ShelfItemInput = Partial<
     | 'name'
     | 'brand'
     | 'category'
+    | 'key_ingredients'
     | 'image_path'
     | 'size_label'
     | 'opened_at'
@@ -263,7 +264,7 @@ export type ShelfItemInput = Partial<
 >;
 
 const SHELF_COLS =
-  'id, product_id, name, brand, category, image_path, size_label, opened_at, shelf_life_months, amount_remaining, times_used, last_used_at, status, notes, created_at, updated_at';
+  'id, product_id, name, brand, category, key_ingredients, image_path, size_label, opened_at, shelf_life_months, amount_remaining, times_used, last_used_at, status, notes, created_at, updated_at';
 
 export async function getShelfItems(): Promise<ShelfItem[]> {
   return unwrap(

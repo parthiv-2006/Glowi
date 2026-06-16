@@ -222,6 +222,7 @@ export interface ShelfItem {
   name: string;
   brand: string | null;
   category: ProductCategory | null;
+  key_ingredients: string[];
   image_path: string | null;
   size_label: string | null;
   /** ISO date the product was opened — drives PAO expiry. */
@@ -235,6 +236,24 @@ export interface ShelfItem {
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** One flagged ingredient interaction from the conflict checker. */
+export interface IngredientConflict {
+  severity: 'avoid' | 'caution' | 'time_of_day';
+  /** The specific ingredients involved in the interaction. */
+  ingredients: string[];
+  /** Names of the user's shelf items that contain those ingredients. */
+  products: string[];
+  reason: string;
+  citation: string;
+  recommendation: string;
+}
+
+/** Result of an AI-driven conflict analysis across the user's active shelf. */
+export interface ConflictReport {
+  conflicts: IngredientConflict[];
+  checkedAt: string;
 }
 
 /** What the AI reads off a product label when adding to the Shelf. */

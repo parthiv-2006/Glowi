@@ -1,6 +1,6 @@
 /** Live provider — the deployed Claude edge functions do the thinking. */
 import { supabase } from '../supabase';
-import type { ProductIdentification, Scan, SkinForecast } from '../types';
+import type { ConflictReport, ProductIdentification, Scan, SkinForecast } from '../types';
 import type {
   AIProvider,
   AnalyzeScanInput,
@@ -56,5 +56,9 @@ export const liveProvider: AIProvider = {
 
   async identifyProduct(input: IdentifyProductInput): Promise<ProductIdentification> {
     return invoke<ProductIdentification>('identify-product', { imageBase64: input.imageBase64 });
+  },
+
+  async checkConflicts(): Promise<ConflictReport> {
+    return invoke<ConflictReport>('check-conflicts', {});
   },
 };

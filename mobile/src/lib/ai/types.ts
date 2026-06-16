@@ -3,7 +3,7 @@
  * intelligence is the deployed Claude edge functions (live) or the on-device
  * simulator (mock) is a runtime configuration detail. See docs/adr/0003.
  */
-import type { ProductIdentification, Scan, SkinForecast } from '../types';
+import type { ConflictReport, ProductIdentification, Scan, SkinForecast } from '../types';
 
 export interface AnalyzeScanInput {
   scanId: string;
@@ -53,6 +53,12 @@ export interface AIProvider {
    * Shelf — does not persist anything. The caller saves the confirmed item.
    */
   identifyProduct(input: IdentifyProductInput): Promise<ProductIdentification>;
+  /**
+   * Runs an ingredient conflict analysis across the user's active shelf.
+   * Results are cached server-side until the shelf changes; this call is
+   * idempotent and cheap to call repeatedly.
+   */
+  checkConflicts(): Promise<ConflictReport>;
 }
 
 export interface IdentifyProductInput {
