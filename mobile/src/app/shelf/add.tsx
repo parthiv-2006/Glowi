@@ -55,6 +55,7 @@ export default function AddShelfItem() {
   const [sizeLabel, setSizeLabel] = useState('');
   const [amount, setAmount] = useState(100);
   const [matchedSlug, setMatchedSlug] = useState<string | null>(null);
+  const [keyIngredients, setKeyIngredients] = useState<string[]>([]);
 
   async function pick(source: 'camera' | 'library') {
     haptics.tap();
@@ -91,6 +92,7 @@ export default function AddShelfItem() {
       setCategory(id.category);
       setShelfLife(id.shelf_life_months ? String(id.shelf_life_months) : '');
       setMatchedSlug(id.matched_slug);
+      setKeyIngredients(id.key_ingredients ?? []);
       setRevealed(true);
       haptics.success();
     } catch (e) {
@@ -114,6 +116,7 @@ export default function AddShelfItem() {
         name: name.trim(),
         brand: brand.trim() || null,
         category,
+        key_ingredients: keyIngredients,
         product_id: productId,
         opened_at: opened ? new Date().toISOString().slice(0, 10) : null,
         shelf_life_months: parsedShelfLife && parsedShelfLife > 0 ? parsedShelfLife : null,

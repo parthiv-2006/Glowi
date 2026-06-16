@@ -141,6 +141,14 @@ export default function ShelfScreen() {
               router.push('/shelf/add');
             }}
           />
+          <GlowButton
+            label="Check for conflicts"
+            variant="ghost"
+            onPress={() => {
+              haptics.press();
+              router.push('/shelf/conflicts');
+            }}
+          />
         </>
       )}
     </Screen>

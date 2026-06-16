@@ -19,6 +19,7 @@ function item(partial: Partial<ShelfItem>): ShelfItem {
     name: 'Test',
     brand: null,
     category: null,
+    key_ingredients: [],
     image_path: null,
     size_label: null,
     opened_at: null,
