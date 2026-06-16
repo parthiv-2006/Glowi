@@ -68,7 +68,8 @@ Two families of tables (full DDL in `supabase/migrations/0001_core_tables.sql`):
 - **User-owned** (RLS: owner only): `profiles`, `scans`, `chat_sessions`,
   `chat_messages`, `ai_memories`, `routines`, `routine_steps`, `routine_checkins`,
   `reminder_settings`, `skin_forecasts` (one Skin Weather forecast per user per day),
-  `shelf_items` (The Shelf — the products a user owns).
+  `shelf_items` (The Shelf — the products a user owns, now incl. `key_ingredients`),
+  `conflict_reports` (cached Ingredient Conflict Checker results per user).
 
 ### Security boundary — RLS
 
@@ -87,8 +88,8 @@ flag); `set_updated_at` triggers maintain timestamps.
 ## AI pipeline
 
 The app depends only on the `AIProvider` interface (`lib/ai/types.ts`):
-`analyzeScan`, `chat`, `extractMemories`, `skinForecast`, `identifyProduct`. Two
-implementations ([ADR-0003](adr/0003-ai-provider-seam.md)):
+`analyzeScan`, `chat`, `extractMemories`, `skinForecast`, `identifyProduct`,
+`checkConflicts`. Two implementations ([ADR-0003](adr/0003-ai-provider-seam.md)):
 
 - **Live** (`lib/ai/live.ts`) invokes edge functions.
 - **Mock** (`lib/ai/mock.ts`) runs on-device with realistic, staged behavior and writes
@@ -103,6 +104,7 @@ implementations ([ADR-0003](adr/0003-ai-provider-seam.md)):
 | `extract-memories` | Mines new conversation turns for durable memories (add/update/supersede ops) and refreshes the session summary. Idempotent per turn via `memory_extracted_until`. |
 | `skin-forecast` | Fetches today's local weather + air quality from Open-Meteo (keyless), assembles memory context (incl. the user's shelf), asks Claude for environment-grounded routine guidance that **names products the user owns**, **validates** it against the action enum, and upserts the day's forecast. Falls back to a deterministic forecast if Open-Meteo or Claude is unavailable. Idempotent per user per day ([ADR-0005](adr/0005-skin-weather-forecasting.md)). |
 | `identify-product` | Reads a product photo with Claude vision and returns structured details (name, brand, category, key ingredients, PAO, catalog match) for The Shelf, **validated** against the category enum and catalog. Persists nothing — the client confirms before saving ([ADR-0006](adr/0006-the-shelf-inventory.md)). |
+| `check-conflicts` | Filters the user's active shelf items down to those with known `key_ingredients`; if a cached `conflict_reports` row is at least as new as the latest shelf change, returns it with no Claude call. Otherwise asks Claude (temperature 0) for strict-JSON ingredient interactions, parses via `extractJson`, caches, and returns the report ([ADR-0008](adr/0008-ingredient-conflict-checker.md)). |
 | `auth-signup` | Creates pre-confirmed email and guest users via the admin API ([ADR-0002](adr/0002-prefilled-auth-signup-function.md)). |
 
 A `_shared` module holds the Anthropic client (with balanced-JSON extraction), the

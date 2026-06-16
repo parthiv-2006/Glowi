@@ -35,6 +35,10 @@ skincare coach that remembers you across every conversation.
   stock level, and usage. Skin Weather routes its advice through what's on your shelf
   ("use your CeraVe Moisturizing Cream"), and you get expiry and low-stock nudges before
   they bite.
+- **Ingredient Conflict Checker** — Glowi reads the ingredients behind every product on
+  your shelf and asks Claude to flag real interactions — layering a BHA with a retinoid,
+  applying a photosensitizing retinoid in the morning — with severity, a citation, and a
+  concrete recommendation, not just a warning.
 - **Coach** — A memory-aware chatbot answers anything skincare, recommends products
   inline, and *remembers you*: skin type, goals, what's reacted badly, and where you
   left off last time. It's also weather-aware and shelf-aware — it sees today's forecast
@@ -60,6 +64,10 @@ skincare coach that remembers you across every conversation.
 - **A product inventory that closes the loop.** The Shelf logs what you own via AI label
   reading, tracks expiry/stock, and routes Skin Weather and the coach through your actual
   cabinet ([ADR-0006](docs/adr/0006-the-shelf-inventory.md)).
+- **Server-cached AI safety analysis.** The Ingredient Conflict Checker reasons over your
+  whole shelf but only calls Claude when the shelf actually changes — results are cached
+  per user and invalidated against `shelf_items.updated_at`
+  ([ADR-0008](docs/adr/0008-ingredient-conflict-checker.md)).
 - **Security at the data layer.** Row Level Security on every user table; a private,
   per-user image bucket; the Anthropic key lives only in edge-function secrets and never
   ships in the app bundle.
