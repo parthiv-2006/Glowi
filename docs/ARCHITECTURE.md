@@ -49,11 +49,18 @@ contains it; the app reaches AI exclusively through authenticated function calls
   `stores/settings.ts`).
 - **Design system** — `theme/index.ts` holds every token (palette, spacing, radii,
   type ramp, motion curves, severity/score color logic, gradients). `components/ui`
-  are the primitives (GlassCard, GlowButton, ProgressRing, Stagger, …). No screen uses
-  ad-hoc colors. `lib/responsive.ts` exposes `useResponsive()` — a single hook that
-  derives screen-adaptive values (`hPadding`, `isTablet`) from `useWindowDimensions`.
-  `Screen` and `TabBar` consume it so all tabs adapt from iPhone SE (375 px) through
-  iPad (820 px) without per-screen breakpoint logic.
+  are the primitives: `GlassCard` (tier `sunken`/`raised`/`glow` — one `glow` per
+  screen max), `GlowButton`, `ProgressRing`, `Stagger`, `AppText`, and
+  `effects.tsx` (the five §0 techniques that can't be expressed as flat fills —
+  `InnerHighlight`, `glowShadow`, `GradientText`). `GlowiAvatar` (`components/GlowiAvatar.tsx`)
+  is the brand mascot (jade Skia sphere, 4 animated states); always reuse it, never
+  draw a one-off mascot. `SplashView` shows during font/auth init. No screen uses
+  ad-hoc colors. Design principles, component recipes, and per-screen specs live in
+  `Glowi app visual enhancement (1)/design_handoff_glowi_redesign/`; `mobile/DESIGN.md`
+  is the entry point. `lib/responsive.ts` exposes `useResponsive()` — a single hook
+  that derives screen-adaptive values (`hPadding`, `isTablet`) from
+  `useWindowDimensions`. `Screen` and `TabBar` consume it so all tabs adapt from
+  iPhone SE (375 px) through iPad (820 px) without per-screen breakpoint logic.
 - **Animation** — Reanimated 4 for transitions and the staggered reveals; React Native
   Skia for the scan theater (`components/scan/ScanTheater.tsx`) and the aurora
   background. Haptics fire only on meaningful moments.
