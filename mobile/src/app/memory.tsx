@@ -78,7 +78,6 @@ export default function MemoryScreen() {
         </View>
       ) : grouped.length === 0 ? (
         <EmptyState
-          icon="bookmark-outline"
           title="Nothing remembered yet"
           body="As you scan and chat, Glowi notes durable facts about your skin here — your type, goals, and anything that's reacted badly."
         />
@@ -100,8 +99,7 @@ export default function MemoryScreen() {
                 <View key={m.id} style={styles.memoryWrap}>
                   <GlassCard
                     style={styles.memoryCard}
-                    glow={group.type === 'gotcha'}
-                    emphasized={group.type === 'gotcha'}
+                    tier={group.type === 'gotcha' ? 'glow' : 'raised'}
                   >
                     <AppText variant="body" style={styles.memoryText}>
                       {m.content}

@@ -238,7 +238,6 @@ function ProductsTab({
     return (
       <Animated.View entering={FadeIn.duration(220)} style={styles.tabContent}>
         <EmptyState
-          icon="bag-outline"
           title="No products yet"
           body="We haven't curated products for this concern yet. Check back soon."
         />
@@ -278,7 +277,6 @@ function NutritionTab({ guide, isLoading }: { guide: NutritionGuide | null; isLo
     return (
       <Animated.View entering={FadeIn.duration(220)} style={styles.tabContent}>
         <EmptyState
-          icon="nutrition-outline"
           title="No nutrition guide yet"
           body="Nutritional guidance for this concern is coming soon."
         />
@@ -422,11 +420,7 @@ function TipsTab({ tips, isLoading }: { tips: Tip[]; isLoading: boolean }) {
   if (!tips || tips.length === 0) {
     return (
       <Animated.View entering={FadeIn.duration(220)} style={styles.tabContent}>
-        <EmptyState
-          icon="bulb-outline"
-          title="No tips yet"
-          body="Tips for this concern are coming soon."
-        />
+        <EmptyState title="No tips yet" body="Tips for this concern are coming soon." />
       </Animated.View>
     );
   }
@@ -547,10 +541,10 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: palette.surface,
+    backgroundColor: palette.surfaceSunken,
     borderRadius: radii.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.border,
+    borderColor: 'rgba(255,255,255,0.06)',
     padding: spacing(1),
     position: 'relative',
     overflow: 'hidden',

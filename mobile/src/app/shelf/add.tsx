@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { AppText, GlowButton, PressableScale, TextField } from '@/components/ui';
+import { AppText, GlassCard, GlowButton, PressableScale, TextField } from '@/components/ui';
 import { getAIProvider } from '@/lib/ai';
 import * as api from '@/lib/api';
 import { useAddShelfItem } from '@/lib/hooks';
@@ -279,20 +279,21 @@ export default function AddShelfItem() {
                 haptics.tap();
                 setOpened((v) => !v);
               }}
-              style={styles.toggleRow}
               haptic={false}
             >
-              <View>
-                <AppText variant="heading" style={styles.toggleTitle}>
-                  Already opened
-                </AppText>
-                <AppText variant="caption" color={palette.textSecondary}>
-                  Starts the expiry clock from today.
-                </AppText>
-              </View>
-              <View style={[styles.switch, opened && styles.switchOn]}>
-                <View style={[styles.knob, opened && styles.knobOn]} />
-              </View>
+              <GlassCard style={styles.toggleRow}>
+                <View>
+                  <AppText variant="heading" style={styles.toggleTitle}>
+                    Already opened
+                  </AppText>
+                  <AppText variant="caption" color={palette.textSecondary}>
+                    Starts the expiry clock from today.
+                  </AppText>
+                </View>
+                <View style={[styles.switch, opened && styles.switchOn]}>
+                  <View style={[styles.knob, opened && styles.knobOn]} />
+                </View>
+              </GlassCard>
             </PressableScale>
 
             <View style={styles.twoCol}>
@@ -460,11 +461,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: palette.surface,
-    borderRadius: radii.md,
-    padding: spacing(4),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.border,
   },
   toggleTitle: { fontSize: 15 },
   switch: {

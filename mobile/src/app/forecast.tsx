@@ -56,7 +56,6 @@ export default function ForecastScreen() {
     return (
       <Screen bottomInset={spacing(8)}>
         <EmptyState
-          icon="partly-sunny-outline"
           title="No forecast yet"
           body="We couldn’t put together today’s Skin Weather. Pull back to the home screen and try again in a moment."
           actionLabel="Back home"

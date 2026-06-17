@@ -15,10 +15,11 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingDots } from '@/components/chat/TypingDots';
+import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { AppText, PressableScale } from '@/components/ui';
 import { getAIProvider } from '@/lib/ai';
 import { qk } from '@/lib/query';
-import { useMessages } from '@/lib/hooks';
+import { useMessages, useScans } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
 import type { ChatMessage } from '@/lib/types';
 import { fonts, palette, radii, spacing } from '@/theme';
@@ -31,14 +32,19 @@ const SUGGESTIONS = [
 ];
 
 export default function Conversation() {
-  const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
+  const { sessionId, draft: draftParam } = useLocalSearchParams<{
+    sessionId: string;
+    draft?: string;
+  }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
   const { data: messages = [] } = useMessages(sessionId);
-  const [draft, setDraft] = useState('');
+  const { data: scans } = useScans();
+  const knowsLastScan = scans?.some((s) => s.status === 'complete') ?? false;
+  const [draft, setDraft] = useState(draftParam ?? '');
   const [sending, setSending] = useState(false);
   const turnCount = useRef(0);
 
@@ -101,21 +107,29 @@ export default function Conversation() {
           <Ionicons name="chevron-back" size={26} color={palette.text} />
         </PressableScale>
         <View style={styles.headerTitle}>
-          <View style={styles.coachDot} />
-          <AppText variant="heading">Glowi coach</AppText>
+          <GlowiAvatar state="idle" size={28} />
+          <View>
+            <AppText variant="heading">Glowi Coach</AppText>
+            {knowsLastScan ? (
+              <View style={styles.knowsRow}>
+                <View style={styles.knowsDot} />
+                <AppText variant="caption" color={palette.success}>
+                  Knows your last scan
+                </AppText>
+              </View>
+            ) : null}
+          </View>
         </View>
         <View style={{ width: 26 }} />
       </View>
 
       {empty ? (
         <Animated.View entering={FadeIn} style={styles.welcome}>
-          <View style={styles.coachHalo}>
-            <Ionicons name="sparkles" size={26} color={palette.accentBright} />
-          </View>
+          <GlowiAvatar state="idle" size={72} />
           <AppText variant="title" style={styles.welcomeTitle}>
             Ask me anything skincare
           </AppText>
-          <AppText variant="subheading" style={styles.welcomeSub}>
+          <AppText variant="body" style={styles.welcomeSub}>
             I know your scans and what we&apos;ve talked about before. No question is too small.
           </AppText>
           <View style={styles.suggestions}>
@@ -137,7 +151,14 @@ export default function Conversation() {
           renderItem={({ item }) => <MessageBubble message={item} />}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          ListFooterComponent={sending ? <TypingDots /> : null}
+          ListFooterComponent={
+            sending ? (
+              <View style={styles.typingRow}>
+                <GlowiAvatar state="thinking" size={24} />
+                <TypingDots />
+              </View>
+            ) : null
+          }
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         />
       )}
@@ -147,7 +168,7 @@ export default function Conversation() {
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Message Glowi…"
+            placeholder="Message your coach…"
             placeholderTextColor={palette.textTertiary}
             selectionColor={palette.accent}
             style={styles.input}
@@ -161,7 +182,7 @@ export default function Conversation() {
             style={[styles.sendBtn, (!draft.trim() || sending) && styles.sendDisabled]}
             haptic={false}
           >
-            <Ionicons name="arrow-up" size={20} color={palette.textOnAccent} />
+            <Ionicons name="arrow-forward" size={20} color={palette.textOnAccent} />
           </PressableScale>
         </View>
       </View>
@@ -181,31 +202,15 @@ const styles = StyleSheet.create({
     borderBottomColor: palette.border,
   },
   headerTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
-  coachDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: palette.accentBright,
-    shadowColor: palette.accentBright,
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
-  },
+  knowsRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) },
+  knowsDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.success },
+  typingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1) },
   welcome: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing(6),
     gap: spacing(3),
-  },
-  coachHalo: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: palette.accentDim,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.3)',
   },
   welcomeTitle: { textAlign: 'center' },
   welcomeSub: { textAlign: 'center', maxWidth: 300 },

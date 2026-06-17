@@ -72,7 +72,6 @@ export default function ShelfItemDetail() {
     return (
       <Screen bottomInset={spacing(8)}>
         <EmptyState
-          icon="cube-outline"
           title="Item not found"
           body="This product is no longer on your shelf."
           actionLabel="Back to shelf"

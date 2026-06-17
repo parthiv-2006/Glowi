@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -15,6 +14,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 
+import { SplashView } from '@/components/SplashView';
 import { queryClient } from '@/lib/query';
 import { palette } from '@/theme';
 import { useAuth } from '@/stores/auth';
@@ -95,7 +95,10 @@ export default function RootLayout() {
   }, [fontsLoaded, initializing]);
 
   if (!fontsLoaded || initializing) {
-    return <View style={{ flex: 1, backgroundColor: palette.bg }} />;
+    // Fonts aren't loaded yet on the very first paint, so this initial frame
+    // still renders with system fonts for an instant — acceptable since the
+    // native splash (app.json) covers it until fonts resolve.
+    return <SplashView />;
   }
 
   return (

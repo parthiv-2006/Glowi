@@ -92,7 +92,6 @@ export default function ShelfScreen() {
         </View>
       ) : !items?.length ? (
         <EmptyState
-          icon="cube-outline"
           title="Your shelf is empty"
           body="Add the products you already own. Glowi will track expiry and stock, and route your daily forecast through what's in your cabinet."
           actionLabel="Add a product"
@@ -105,7 +104,7 @@ export default function ShelfScreen() {
           </AppText>
 
           {nudge.length ? (
-            <GlassCard style={styles.nudge} emphasized>
+            <GlassCard style={styles.nudge}>
               <Ionicons name="notifications-outline" size={18} color={palette.warning} />
               <AppText variant="subheading" color={palette.text} style={styles.nudgeText}>
                 {nudge.join(' · ')}.

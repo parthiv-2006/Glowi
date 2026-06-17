@@ -69,11 +69,7 @@ function ConflictCard({ conflict }: { conflict: IngredientConflict }) {
           </AppText>
         </View>
 
-        <AppText
-          variant="caption"
-          color={palette.textTertiary}
-          style={styles.citation}
-        >
+        <AppText variant="caption" color={palette.textTertiary} style={styles.citation}>
           {conflict.citation}
         </AppText>
       </View>
@@ -153,7 +149,6 @@ export default function ConflictsScreen() {
         </View>
       ) : !report?.conflicts.length ? (
         <EmptyState
-          icon="checkmark-circle-outline"
           title="No conflicts found"
           body="Your current products are safe to layer together. Add more products to your shelf to get richer analysis."
           actionLabel="Re-check"

@@ -125,10 +125,7 @@ const toggle = StyleSheet.create({
     height: 38,
     borderRadius: radii.full,
     backgroundColor: palette.accent,
-    shadowColor: palette.accent,
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 0 },
+    boxShadow: '0px 0px 12px rgba(45,212,191,0.45)',
   },
   side: {
     flex: 1,
@@ -370,7 +367,6 @@ export default function RoutineScreen() {
         <GenerateFromScanCard generating={generating} onGenerate={handleGenerate} />
       ) : (
         <EmptyState
-          icon="camera-outline"
           title="No scan yet"
           body="Scan your skin first so Glowi can build a routine personalised to what it finds."
           actionLabel="Start a scan"
@@ -491,7 +487,7 @@ function GenerateFromScanCard({
         end={{ x: 1, y: 1 }}
         style={styles.heroGradientBorder}
       >
-        <GlassCard emphasized glow style={styles.heroCard}>
+        <GlassCard tier="glow" style={styles.heroCard}>
           {/* Glow halo */}
           <View style={styles.heroHalo}>
             <Ionicons name="sparkles" size={32} color={palette.accentBright} />
