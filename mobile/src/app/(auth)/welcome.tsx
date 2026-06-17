@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { AuroraBackground } from '@/components/AuroraBackground';
+import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { AppText, GlowButton, PressableScale } from '@/components/ui';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/stores/auth';
@@ -35,13 +36,11 @@ export default function Welcome() {
           { paddingTop: insets.top + spacing(14), paddingBottom: insets.bottom + spacing(6) },
         ]}
       >
-        <Animated.View entering={FadeInDown.duration(motion.slow)}>
-          <View style={styles.markRow}>
-            <View style={styles.dot} />
-            <AppText variant="overline" color={palette.accentBright}>
-              Glowi
-            </AppText>
-          </View>
+        <Animated.View entering={FadeInDown.duration(motion.slow)} style={styles.markRow}>
+          <GlowiAvatar state="idle" size={40} />
+          <AppText variant="overline" color={palette.accentBright}>
+            Glowi
+          </AppText>
         </Animated.View>
 
         <View style={styles.hero}>
@@ -84,15 +83,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.bg },
   content: { flex: 1, paddingHorizontal: spacing(6), justifyContent: 'space-between' },
   markRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
-  dot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    backgroundColor: palette.accentBright,
-    shadowColor: palette.accentBright,
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
-  },
   hero: { gap: spacing(4) },
   title: { fontSize: 40, lineHeight: 46 },
   sub: { fontSize: 16, lineHeight: 24, maxWidth: 340 },

@@ -17,7 +17,7 @@ import { haptics } from '@/lib/haptics';
 import { supabase } from '@/lib/supabase';
 import type { SkinType } from '@/lib/types';
 import { useAuth } from '@/stores/auth';
-import { motion, palette, spacing } from '@/theme';
+import { motion, palette, radii, spacing } from '@/theme';
 
 type Step = 0 | 1 | 2 | 3;
 const STEPS = 4;
@@ -101,13 +101,46 @@ export default function Onboarding() {
         <View style={styles.stepArea}>
           {step === 0 && (
             <Animated.View entering={FadeIn.duration(motion.slow)} style={styles.intro}>
+              <View style={styles.viewfinder}>
+                <View style={styles.viewfinderCircle} />
+              </View>
+
               <AppText variant="display" style={styles.bigTitle}>
-                {firstName ? `Hi ${firstName}.` : 'Welcome to Glowi.'}
+                {firstName ? (
+                  <>
+                    Hi{' '}
+                    <AppText
+                      variant="display"
+                      color={palette.accentBright}
+                      style={styles.nameItalic}
+                    >
+                      {firstName}
+                    </AppText>
+                    .
+                  </>
+                ) : (
+                  'Welcome to Glowi.'
+                )}
               </AppText>
-              <AppText variant="subheading" style={styles.introSub}>
+              <AppText variant="body" style={styles.introSub}>
                 A few quick questions so your first scan and every conversation are tuned to your
                 skin — not a generic average.
               </AppText>
+
+              <View style={styles.promiseList}>
+                {[
+                  { icon: 'scan-outline' as const, label: 'Scan your skin in seconds' },
+                  { icon: 'sparkles-outline' as const, label: 'A coach that remembers you' },
+                  { icon: 'trending-up-outline' as const, label: 'Watch your progress over time' },
+                ].map((item) => (
+                  <View key={item.label} style={styles.promiseRow}>
+                    <View style={styles.promiseIcon}>
+                      <Ionicons name={item.icon} size={18} color={palette.accentBright} />
+                    </View>
+                    <AppText variant="body">{item.label}</AppText>
+                  </View>
+                ))}
+              </View>
             </Animated.View>
           )}
 
@@ -125,7 +158,7 @@ export default function Onboarding() {
                   const active = skinType === opt.id;
                   return (
                     <PressableScale key={opt.id} onPress={() => setSkinType(opt.id)}>
-                      <GlassCard emphasized={active} glow={active} style={styles.optionCard}>
+                      <GlassCard tier={active ? 'glow' : 'raised'} style={styles.optionCard}>
                         <View style={styles.optionRow}>
                           <View style={{ flex: 1 }}>
                             <AppText
@@ -169,8 +202,7 @@ export default function Onboarding() {
                       style={styles.goalWrap}
                     >
                       <GlassCard
-                        emphasized={active}
-                        glow={active}
+                        tier={active ? 'glow' : 'raised'}
                         padded={false}
                         style={styles.goalCard}
                       >
@@ -234,6 +266,7 @@ export default function Onboarding() {
   );
 }
 
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.bg },
   content: { flex: 1, paddingHorizontal: spacing(6) },
@@ -247,9 +280,40 @@ const styles = StyleSheet.create({
   pipActive: { backgroundColor: palette.accent },
   pipCurrent: { width: 40, backgroundColor: palette.accentBright },
   stepArea: { flex: 1 },
-  intro: { gap: spacing(4), marginTop: spacing(10) },
-  bigTitle: { fontSize: 38, lineHeight: 44 },
-  introSub: { fontSize: 16, lineHeight: 24 },
+  intro: { gap: spacing(4), marginTop: spacing(6), alignItems: 'center' },
+  viewfinder: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    borderRadius: radii.xl,
+    backgroundColor: palette.bgElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(94,234,212,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing(2),
+    overflow: 'hidden',
+  },
+  viewfinderCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 1.5,
+    borderColor: 'rgba(94,234,212,0.35)',
+    borderStyle: 'dashed',
+  },
+  bigTitle: { fontSize: 38, lineHeight: 44, textAlign: 'center' },
+  nameItalic: { fontStyle: 'italic' },
+  introSub: { fontSize: 16, lineHeight: 24, textAlign: 'center' },
+  promiseList: { gap: spacing(3), alignSelf: 'stretch', marginTop: spacing(2) },
+  promiseRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
+  promiseIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.accentDim,
+  },
   stepBody: { gap: spacing(2.5), flex: 1 },
   options: { gap: spacing(3), marginTop: spacing(4) },
   optionCard: { paddingVertical: spacing(4) },
