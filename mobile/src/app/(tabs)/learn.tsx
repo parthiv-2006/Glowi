@@ -16,7 +16,7 @@ import {
 } from '@/components/ui';
 import { useArticles } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
-import { gradientFor, palette, radii, spacing } from '@/theme';
+import { fonts, gradientFor, palette, radii, spacing } from '@/theme';
 import type { Article } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -56,34 +56,64 @@ function ArticleCard({ article, onPress }: { article: Article; onPress: () => vo
 
   return (
     <PressableScale onPress={onPress} style={styles.cardWrap}>
-      {/* Gradient banner */}
+      {/* Gradient cover — category overline top-left, read-time pill top-right */}
       <LinearGradient
         colors={colors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.cardBanner}
       >
-        {/* Top-left: category overline */}
-        <AppText variant="overline" color="rgba(244,246,245,0.7)" style={styles.cardCategory}>
+        <View style={styles.bannerGlow} />
+        <AppText variant="overline" color={palette.accentBright} style={styles.cardCategory}>
           {article.category}
         </AppText>
-
-        {/* Bottom-right: read time pill */}
         <View style={styles.readPill}>
-          <Ionicons name="time-outline" size={11} color={palette.accentBright} />
-          <AppText variant="caption" color={palette.accentBright} style={styles.readPillText}>
-            {article.read_minutes} min read
+          <Ionicons name="time-outline" size={11} color={palette.textBody} />
+          <AppText variant="caption" color={palette.textBody} style={styles.readPillText}>
+            {article.read_minutes} min
           </AppText>
         </View>
       </LinearGradient>
 
-      {/* Text content below banner */}
+      {/* Text content below cover */}
       <View style={styles.cardBody}>
         <AppText variant="title" style={styles.cardTitle}>
           {article.title}
         </AppText>
-        <AppText variant="subheading" numberOfLines={2} style={styles.cardExcerpt}>
+        <AppText
+          variant="caption"
+          color={palette.textSecondary}
+          numberOfLines={2}
+          style={styles.cardExcerpt}
+        >
           {article.excerpt}
+        </AppText>
+      </View>
+    </PressableScale>
+  );
+}
+
+// Compact list row — 64px gradient thumbnail + Fraunces title + meta.
+function ArticleRow({ article, onPress }: { article: Article; onPress: () => void }) {
+  const colors = gradientFor(article.hero_gradient);
+  return (
+    <PressableScale onPress={onPress} style={styles.row}>
+      <LinearGradient
+        colors={colors}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.rowThumb}
+      >
+        <AppText variant="overline" color={palette.accentBright} style={styles.rowThumbTag}>
+          {article.category.slice(0, 3)}
+        </AppText>
+      </LinearGradient>
+      <View style={styles.rowBody}>
+        <AppText variant="heading" numberOfLines={2} style={styles.rowTitle}>
+          {article.title}
+        </AppText>
+        <AppText variant="caption" color={palette.textTertiary} style={styles.rowMeta}>
+          {`${article.read_minutes} min read · ${article.category}`}
         </AppText>
       </View>
     </PressableScale>
@@ -195,7 +225,6 @@ export default function LearnScreen() {
           </>
         ) : filtered.length === 0 ? (
           <EmptyState
-            icon="search-outline"
             title="No articles found"
             body={
               query
@@ -205,9 +234,15 @@ export default function LearnScreen() {
           />
         ) : (
           <Stagger delay={60}>
-            {filtered.map((article) => (
-              <View key={article.id} style={styles.cardGap}>
-                <ArticleCard
+            <View style={styles.cardGap}>
+              <ArticleCard
+                article={filtered[0]}
+                onPress={() => router.push(`/article/${filtered[0].slug}`)}
+              />
+            </View>
+            {filtered.slice(1).map((article) => (
+              <View key={article.id} style={styles.rowGap}>
+                <ArticleRow
                   article={article}
                   onPress={() => router.push(`/article/${article.slug}`)}
                 />
@@ -273,20 +308,32 @@ const styles = StyleSheet.create({
     backgroundColor: palette.bgElevated,
   },
   cardBanner: {
-    height: 120,
-    padding: spacing(4),
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    height: 132,
+    overflow: 'hidden',
+  },
+  bannerGlow: {
+    position: 'absolute',
+    top: -20,
+    right: -10,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(94,234,212,0.18)',
   },
   cardCategory: {
-    alignSelf: 'flex-start',
+    position: 'absolute',
+    top: spacing(3.5),
+    left: spacing(3.5),
+    letterSpacing: 1.5,
   },
   readPill: {
+    position: 'absolute',
+    top: spacing(3),
+    right: spacing(3.5),
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(1),
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(7,9,11,0.6)',
     paddingHorizontal: spacing(2.5),
     paddingVertical: spacing(1),
     borderRadius: radii.full,
@@ -296,15 +343,45 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     padding: spacing(4),
-    gap: spacing(2),
+    gap: spacing(1.5),
+    backgroundColor: palette.surfaceRaised,
   },
   cardTitle: {
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: 18,
+    lineHeight: 23,
   },
   cardExcerpt: {
-    lineHeight: 21,
+    lineHeight: 18,
   },
+
+  // Compact list row
+  rowGap: { marginBottom: spacing(3) },
+  row: {
+    flexDirection: 'row',
+    gap: spacing(3),
+    alignItems: 'center',
+    borderRadius: radii.md,
+    padding: spacing(3),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.border,
+    backgroundColor: palette.surfaceRaised,
+  },
+  rowThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: radii.sm,
+    overflow: 'hidden',
+  },
+  rowThumbTag: {
+    position: 'absolute',
+    bottom: spacing(1.5),
+    left: spacing(1.5),
+    fontSize: 8.5,
+    letterSpacing: 1,
+  },
+  rowBody: { flex: 1, minWidth: 0, gap: spacing(1) },
+  rowTitle: { fontFamily: fonts.display, fontSize: 14.5, lineHeight: 18 },
+  rowMeta: { fontSize: 11.5 },
 
   // Skeleton
   skeletonWrap: {

@@ -79,7 +79,7 @@ export default function ProfileTab() {
       </Animated.View>
 
       {isGuest ? (
-        <GlassCard glow style={styles.guestCard}>
+        <GlassCard tier="glow" style={styles.guestCard}>
           <AppText variant="heading">Save your progress</AppText>
           <AppText variant="subheading" style={styles.guestText}>
             Create an account to keep your scans, routines, and memory if you switch devices.
@@ -231,9 +231,11 @@ const styles = StyleSheet.create({
   blockHint: { lineHeight: 18 },
   segment: {
     flexDirection: 'row',
-    backgroundColor: palette.bgInput,
+    backgroundColor: palette.surfaceSunken,
     borderRadius: radii.full,
     padding: spacing(1),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   segmentBtn: {
     flex: 1,

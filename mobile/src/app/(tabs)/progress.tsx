@@ -1,20 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  FadeIn,
-  useAnimatedStyle,
-  useSharedValue,
-  withSequence,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import {
   AppText,
   Badge,
-  EmptyState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -24,17 +16,13 @@ import {
   Skeleton,
   Stagger,
 } from '@/components/ui';
-import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
+import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { ScoreTrend } from '@/components/ScoreTrend';
-import { useCheckIn, useRecentCheckins, useRoutines, useScans } from '@/lib/hooks';
+import { useRecentCheckins, useScans } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
-import { useResponsive } from '@/lib/responsive';
-import { checkedInToday, computeStreak, lastNDays } from '@/lib/streak';
-import { getScanImageUrl } from '@/lib/api';
-import { palette, radii, scoreColor, spacing } from '@/theme';
+import { computeStreak } from '@/lib/streak';
+import { palette, scoreColor, spacing } from '@/theme';
 import type { Scan } from '@/lib/types';
-
-// ─── helpers ───────────────────────────────────────────────────────────────
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -43,70 +31,6 @@ function formatDate(iso: string): string {
     year: 'numeric',
   });
 }
-
-function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-// ─── before/after image state ───────────────────────────────────────────────
-
-interface BeforeAfterUrls {
-  before: string | null;
-  after: string | null;
-}
-
-// ─── streak celebration ──────────────────────────────────────────────────────
-
-function useCelebration() {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
-
-  const celebrate = useCallback(() => {
-    scale.value = withSequence(
-      withSpring(1.18, { damping: 8, stiffness: 240 }),
-      withSpring(0.95, { damping: 12, stiffness: 220 }),
-      withSpring(1, { damping: 14, stiffness: 200 }),
-    );
-    opacity.value = withSequence(
-      withTiming(1, { duration: 60 }),
-      withTiming(0.7, { duration: 120 }),
-      withTiming(1, { duration: 200 }),
-    );
-  }, [scale, opacity]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  return { celebrate, animatedStyle };
-}
-
-// ─── activity grid ───────────────────────────────────────────────────────────
-
-function ActivityGrid({
-  days,
-  checkinSet,
-  cellSize,
-}: {
-  days: string[];
-  checkinSet: Set<string>;
-  cellSize: number;
-}) {
-  const cell = { width: cellSize, height: cellSize, borderRadius: radii.sm };
-  return (
-    <View style={styles.gridWrap}>
-      {days.map((day) => (
-        <View
-          key={day}
-          style={[cell, checkinSet.has(day) ? styles.gridCellActive : styles.gridCellDim]}
-        />
-      ))}
-    </View>
-  );
-}
-
-// ─── scan row ────────────────────────────────────────────────────────────────
 
 function ScanRow({ scan, onPress }: { scan: Scan; onPress: () => void }) {
   const score = scan.skin_score ?? 0;
@@ -132,31 +56,14 @@ function ScanRow({ scan, onPress }: { scan: Scan; onPress: () => void }) {
   );
 }
 
-// ─── main screen ─────────────────────────────────────────────────────────────
-
 export default function ProgressScreen() {
   const router = useRouter();
   const { data: scans = [], isLoading: scansLoading } = useScans();
-  const { data: routines = [] } = useRoutines();
   const { data: checkins = [] } = useRecentCheckins();
-  const checkIn = useCheckIn();
 
-  const { celebrate, animatedStyle: celebAnim } = useCelebration();
-  const justCheckedIn = useRef(false);
-
-  const { width, hPadding } = useResponsive();
-  // 6 columns × cellSize + 5 gaps of spacing(1) fit within the GlassCard's content area.
-  const cellSize = Math.floor((width - 2 * hPadding - 2 * spacing(4) - 5 * spacing(1)) / 6);
-
-  // Derive unique checkin dates
   const dates = useMemo(() => [...new Set(checkins.map((c) => c.checkin_date))], [checkins]);
-  const checkinSet = useMemo(() => new Set(dates), [dates]);
-
   const streak = computeStreak(dates);
-  const alreadyCheckedIn = checkedInToday(dates);
-  const gridDays = lastNDays(30);
 
-  // Completed scans oldest → newest
   const completedScans = useMemo(
     () =>
       scans
@@ -166,28 +73,6 @@ export default function ProgressScreen() {
     [scans],
   );
 
-  // Before / after: oldest and newest completed scans
-  const beforeScan = completedScans[0] ?? null;
-  const afterScan = completedScans.length > 1 ? completedScans[completedScans.length - 1] : null;
-
-  const [baUrls, setBaUrls] = useState<BeforeAfterUrls>({ before: null, after: null });
-
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchUrls() {
-      const [b, a] = await Promise.all([
-        beforeScan?.image_path ? getScanImageUrl(beforeScan.image_path) : Promise.resolve(null),
-        afterScan?.image_path ? getScanImageUrl(afterScan.image_path) : Promise.resolve(null),
-      ]);
-      if (!cancelled) setBaUrls({ before: b, after: a });
-    }
-    if (beforeScan || afterScan) void fetchUrls();
-    return () => {
-      cancelled = true;
-    };
-  }, [beforeScan?.id, afterScan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Score delta
   const scoreDelta = useMemo(() => {
     if (completedScans.length < 2) return null;
     const prev = completedScans[completedScans.length - 2].skin_score;
@@ -196,143 +81,93 @@ export default function ProgressScreen() {
     return curr - prev;
   }, [completedScans]);
 
-  // Check-in handler
-  const handleCheckIn = () => {
-    if (!routines.length) {
-      router.push('/routine');
-      return;
-    }
-    haptics.press();
-    // Check in for all routines
-    routines.forEach((r) => checkIn.mutate(r.id));
-    justCheckedIn.current = true;
-  };
+  const trendingDown = useMemo(() => {
+    if (completedScans.length < 2) return [];
+    const prev = completedScans[completedScans.length - 2];
+    const curr = completedScans[completedScans.length - 1];
+    return curr.concerns.flatMap((c) => {
+      const prevC = prev.concerns.find((p) => p.concern_slug === c.concern_slug);
+      if (!prevC || c.severity >= prevC.severity) return [];
+      return [{ name: c.display_name, from: prevC.severity, to: c.severity }];
+    });
+  }, [completedScans]);
 
-  // Celebrate once data reflects check-in
-  useEffect(() => {
-    if (justCheckedIn.current && alreadyCheckedIn) {
-      haptics.success();
-      celebrate();
-      justCheckedIn.current = false;
-    }
-  }, [alreadyCheckedIn, celebrate]);
-
-  // ── loading ──
   if (scansLoading) {
     return (
       <Screen bottomInset={spacing(20)}>
-        <Animated.View entering={FadeIn.duration(300)}>
-          <AppText variant="overline">Your journey</AppText>
-          <AppText variant="display" style={styles.headerTitle}>
-            Progress
-          </AppText>
-        </Animated.View>
+        <AppText variant="overline">Your journey</AppText>
+        <AppText variant="display" style={styles.title}>
+          Progress
+        </AppText>
         <View style={styles.gap5}>
-          <Skeleton width="100%" height={140} />
-          <View style={styles.gap3}>
-            <Skeleton width="60%" height={20} />
-            <Skeleton width="100%" height={120} />
+          <Skeleton width="100%" height={180} />
+          <View style={styles.statsRow}>
+            <Skeleton width="48%" height={100} />
+            <Skeleton width="48%" height={100} />
           </View>
-          <Skeleton width="100%" height={80} />
-          <Skeleton width="100%" height={80} />
         </View>
       </Screen>
     );
   }
 
-  // ── zero scans ──
-  if (!scansLoading && completedScans.length === 0) {
+  if (completedScans.length === 0) {
     return (
       <Screen bottomInset={spacing(20)}>
         <Animated.View entering={FadeIn.duration(300)}>
           <AppText variant="overline">Your journey</AppText>
-          <AppText variant="display" style={styles.headerTitle}>
+          <AppText variant="display" style={styles.title}>
             Progress
           </AppText>
         </Animated.View>
-        <EmptyState
-          icon="analytics-outline"
-          title="No history yet"
-          body="Complete your first scan to start tracking your skin's journey."
-          actionLabel="Run your first scan"
-          onAction={() => router.push('/scan')}
-        />
+        <View style={styles.emptyBlock}>
+          <GlowiAvatar state="idle" size={72} />
+          <AppText variant="title" style={styles.emptyTitle}>
+            Complete your first scan to start tracking
+          </AppText>
+          <AppText variant="body" style={styles.emptyBody}>
+            Every scan adds to your timeline — streaks, trends, and a before &amp; after view of
+            your skin.
+          </AppText>
+          <GlowButton
+            label="Run your first scan"
+            onPress={() => router.push('/scan')}
+            style={styles.emptyBtn}
+          />
+        </View>
       </Screen>
     );
   }
 
-  // ── main render ──
   return (
     <Screen bottomInset={spacing(20)}>
-      {/* 1. Header */}
+      <Animated.View entering={FadeIn.duration(300)}>
+        <AppText variant="overline">Your journey</AppText>
+        <AppText variant="display" style={styles.title}>
+          Progress
+        </AppText>
+      </Animated.View>
+
       <Stagger delay={0}>
-        <Animated.View entering={FadeIn.duration(300)}>
-          <AppText variant="overline">Your journey</AppText>
-          <AppText variant="display" style={styles.headerTitle}>
-            Progress
-          </AppText>
-          <AppText variant="subheading" style={styles.headerSub}>
-            Track your streak, score, and skin evolution.
-          </AppText>
-        </Animated.View>
-
-        {/* 2. Streak card */}
-        <GlassCard glow style={styles.section}>
-          <View style={styles.streakTopRow}>
-            <Animated.View style={[styles.streakCount, celebAnim]}>
-              <Ionicons name="flame" size={28} color={palette.warning} />
-              <AppText variant="display" style={styles.streakNumber}>
-                {streak}
-              </AppText>
-            </Animated.View>
-            <View style={styles.streakMeta}>
-              <AppText variant="heading">day streak</AppText>
-              <AppText variant="caption" color={palette.textSecondary}>
-                Keep it going — consistency is everything.
-              </AppText>
-            </View>
-          </View>
-
-          <ActivityGrid days={gridDays} checkinSet={checkinSet} cellSize={cellSize} />
-
-          <View style={styles.checkInWrap}>
-            {alreadyCheckedIn ? (
-              <View style={styles.checkedInRow}>
-                <Ionicons name="checkmark-circle" size={20} color={palette.success} />
-                <AppText variant="subheading" color={palette.success}>
-                  Checked in today
-                </AppText>
-              </View>
-            ) : (
-              <GlowButton
-                label="Check in for today"
-                onPress={handleCheckIn}
-                loading={checkIn.isPending}
-                icon={<Ionicons name="sunny-outline" size={16} color={palette.textOnAccent} />}
-              />
-            )}
-          </View>
-        </GlassCard>
-
-        {/* 3. Score trend */}
+        {/* Score chart */}
         {completedScans.length >= 2 && (
           <GlassCard style={styles.section}>
-            <View style={styles.trendHeader}>
-              <SectionHeader overline="Over time" title="Score trend" />
+            <View style={styles.chartHeader}>
+              <AppText variant="caption" color={palette.textSecondary}>
+                Skin score · {Math.min(completedScans.length, 8)} weeks
+              </AppText>
               {scoreDelta != null && (
-                <View style={styles.deltaWrap}>
+                <View style={styles.deltaRow}>
                   <Ionicons
-                    name={scoreDelta >= 0 ? 'trending-up-outline' : 'trending-down-outline'}
-                    size={18}
+                    name={scoreDelta >= 0 ? 'trending-up' : 'trending-down'}
+                    size={14}
                     color={scoreDelta >= 0 ? palette.success : palette.warning}
                   />
                   <AppText
                     variant="heading"
                     color={scoreDelta >= 0 ? palette.success : palette.warning}
-                    style={styles.deltaText}
                   >
                     {scoreDelta >= 0 ? '+' : ''}
-                    {scoreDelta} since last scan
+                    {scoreDelta}
                   </AppText>
                 </View>
               )}
@@ -341,23 +176,51 @@ export default function ProgressScreen() {
           </GlassCard>
         )}
 
-        {/* 4. Before / after */}
-        {completedScans.length >= 2 && beforeScan && afterScan && (
-          <GlassCard style={styles.section}>
-            <SectionHeader overline="Transformation" title="Before & after" />
-            <AppText variant="caption" color={palette.textTertiary} style={styles.sinceCaption}>
-              Since {formatShortDate(beforeScan.created_at)}
+        {/* Stats row */}
+        <View style={[styles.section, styles.statsRow]}>
+          <GlassCard style={styles.statBox}>
+            <AppText variant="display" style={styles.statNum}>
+              {streak}
             </AppText>
-            <BeforeAfterSlider
-              beforeScan={beforeScan}
-              afterScan={afterScan}
-              beforeUrl={baUrls.before}
-              afterUrl={baUrls.after}
-            />
+            <AppText variant="caption" color={palette.textSecondary}>
+              day streak 🔥
+            </AppText>
+          </GlassCard>
+          <GlassCard style={styles.statBox}>
+            <AppText variant="display" style={styles.statNum}>
+              {completedScans.length}
+            </AppText>
+            <AppText variant="caption" color={palette.textSecondary}>
+              scans logged
+            </AppText>
+          </GlassCard>
+        </View>
+
+        {/* Concerns trending down */}
+        {trendingDown.length > 0 && (
+          <GlassCard style={styles.section}>
+            <AppText variant="subheading" style={styles.trendTitle}>
+              Concerns trending down
+            </AppText>
+            {trendingDown.map((c) => (
+              <View key={c.name} style={styles.trendRow}>
+                <AppText variant="caption" style={styles.trendName} numberOfLines={1}>
+                  {c.name}
+                </AppText>
+                <View style={styles.trendBarTrack}>
+                  <View
+                    style={[styles.trendBarFill, { width: `${c.to}%` as `${number}%` }]}
+                  />
+                </View>
+                <AppText variant="caption" color={palette.accentBright} style={styles.trendDelta}>
+                  {c.from} → {c.to}
+                </AppText>
+              </View>
+            ))}
           </GlassCard>
         )}
 
-        {/* 5. Scan history timeline */}
+        {/* Scan history */}
         <View style={styles.section}>
           <SectionHeader overline="History" title="All scans" />
           <Stagger delay={80} interval={60}>
@@ -378,68 +241,45 @@ export default function ProgressScreen() {
   );
 }
 
-// ─── styles ──────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  headerTitle: { marginTop: spacing(1) },
-  headerSub: { marginTop: spacing(2) },
-  section: { marginTop: spacing(6) },
-  gap5: { gap: spacing(5), marginTop: spacing(6) },
-  gap3: { gap: spacing(3) },
+  title: { marginTop: spacing(1) },
+  section: { marginTop: spacing(5) },
+  gap5: { gap: spacing(5), marginTop: spacing(5) },
+  emptyBlock: { alignItems: 'center', gap: spacing(2), paddingVertical: spacing(10) },
+  emptyTitle: { textAlign: 'center', marginTop: spacing(1) },
+  emptyBody: { textAlign: 'center', maxWidth: 280 },
+  emptyBtn: { marginTop: spacing(2) },
 
-  // Streak card
-  streakTopRow: {
+  chartHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing(4),
-    marginBottom: spacing(4),
-  },
-  streakCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing(2),
-  },
-  streakNumber: { fontSize: 42, lineHeight: 48, color: palette.warning },
-  streakMeta: { flex: 1, gap: spacing(1) },
-
-  // Activity grid (30 cells)
-  gridWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing(1),
-    marginBottom: spacing(4),
-  },
-  gridCellActive: { backgroundColor: palette.accent },
-  gridCellDim: {
-    backgroundColor: palette.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.border,
-  },
-
-  // Check-in
-  checkInWrap: { marginTop: spacing(1) },
-  checkedInRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing(2),
-    justifyContent: 'center',
-    paddingVertical: spacing(3),
-  },
-
-  // Trend
-  trendHeader: { marginBottom: 0 },
-  deltaWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing(1.5),
+    justifyContent: 'space-between',
     marginBottom: spacing(3),
   },
-  deltaText: { fontSize: 15 },
+  deltaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1) },
 
-  // Before / after
-  sinceCaption: { marginTop: -spacing(2), marginBottom: spacing(3) },
+  statsRow: { flexDirection: 'row', gap: spacing(3) },
+  statBox: { flex: 1, gap: spacing(1) },
+  statNum: { fontSize: 36, lineHeight: 42 },
 
-  // Scan rows
+  trendTitle: { marginBottom: spacing(4) },
+  trendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(2),
+    marginBottom: spacing(3),
+  },
+  trendName: { width: 96 },
+  trendBarTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: palette.surfaceStrong,
+    overflow: 'hidden',
+  },
+  trendBarFill: { height: 4, borderRadius: 2, backgroundColor: palette.accentBright },
+  trendDelta: { width: 58, textAlign: 'right' },
+
   scanRowWrap: { marginBottom: spacing(3) },
   scanRow: {
     flexDirection: 'row',
