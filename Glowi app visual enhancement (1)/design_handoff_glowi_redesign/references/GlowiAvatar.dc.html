@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @keyframes ga-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.035); } }
+  @keyframes ga-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5%); } }
+  @keyframes ga-scanline { 0% { top: -12%; opacity: 0; } 16% { opacity: 1; } 84% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+  @keyframes ga-twinkle { 0%,100% { opacity: 0; transform: scale(.3) rotate(0deg); } 50% { opacity: 1; transform: scale(1) rotate(40deg); } }
+  @keyframes ga-think { 0%,60%,100% { opacity: .2; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-32%); } }
+</style>
+</helmet>
+<div style="position: relative; width: 100%; aspect-ratio: 1 / 1; animation: ga-float 4.5s ease-in-out infinite;">
+  <!-- glow halo -->
+  <div style="position: absolute; inset: -14%; border-radius: 50%; background: radial-gradient(circle, rgba(94,234,212,.5), transparent 68%); filter: blur(6px); opacity: .85;"></div>
+  <!-- sphere body -->
+  <div style="position: absolute; inset: 0; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 38% 30%, rgba(255,255,255,.5) 0%, rgba(255,255,255,0) 26%), radial-gradient(circle at 64% 88%, rgba(180,255,244,.42) 0%, rgba(180,255,244,0) 34%), radial-gradient(circle at 40% 34%, #8FF4E5 0%, #4FE0CC 26%, #2DD4BF 50%, #119C8C 74%, #0B6B62 100%); box-shadow: inset -7% -11% 22% rgba(6,46,41,.55), inset 9% 12% 20px rgba(255,255,255,.32), 0 10px 26px -8px rgba(8,60,52,.55); animation: ga-breathe 4.5s ease-in-out infinite;">
+    <!-- soft glossy highlight -->
+    <div style="position: absolute; top: 10%; left: 17%; width: 47%; height: 35%; border-radius: 50%; background: radial-gradient(circle at 42% 36%, rgba(255,255,255,.78), rgba(255,255,255,0) 66%); filter: blur(1px);"></div>
+    <!-- crisp specular dot -->
+    <div style="position: absolute; top: 15%; left: 25%; width: 13%; height: 11%; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 70%);"></div>
+    <!-- bottom rim light -->
+    <div style="position: absolute; bottom: 6%; left: 22%; width: 56%; height: 22%; border-radius: 50%; background: radial-gradient(circle, rgba(200,255,247,.4), rgba(200,255,247,0) 70%); filter: blur(2px);"></div>
+    <!-- scan line -->
+    <sc-if value="{{ isScanning }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; left: 0; right: 0; height: 14%; background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.55)); border-bottom: 2px solid #EAFFFB; box-shadow: 0 0 12px rgba(255,255,255,.7); animation: ga-scanline 2.2s cubic-bezier(.45,0,.55,1) infinite;"></div>
+    </sc-if>
+  </div>
+
+  <!-- face -->
+  <svg viewBox="0 0 100 100" style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;">
+    <!-- cheeks -->
+    <ellipse cx="26" cy="57" rx="5" ry="3.6" fill="rgba(255,122,122,0.28)"></ellipse>
+    <ellipse cx="74" cy="57" rx="5" ry="3.6" fill="rgba(255,122,122,0.28)"></ellipse>
+
+    <g fill="#07332C" stroke="none">
+      <!-- IDLE -->
+      <sc-if value="{{ isIdle }}" hint-placeholder-val="{{ true }}">
+        <ellipse cx="37" cy="45" rx="5.4" ry="7"></ellipse>
+        <ellipse cx="63" cy="45" rx="5.4" ry="7"></ellipse>
+        <circle cx="39.2" cy="42" r="1.9" fill="#EAFFFB"></circle>
+        <circle cx="65.2" cy="42" r="1.9" fill="#EAFFFB"></circle>
+        <path d="M40 60 Q50 70 60 60" fill="none" stroke="#07332C" stroke-width="4" stroke-linecap="round"></path>
+      </sc-if>
+      <!-- THINKING -->
+      <sc-if value="{{ isThinking }}" hint-placeholder-val="{{ false }}">
+        <ellipse cx="40" cy="43" rx="5" ry="6.4"></ellipse>
+        <ellipse cx="66" cy="43" rx="5" ry="6.4"></ellipse>
+        <circle cx="42" cy="40" r="1.8" fill="#EAFFFB"></circle>
+        <circle cx="68" cy="40" r="1.8" fill="#EAFFFB"></circle>
+        <path d="M44 62 Q50 59 55 62" fill="none" stroke="#07332C" stroke-width="3.6" stroke-linecap="round"></path>
+      </sc-if>
+      <!-- SCANNING -->
+      <sc-if value="{{ isScanning }}" hint-placeholder-val="{{ false }}">
+        <rect x="31" y="43" width="12" height="3.8" rx="1.9"></rect>
+        <rect x="57" y="43" width="12" height="3.8" rx="1.9"></rect>
+        <path d="M45 61 H55" fill="none" stroke="#07332C" stroke-width="3.6" stroke-linecap="round"></path>
+      </sc-if>
+      <!-- CELEBRATING -->
+      <sc-if value="{{ isCelebrating }}" hint-placeholder-val="{{ false }}">
+        <path d="M31 46 Q37 39 43 46" fill="none" stroke="#07332C" stroke-width="4" stroke-linecap="round"></path>
+        <path d="M57 46 Q63 39 69 46" fill="none" stroke="#07332C" stroke-width="4" stroke-linecap="round"></path>
+        <path d="M36 55 A15 13 0 0 0 64 55 Z" fill="#07332C"></path>
+        <path d="M44 64 A7 6 0 0 0 56 64 Z" fill="#FF8FA3"></path>
+      </sc-if>
+    </g>
+  </svg>
+
+  <!-- thinking dots -->
+  <sc-if value="{{ isThinking }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; top: -8%; right: -6%; display: flex; gap: 8%; align-items: flex-end;">
+      <div style="width: 9%; aspect-ratio: 1; min-width: 4px; border-radius: 50%; background: #5EEAD4; animation: ga-think 1.3s ease-in-out infinite;"></div>
+      <div style="width: 11%; aspect-ratio: 1; min-width: 5px; border-radius: 50%; background: #5EEAD4; animation: ga-think 1.3s ease-in-out .22s infinite;"></div>
+      <div style="width: 13%; aspect-ratio: 1; min-width: 6px; border-radius: 50%; background: #5EEAD4; animation: ga-think 1.3s ease-in-out .44s infinite;"></div>
+    </div>
+  </sc-if>
+
+  <!-- celebration sparkles -->
+  <sc-if value="{{ isCelebrating }}" hint-placeholder-val="{{ false }}">
+    <svg viewBox="0 0 12 12" style="position: absolute; top: -10%; left: 2%; width: 16%; animation: ga-twinkle 1.8s ease-in-out infinite;"><path d="M6 0 L7.4 4.6 12 6 7.4 7.4 6 12 4.6 7.4 0 6 4.6 4.6Z" fill="#FBE38A"></path></svg>
+    <svg viewBox="0 0 12 12" style="position: absolute; top: 6%; right: -8%; width: 13%; animation: ga-twinkle 1.8s ease-in-out .5s infinite;"><path d="M6 0 L7.4 4.6 12 6 7.4 7.4 6 12 4.6 7.4 0 6 4.6 4.6Z" fill="#5EEAD4"></path></svg>
+    <svg viewBox="0 0 12 12" style="position: absolute; bottom: -4%; right: 4%; width: 15%; animation: ga-twinkle 1.8s ease-in-out .9s infinite;"><path d="M6 0 L7.4 4.6 12 6 7.4 7.4 6 12 4.6 7.4 0 6 4.6 4.6Z" fill="#FBE38A"></path></svg>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 160, &quot;height&quot;: 160}, &quot;state&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;idle&quot;, &quot;thinking&quot;, &quot;scanning&quot;, &quot;celebrating&quot;], &quot;default&quot;: &quot;idle&quot;, &quot;tsType&quot;: &quot;'idle' | 'thinking' | 'scanning' | 'celebrating'&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const state = this.props.state ?? 'idle';
+    return {
+      isIdle: state === 'idle',
+      isThinking: state === 'thinking',
+      isScanning: state === 'scanning',
+      isCelebrating: state === 'celebrating',
+    };
+  }
+}
+</script>
+</body>
+</html>

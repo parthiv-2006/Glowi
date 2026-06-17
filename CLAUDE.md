@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+@AGENTS.md
+
 Guidance for Claude Code (and any AI agent) working in the **Glowi** repository.
 Read this before making changes. These instructions are not optional.
 
@@ -140,3 +142,20 @@ docs/                   ARCHITECTURE · MEMORY_SYSTEM · adr/
 
 When in doubt about conventions, look at how the nearest existing file solves the same
 problem and follow it.
+
+---
+
+## Glowi visual system — enforced every session
+
+The design system lives in
+`Glowi app visual enhancement (1)/design_handoff_glowi_redesign/`. Before any UI work:
+
+1. Read `DESIGN_PRINCIPLES.md`, `COMPONENT_FIDELITY.md`, and `BUILD_ORDER.md`.
+2. **Transcribe exact values** from `COMPONENT_FIDELITY.md` — never approximate fills,
+   borders, radii, gradient stops, shadow offsets, or motion timings.
+3. **Never** render any of the five §0 effects (BlurView glass, inset-highlight line,
+   behind-view glow, MaskedView gradient text, aurora) as a flat `rgba()` fill.
+4. Every surface declares a GlassCard tier; **one Glow element per screen, max**.
+5. For any screen without a mockup, follow the "Designing a screen that was never mocked
+   up" recipe and run **"check the tells"** before finishing it.
+6. Build primitives first, one screen per turn, and stop for review after each.
