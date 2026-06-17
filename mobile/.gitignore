@@ -45,3 +45,4 @@ example
 # Verification screenshots (captured by browser/playwright during dev)
 .shots/
 .playwright-mcp/
+*.png
