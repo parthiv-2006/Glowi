@@ -1,9 +1,18 @@
+import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, View, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 
-import { fonts, palette, radii, spacing } from '@/theme';
+import { fonts, motion, palette, radii, spacing } from '@/theme';
 import { AppText } from './AppText';
 import { PressableScale } from './PressableScale';
+import { glowShadow } from './effects';
 
 interface GlowButtonProps {
   label: string;
@@ -11,17 +20,20 @@ interface GlowButtonProps {
   variant?: 'primary' | 'ghost' | 'danger';
   loading?: boolean;
   disabled?: boolean;
+  /** Slow diagonal sheen sweep (primary only) — e.g. the onboarding CTA (§4). */
+  sheen?: boolean;
   style?: ViewStyle;
   icon?: React.ReactNode;
 }
 
-/** Primary CTA: jade gradient, glow bloom, spring press. */
+/** Primary CTA: jade gradient, negative-spread glow, spring press (§4). */
 export function GlowButton({
   label,
   onPress,
   variant = 'primary',
   loading,
   disabled,
+  sheen,
   style,
   icon,
 }: GlowButtonProps) {
@@ -58,7 +70,7 @@ export function GlowButton({
       disabled={inactive}
       style={[
         styles.base,
-        variant === 'primary' && styles.glow,
+        variant === 'primary' && glowShadow({ y: 12, blur: 34, spread: -8, color: palette.glow }),
         inactive && styles.disabled,
         style,
       ]}
@@ -73,6 +85,7 @@ export function GlowButton({
           style={styles.fill}
         >
           {content}
+          {sheen && !inactive ? <Sheen /> : null}
         </LinearGradient>
       ) : (
         <View style={[styles.fill, styles.ghostFill, variant === 'danger' && styles.dangerFill]}>
@@ -83,9 +96,48 @@ export function GlowButton({
   );
 }
 
+/** A 60px band of light sweeping across the button face, looping (§4 g-sheen). */
+function Sheen() {
+  const [width, setWidth] = useState(0);
+  const x = useSharedValue(-120);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: (x.value / 100) * (width || 1) }],
+  }));
+
+  if (width === 0) {
+    // Measure once, then kick off the loop (-120% → 220% over 4s, §8).
+    x.value = withDelay(
+      400,
+      withRepeat(withTiming(220, { duration: 4000, easing: motion.easing }), -1, false),
+    );
+  }
+
+  return (
+    <Animated.View
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      style={[StyleSheet.absoluteFill, styles.sheenClip]}
+    >
+      <Animated.View style={[styles.sheenBand, animatedStyle]}>
+        <LinearGradient
+          colors={['transparent', 'rgba(255,255,255,0.4)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
-  base: { borderRadius: radii.full, overflow: 'hidden' },
-  fill: { paddingVertical: spacing(4), paddingHorizontal: spacing(6), alignItems: 'center' },
+  base: { borderRadius: radii.full, overflow: 'hidden', minHeight: 56 },
+  fill: {
+    flex: 1,
+    paddingHorizontal: spacing(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   ghostFill: {
     backgroundColor: palette.surface,
     borderWidth: StyleSheet.hairlineWidth,
@@ -95,12 +147,7 @@ const styles = StyleSheet.create({
   dangerFill: { borderColor: 'rgba(251,113,133,0.35)' },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
   label: { fontFamily: fonts.bodySemiBold, fontSize: 16 },
-  glow: {
-    shadowColor: palette.accent,
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 10,
-  },
+  sheenClip: { overflow: 'hidden', pointerEvents: 'none' },
+  sheenBand: { position: 'absolute', top: 0, bottom: 0, width: 60 },
   disabled: { opacity: 0.45 },
 });

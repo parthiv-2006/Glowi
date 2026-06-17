@@ -12,9 +12,9 @@ const variants: Record<Variant, TextStyle> = {
     fontFamily: fonts.bodyMedium,
     fontSize: 15,
     lineHeight: 21,
-    color: palette.textSecondary,
+    color: palette.textBody,
   },
-  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: palette.text },
+  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: palette.textBody },
   caption: { fontFamily: fonts.body, fontSize: 12.5, lineHeight: 17, color: palette.textSecondary },
   overline: {
     fontFamily: fonts.bodySemiBold,

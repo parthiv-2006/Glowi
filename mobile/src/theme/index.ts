@@ -19,6 +19,7 @@ export const palette = {
 
   // Ink
   text: '#F2F5F4',
+  textBody: '#C4CBC7', // primary reading copy — body paragraphs, card descriptions, chat text
   textSecondary: '#9BA6A2',
   textTertiary: '#646E6A',
   textOnAccent: '#04211C',
@@ -29,6 +30,11 @@ export const palette = {
   accentDeep: '#0F766E',
   accentDim: 'rgba(45,212,191,0.14)',
   glow: 'rgba(94,234,212,0.45)',
+
+  // Surface tiers — every card declares one (see GlassCard `tier`)
+  surfaceSunken: '#0B0F0E', // recessed wells: inputs, search bars, empty-state interiors
+  surfaceRaised: 'rgba(255,255,255,0.055)', // default card fill
+  surfaceGlow: 'rgba(94,234,212,0.13)', // hero/active cards — one per screen, max
 
   // Semantic
   danger: '#FB7185',

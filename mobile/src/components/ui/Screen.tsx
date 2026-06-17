@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react';
+import { forwardRef, type PropsWithChildren } from 'react';
 import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,13 +15,10 @@ interface ScreenProps extends PropsWithChildren {
   bottomInset?: number;
 }
 
-export function Screen({
-  children,
-  scroll = true,
-  padded = true,
-  style,
-  bottomInset = 0,
-}: ScreenProps) {
+export const Screen = forwardRef<ScrollView, ScreenProps>(function Screen(
+  { children, scroll = true, padded = true, style, bottomInset = 0 },
+  ref,
+) {
   const insets = useSafeAreaInsets();
   const { hPadding } = useResponsive();
   const base: ViewStyle = {
@@ -35,6 +32,7 @@ export function Screen({
   }
   return (
     <ScrollView
+      ref={ref}
       style={styles.root}
       contentContainerStyle={[base, style]}
       showsVerticalScrollIndicator={false}
@@ -43,7 +41,7 @@ export function Screen({
       {children}
     </ScrollView>
   );
-}
+});
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.bg },
