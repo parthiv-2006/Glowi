@@ -34,7 +34,7 @@ export function AuroraBackground({ intensity = 1 }: { intensity?: number }) {
   const c3y = useDerivedValue(() => height * 0.7 - Math.sin(t.value * Math.PI * 2) * 40);
 
   return (
-    <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
+    <Canvas style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
       <Fill color={palette.bg} />
       <Group opacity={0.55 * intensity}>
         <Circle cx={c1x} cy={c1y} r={width * 0.5} color={palette.accentDeep}>

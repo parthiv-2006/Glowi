@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ProductCard } from '@/components/ProductCard';
+import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { AppText } from '@/components/ui';
 import { useProductsBySlug } from '@/lib/hooks';
 import type { ChatMessage } from '@/lib/types';
@@ -72,10 +73,13 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
       entering={FadeInDown.duration(300).springify().damping(18)}
       style={styles.assistantRow}
     >
-      <View style={styles.assistantBubble}>
-        {paragraphs.map((p, i) => (
-          <RichText key={i} text={p.trim()} />
-        ))}
+      <View style={styles.assistantInner}>
+        <GlowiAvatar state="idle" size={24} />
+        <View style={styles.assistantBubble}>
+          {paragraphs.map((p, i) => (
+            <RichText key={i} text={p.trim()} />
+          ))}
+        </View>
       </View>
       {message.product_refs.length > 0 ? (
         <ProductRecommendations slugs={message.product_refs} />
@@ -95,7 +99,9 @@ const styles = StyleSheet.create({
   },
   userText: { lineHeight: 21 },
   assistantRow: { alignItems: 'flex-start', marginVertical: spacing(1.5), maxWidth: '92%' },
+  assistantInner: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing(2) },
   assistantBubble: {
+    flexShrink: 1,
     backgroundColor: palette.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: palette.border,

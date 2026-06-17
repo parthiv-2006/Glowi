@@ -283,11 +283,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    boxShadow: '0px 2px 8px rgba(0,0,0,0.25)',
   },
   cornerLabel: {
     position: 'absolute',

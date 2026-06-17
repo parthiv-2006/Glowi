@@ -82,11 +82,17 @@ export function TabBar({ state, navigation }: TabBarProps) {
 
   return (
     <View
-      style={[styles.wrap, { paddingBottom: insets.bottom || spacing(3) }]}
-      pointerEvents="box-none"
+      style={[
+        styles.wrap,
+        { paddingBottom: insets.bottom || spacing(3), pointerEvents: 'box-none' },
+      ]}
     >
       <View style={styles.barShadow}>
-        <BlurView intensity={Platform.OS === 'ios' ? 40 : 0} tint="dark" style={[styles.bar, { width: barWidth }]}>
+        <BlurView
+          intensity={Platform.OS === 'ios' ? 40 : 0}
+          tint="dark"
+          style={[styles.bar, { width: barWidth }]}
+        >
           {state.routes.map((route, index) => {
             const focused = state.index === index;
             return (
@@ -114,11 +120,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
   barShadow: {
-    shadowColor: '#000',
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 16,
+    boxShadow: '0px 16px 40px -12px rgba(0,0,0,0.7)',
     borderRadius: radii.full,
   },
   bar: {

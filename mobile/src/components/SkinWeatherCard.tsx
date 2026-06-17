@@ -40,9 +40,12 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: stri
 export function SkinWeatherCard({
   forecast,
   onPress,
+  compact = false,
 }: {
   forecast: SkinForecast;
   onPress: () => void;
+  /** One-line glow strip (populated Home) vs the full 3-stat card (empty Home). */
+  compact?: boolean;
 }) {
   const env = forecast.environment;
   const uv = uvLevel(env.uv_index);
@@ -51,9 +54,29 @@ export function SkinWeatherCard({
   const lead = forecast.guidance[0];
   const action = lead ? FORECAST_ACTION[lead.kind] : null;
 
+  // Compact strip: icon + "SKIN WEATHER · {condition}" + one-line guidance + chevron.
+  if (compact) {
+    return (
+      <PressableScale onPress={onPress}>
+        <GlassCard tier="glow" style={styles.strip}>
+          <Ionicons name={conditionIcon(env.condition)} size={22} color={palette.accentBright} />
+          <View style={styles.stripBody}>
+            <AppText variant="overline" color={palette.accentBright} style={styles.stripOverline}>
+              {`Skin Weather · ${env.condition}`}
+            </AppText>
+            <AppText variant="caption" color={palette.textBody} numberOfLines={1}>
+              {lead?.text ?? forecast.headline}
+            </AppText>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={palette.accentBright} />
+        </GlassCard>
+      </PressableScale>
+    );
+  }
+
   return (
     <PressableScale onPress={onPress}>
-      <GlassCard emphasized glow style={styles.card}>
+      <GlassCard tier="glow" style={styles.card}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Ionicons name={conditionIcon(env.condition)} size={18} color={palette.accentBright} />
@@ -105,6 +128,14 @@ export function SkinWeatherCard({
 
 const styles = StyleSheet.create({
   card: { gap: spacing(3) },
+  strip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3.5),
+    paddingVertical: spacing(4),
+  },
+  stripBody: { flex: 1, gap: spacing(0.5) },
+  stripOverline: { letterSpacing: 1.5 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
   headline: { fontSize: 17, lineHeight: 23 },
