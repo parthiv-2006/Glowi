@@ -13,7 +13,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { ScanTheater } from '@/components/scan/ScanTheater';
+import { GlowiAvatar } from '@/components/GlowiAvatar';
+import { ScanTheater, type ScanZone } from '@/components/scan/ScanTheater';
 import { AppText, GlowButton } from '@/components/ui';
 import { getAIProvider } from '@/lib/ai';
 import { attachScanImage, createScan } from '@/lib/api';
@@ -26,11 +27,19 @@ const STAGES = [
   'Calibrating sensors',
   'Mapping surface zones',
   'Analyzing texture & tone',
-  'Cross-referencing dermatological patterns',
+  'Cross-referencing patterns',
   'Compiling your protocol',
 ];
 const STAGE_MS = 1300;
 const MIN_THEATER_MS = STAGES.length * STAGE_MS;
+
+// Illustrative detected-zone callouts — purely a sensory cue during the
+// cinematic sweep; the real findings render on the results screen.
+const ZONES: ScanZone[] = [
+  { label: 'Congestion · 52', severity: 52, x: 0.66, y: 0.3, delay: 0 },
+  { label: 'Breakouts · 38', severity: 38, x: 0.26, y: 0.52, delay: 1100 },
+  { label: 'Hydration · good', severity: 12, x: 0.62, y: 0.72, delay: 2400 },
+];
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -141,7 +150,12 @@ export default function Analyzing() {
           <View style={styles.scrim} />
           {frame.width > 0 ? (
             <View style={StyleSheet.absoluteFill}>
-              <ScanTheater width={frame.width} height={frame.height} active={!done && !error} />
+              <ScanTheater
+                width={frame.width}
+                height={frame.height}
+                active={!done && !error}
+                zones={done || error ? [] : ZONES}
+              />
             </View>
           ) : null}
         </View>
@@ -169,7 +183,7 @@ export default function Analyzing() {
           </View>
           {done ? (
             <Animated.View entering={FadeIn} style={styles.statusRow}>
-              <Ionicons name="checkmark-circle" size={20} color={palette.accentBright} />
+              <GlowiAvatar state="celebrating" size={28} />
               <AppText variant="heading" color={palette.accentBright}>
                 Analysis complete
               </AppText>
@@ -181,13 +195,13 @@ export default function Analyzing() {
               exiting={FadeOut.duration(120)}
             >
               <Animated.View style={[styles.statusRow, pulseStyle]}>
-                <View style={styles.spinnerDot} />
+                <GlowiAvatar state="scanning" size={28} />
                 <AppText variant="heading">{STAGES[stage]}…</AppText>
               </Animated.View>
             </Animated.View>
           )}
           <AppText variant="caption" style={styles.reassure}>
-            Your photo is private and analyzed only for your results.
+            {ZONES.length} zones mapped · analyzed only for your results.
           </AppText>
         </View>
       )}
@@ -208,9 +222,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: palette.accentBright,
-    shadowColor: palette.accentBright,
-    shadowOpacity: 0.9,
-    shadowRadius: 8,
+    boxShadow: '0px 0px 8px rgba(94,234,212,0.9)',
   },
   stageWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   frame: {

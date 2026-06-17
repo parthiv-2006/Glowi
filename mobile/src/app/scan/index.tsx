@@ -16,7 +16,7 @@ export default function ScanCapture() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [uri, setUri] = useState<string | null>(null);
-  const [area, setArea] = useState<string | null>(null);
+  const [area, setArea] = useState<string | null>('Whole face');
 
   async function pick(source: 'camera' | 'library') {
     haptics.tap();
@@ -113,9 +113,9 @@ export default function ScanCapture() {
         </Animated.View>
 
         {/* Guidance */}
-        <GlassCard style={styles.tips}>
+        <GlassCard tier="sunken" style={styles.tips}>
           <View style={styles.tipRow}>
-            <Ionicons name="bulb-outline" size={16} color={palette.accentBright} />
+            <Ionicons name="location-outline" size={16} color={palette.accentBright} />
             <AppText variant="caption" color={palette.textSecondary} style={styles.tipText}>
               Best results: soft natural light, bare clean skin, camera steady and close.
             </AppText>

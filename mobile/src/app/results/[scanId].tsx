@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native';
+import { useMemo, useRef } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -16,7 +17,7 @@ import {
   Skeleton,
   Stagger,
 } from '@/components/ui';
-import { useScan } from '@/lib/hooks';
+import { useScan, useScans } from '@/lib/hooks';
 import { DISCLAIMER } from '@/lib/constants';
 import { haptics } from '@/lib/haptics';
 import type { ScanConcern } from '@/lib/types';
@@ -26,6 +27,19 @@ export default function ResultsScreen() {
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
   const router = useRouter();
   const { data: scan, isLoading } = useScan(scanId);
+  const { data: scans } = useScans();
+  const scrollRef = useRef<ScrollView>(null);
+
+  const scoreDelta = useMemo(() => {
+    if (!scan || !scans) return null;
+    const sorted = scans
+      .filter((s) => s.skin_score != null)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const idx = sorted.findIndex((s) => s.id === scan.id);
+    const prev = idx >= 0 ? sorted[idx + 1] : undefined;
+    if (!prev || scan.skin_score == null || prev.skin_score == null) return null;
+    return scan.skin_score - prev.skin_score;
+  }, [scan, scans]);
 
   /* ── Loading ── */
   if (isLoading) {
@@ -60,7 +74,6 @@ export default function ResultsScreen() {
     return (
       <Screen bottomInset={spacing(8)}>
         <EmptyState
-          icon="alert-circle-outline"
           title="Analysis didn't complete"
           body={
             scan?.summary ?? 'Something went wrong while analyzing your skin. Please try again.'
@@ -77,8 +90,15 @@ export default function ResultsScreen() {
     ? `${scan.skin_type_estimate.charAt(0).toUpperCase()}${scan.skin_type_estimate.slice(1)} skin`
     : null;
 
+  const avgConfidence =
+    scan.concerns.length > 0
+      ? Math.round(
+          (scan.concerns.reduce((sum, c) => sum + c.confidence, 0) / scan.concerns.length) * 100,
+        )
+      : null;
+
   return (
-    <Screen bottomInset={spacing(8)}>
+    <Screen ref={scrollRef} bottomInset={spacing(8)}>
       {/* Back button */}
       <Animated.View entering={FadeIn.duration(260)} style={styles.backRow}>
         <PressableScale
@@ -94,17 +114,17 @@ export default function ResultsScreen() {
         <AppText variant="overline">Scan results</AppText>
       </Animated.View>
 
-      {/* Hero */}
+      {/* Hero — the reveal */}
       <Animated.View
         entering={FadeInDown.delay(80).duration(460).springify().damping(16)}
         style={styles.hero}
       >
         <ProgressRing
           value={skinScore}
-          size={140}
+          size={176}
           strokeWidth={11}
           color={scoreColor(skinScore)}
-          sublabel="skin score"
+          sublabel="SKIN SCORE"
           delay={200}
         />
         <View style={styles.heroText}>
@@ -115,6 +135,43 @@ export default function ResultsScreen() {
             {scan.summary ?? 'Your skin analysis is ready.'}
           </AppText>
         </View>
+
+        <View style={styles.statRow}>
+          <View style={styles.statCol}>
+            <AppText variant="heading">{scan.concerns.length}</AppText>
+            <AppText variant="caption">concerns</AppText>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statCol}>
+            <AppText
+              variant="heading"
+              color={
+                scoreDelta == null
+                  ? palette.text
+                  : scoreDelta >= 0
+                    ? palette.success
+                    : palette.danger
+              }
+            >
+              {scoreDelta == null ? '—' : `${scoreDelta >= 0 ? '+' : ''}${scoreDelta}`}
+            </AppText>
+            <AppText variant="caption">vs last</AppText>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statCol}>
+            <AppText variant="heading">{avgConfidence == null ? '—' : `${avgConfidence}%`}</AppText>
+            <AppText variant="caption">confidence</AppText>
+          </View>
+        </View>
+
+        <GlowButton
+          label="See what we found"
+          onPress={() => {
+            haptics.tap();
+            scrollRef.current?.scrollTo({ y: 520, animated: true });
+          }}
+          style={styles.seeMoreBtn}
+        />
       </Animated.View>
 
       {/* Concerns section */}
@@ -173,25 +230,15 @@ function ConcernCard({ concern, onPress }: { concern: ScanConcern; onPress: () =
 
   return (
     <PressableScale onPress={onPress} style={styles.concernWrap} haptic={false}>
-      <GlassCard style={styles.concernCard}>
-        {/* Top row: severity bar + title */}
-        <View style={styles.concernHeader}>
-          <View style={styles.severityBarTrack}>
-            <View
-              style={[
-                styles.severityBarFill,
-                { width: `${concern.severity}%` as unknown as number, backgroundColor: sColor },
-              ]}
-            />
-          </View>
-          <View style={styles.concernMeta}>
-            <AppText variant="heading" style={styles.concernName}>
-              {concern.display_name}
-            </AppText>
-            <View style={styles.concernBadgeRow}>
-              <Badge label={`${sLabel} · ${concern.severity}/100`} color={sColor} />
-              <Badge label={`${confidencePct}% confidence`} color={palette.textSecondary} />
-            </View>
+      <GlassCard style={[styles.concernCard, { borderLeftWidth: 3, borderLeftColor: sColor }]}>
+        {/* Title + badges */}
+        <View style={styles.concernMeta}>
+          <AppText variant="heading" style={styles.concernName}>
+            {concern.display_name}
+          </AppText>
+          <View style={styles.concernBadgeRow}>
+            <Badge label={`${sLabel} · ${concern.severity}`} color={sColor} />
+            <Badge label={`${confidencePct}% confidence`} color={palette.textSecondary} />
           </View>
         </View>
 
@@ -277,6 +324,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 28,
   },
+  statRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(4),
+    marginTop: spacing(2),
+  },
+  statCol: { alignItems: 'center', gap: spacing(1) },
+  statDivider: { width: StyleSheet.hairlineWidth, height: 28, backgroundColor: palette.border },
+  seeMoreBtn: {
+    marginTop: spacing(2),
+    alignSelf: 'stretch',
+  },
   section: {
     marginTop: spacing(8),
   },
@@ -285,19 +344,6 @@ const styles = StyleSheet.create({
   },
   concernCard: {
     gap: spacing(3),
-  },
-  concernHeader: {
-    gap: spacing(2),
-  },
-  severityBarTrack: {
-    height: 3,
-    borderRadius: radii.full,
-    backgroundColor: palette.surfaceStrong,
-    overflow: 'hidden',
-  },
-  severityBarFill: {
-    height: 3,
-    borderRadius: radii.full,
   },
   concernMeta: {
     gap: spacing(2),
