@@ -47,11 +47,18 @@ export default function Home() {
           </AppText>
         </View>
         {initial ? (
-          <View style={styles.avatar}>
+          <PressableScale
+            onPress={() => {
+              haptics.press();
+              router.push('/(tabs)/profile');
+            }}
+            style={styles.avatar}
+            haptic={false}
+          >
             <AppText variant="heading" color={palette.textOnAccent} style={styles.avatarText}>
               {initial}
             </AppText>
-          </View>
+          </PressableScale>
         ) : latest ? (
           <PressableScale
             onPress={() => {
