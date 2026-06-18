@@ -11,6 +11,7 @@
  */
 import { supabase } from '../supabase';
 import type {
+  AIDelta,
   ConflictReport,
   ProductCategory,
   ProductIdentification,
@@ -24,6 +25,7 @@ import type {
   AnalyzeScanInput,
   ChatInput,
   ChatResult,
+  CompareScanInput,
   ExtractResult,
   IdentifyProductInput,
   SkinForecastInput,
@@ -445,6 +447,81 @@ export const mockProvider: AIProvider = {
     const pick = MOCK_IDENTIFICATIONS[(count ?? 0) % MOCK_IDENTIFICATIONS.length];
 
     return { ...pick, not_product: false, reject_reason: null, confidence: 0.92 };
+  },
+
+  async compareScans({ scanIdBefore, scanIdAfter }: CompareScanInput): Promise<AIDelta> {
+    await wait(1400 + Math.random() * 800);
+
+    // Deterministic scenario selection keyed by the two scan IDs so the same
+    // pair always returns the same mock without any network call.
+    let h = 0;
+    for (const ch of scanIdBefore + scanIdAfter) h = (h * 31 + ch.charCodeAt(0)) | 0;
+    const scenario = Math.abs(h) % 3;
+
+    const MOCK_DELTAS: AIDelta[] = [
+      {
+        headline: 'Redness visibly reduced since your last scan.',
+        overall_narrative:
+          'Skin tone looks calmer and more even compared to the earlier photo. Redness around the cheeks and nose has noticeably decreased, and the surface texture appears smoother overall.',
+        changes: [
+          {
+            slug: 'redness-rosacea',
+            display_name: 'Facial redness',
+            direction: 'improved',
+            magnitude: 35,
+            observation: 'Cheek and nose redness is less pronounced; skin tone is more uniform.',
+          },
+          {
+            slug: 'dullness',
+            display_name: 'Surface dullness',
+            direction: 'improved',
+            magnitude: 20,
+            observation: 'Light reflects more evenly, suggesting improved hydration or exfoliation.',
+          },
+        ],
+        caveat: null,
+      },
+      {
+        headline: 'No significant change detected this week.',
+        overall_narrative:
+          'The two photos look very similar. Skin texture and tone are consistent between scans with no clear positive or negative trend visible.',
+        changes: [
+          {
+            slug: null,
+            display_name: 'Overall skin condition',
+            direction: 'unchanged',
+            magnitude: 5,
+            observation: 'No meaningful visual difference between the before and after photos.',
+          },
+        ],
+        caveat:
+          'Lighting conditions appear slightly different between photos, which may mask subtle changes.',
+      },
+      {
+        headline: 'Mild increase in congestion around the nose.',
+        overall_narrative:
+          'Some additional congestion is visible in the nose area compared to the earlier scan. Other zones appear stable with no major changes.',
+        changes: [
+          {
+            slug: 'blackheads-congestion',
+            display_name: 'Nose congestion',
+            direction: 'worsened',
+            magnitude: 20,
+            observation: 'A few additional open comedones visible around the nose creases.',
+          },
+          {
+            slug: 'acne',
+            display_name: 'Breakout activity',
+            direction: 'unchanged',
+            magnitude: 8,
+            observation: 'Chin area looks similar to the previous scan — no new active lesions.',
+          },
+        ],
+        caveat: null,
+      },
+    ];
+
+    return MOCK_DELTAS[scenario];
   },
 
   async extractMemories(sessionId: string): Promise<ExtractResult> {
