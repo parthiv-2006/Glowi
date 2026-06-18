@@ -16,3 +16,12 @@ export const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+/** Returns a 1-hour signed URL for a private scan image, or null on error. */
+export async function getSignedScanImageUrl(imagePath: string): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from('scan-images')
+    .createSignedUrl(imagePath, 3600);
+  if (error || !data) return null;
+  return data.signedUrl;
+}
