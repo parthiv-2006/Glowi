@@ -167,3 +167,13 @@ export function useMarkShelfItemUsed() {
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.shelf }),
   });
 }
+
+export function useScanComparison(scanIdBefore: string | null, scanIdAfter: string | null) {
+  return useQuery({
+    queryKey: qk.comparison(scanIdBefore ?? '', scanIdAfter ?? ''),
+    queryFn: () =>
+      getAIProvider().compareScans({ scanIdBefore: scanIdBefore!, scanIdAfter: scanIdAfter! }),
+    enabled: !!scanIdBefore && !!scanIdAfter,
+    staleTime: Infinity,
+  });
+}

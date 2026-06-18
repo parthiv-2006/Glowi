@@ -256,6 +256,31 @@ export interface ConflictReport {
   checkedAt: string;
 }
 
+export type ChangeDirection = 'improved' | 'worsened' | 'unchanged';
+
+export interface ConcernChange {
+  slug: string | null;
+  display_name: string;
+  direction: ChangeDirection;
+  magnitude: number;
+  observation: string;
+}
+
+export interface AIDelta {
+  headline: string;
+  overall_narrative: string;
+  changes: ConcernChange[];
+  caveat: string | null;
+}
+
+export interface ScanComparison {
+  id: string;
+  scan_id_before: string;
+  scan_id_after: string;
+  ai_delta: AIDelta;
+  created_at: string;
+}
+
 /** What the AI reads off a product label when adding to the Shelf. */
 export interface ProductIdentification {
   /** True when the image is not a skincare product. */
