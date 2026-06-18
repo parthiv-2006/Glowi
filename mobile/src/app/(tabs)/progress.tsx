@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,13 +16,16 @@ import {
   Skeleton,
   Stagger,
 } from '@/components/ui';
+import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
+import { ConcernTrendSparkline } from '@/components/ConcernTrendSparkline';
 import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { ScoreTrend } from '@/components/ScoreTrend';
-import { useRecentCheckins, useScans } from '@/lib/hooks';
+import { useRecentCheckins, useScans, useScanComparison } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
 import { computeStreak } from '@/lib/streak';
+import { getSignedScanImageUrl } from '@/lib/supabase';
 import { palette, scoreColor, spacing } from '@/theme';
-import type { Scan } from '@/lib/types';
+import type { ChangeDirection, Scan } from '@/lib/types';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -30,6 +33,35 @@ function formatDate(iso: string): string {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+/** Fetches a 1-hour signed URL for a private scan image. */
+function useSignedUrl(imagePath: string | null | undefined): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!imagePath) return;
+    let cancelled = false;
+    getSignedScanImageUrl(imagePath).then((u) => {
+      if (!cancelled) setUrl(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [imagePath]);
+
+  return url;
+}
+
+function directionColor(direction: ChangeDirection): string {
+  switch (direction) {
+    case 'improved':
+      return palette.success;
+    case 'worsened':
+      return palette.danger;
+    default:
+      return palette.textSecondary;
+  }
 }
 
 function ScanRow({ scan, onPress }: { scan: Scan; onPress: () => void }) {
@@ -91,6 +123,53 @@ export default function ProgressScreen() {
       return [{ name: c.display_name, from: prevC.severity, to: c.severity }];
     });
   }, [completedScans]);
+
+  // Oldest vs. latest — used for before/after comparison and concern trends.
+  const oldestScan = completedScans.length >= 2 ? completedScans[0] : null;
+  const latestScan =
+    completedScans.length >= 2 ? completedScans[completedScans.length - 1] : null;
+
+  // AI delta between the first and most recent scan. staleTime: Infinity in the
+  // hook because scan_comparisons caches the result server-side forever.
+  const { data: aiDelta, isLoading: deltaLoading } = useScanComparison(
+    oldestScan?.id ?? null,
+    latestScan?.id ?? null,
+  );
+
+  // Signed URLs for the private scan images (1-hour expiry, re-fetched on mount).
+  const beforeUrl = useSignedUrl(oldestScan?.image_path);
+  const afterUrl = useSignedUrl(latestScan?.image_path);
+
+  // Per-concern severity history across the most recent 8 scans.
+  const concernTrends = useMemo(() => {
+    if (completedScans.length < 2) return [];
+    const recent = completedScans.slice(-8);
+    const slugMap = new Map<string, { name: string; values: { date: string; severity: number }[] }>();
+    for (const scan of recent) {
+      for (const c of scan.concerns) {
+        if (!slugMap.has(c.concern_slug)) {
+          slugMap.set(c.concern_slug, { name: c.display_name, values: [] });
+        }
+        slugMap.get(c.concern_slug)!.values.push({ date: scan.created_at, severity: c.severity });
+      }
+    }
+    return [...slugMap.values()]
+      .sort(
+        (a, b) =>
+          Math.max(...b.values.map((v) => v.severity)) -
+          Math.max(...a.values.map((v) => v.severity)),
+      )
+      .slice(0, 5);
+  }, [completedScans]);
+
+  // Weekly nudge: shown when the most recent scan is more than 6 days old.
+  const daysSinceLastScan = useMemo(() => {
+    if (completedScans.length === 0) return Infinity;
+    const latest = completedScans[completedScans.length - 1];
+    return (Date.now() - new Date(latest.created_at).getTime()) / 86_400_000;
+  }, [completedScans]);
+  const [nudgeDismissed, setNudgeDismissed] = useState(false);
+  const showNudge = daysSinceLastScan > 6 && !nudgeDismissed;
 
   if (scansLoading) {
     return (
@@ -176,6 +255,75 @@ export default function ProgressScreen() {
           </GlassCard>
         )}
 
+        {/* Before & After comparison */}
+        {completedScans.length >= 2 && oldestScan && latestScan && (
+          <GlassCard style={styles.section}>
+            <SectionHeader overline="Comparison" title="Before & After" />
+            {deltaLoading ? (
+              <Skeleton width="100%" height={300} />
+            ) : (
+              <View style={styles.beforeAfterContent}>
+                <BeforeAfterSlider
+                  beforeScan={oldestScan}
+                  afterScan={latestScan}
+                  beforeUrl={beforeUrl}
+                  afterUrl={afterUrl}
+                />
+                {aiDelta && (
+                  <View style={styles.aiDeltaBlock}>
+                    <AppText variant="subheading" style={styles.aiHeadline}>
+                      {aiDelta.headline}
+                    </AppText>
+                    <AppText variant="body" color={palette.textBody} style={styles.aiNarrative}>
+                      {aiDelta.overall_narrative}
+                    </AppText>
+                    {aiDelta.changes.map((change, i) => (
+                      <View key={i} style={styles.changeRow}>
+                        <View
+                          style={[
+                            styles.directionBadge,
+                            { borderColor: directionColor(change.direction) },
+                          ]}
+                        >
+                          <AppText
+                            variant="overline"
+                            style={[styles.directionText, { color: directionColor(change.direction) }]}
+                          >
+                            {change.direction}
+                          </AppText>
+                        </View>
+                        <AppText
+                          variant="caption"
+                          color={palette.textSecondary}
+                          style={styles.changeObs}
+                          numberOfLines={2}
+                        >
+                          {change.observation}
+                        </AppText>
+                      </View>
+                    ))}
+                    {aiDelta.caveat && (
+                      <AppText variant="caption" color={palette.textTertiary} style={styles.caveat}>
+                        ⓘ {aiDelta.caveat}
+                      </AppText>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
+          </GlassCard>
+        )}
+
+        {/* Per-concern trend sparklines */}
+        {concernTrends.length > 0 && (
+          <GlassCard style={styles.section}>
+            <SectionHeader overline="History" title="Concern trends" />
+            {concernTrends.map((ct) => (
+              <ConcernTrendSparkline key={ct.name} name={ct.name} values={ct.values} />
+            ))}
+          </GlassCard>
+        )}
+
         {/* Stats row */}
         <View style={[styles.section, styles.statsRow]}>
           <GlassCard style={styles.statBox}>
@@ -220,6 +368,33 @@ export default function ProgressScreen() {
           </GlassCard>
         )}
 
+        {/* Weekly scan nudge */}
+        {showNudge && (
+          <GlassCard style={[styles.section, styles.nudgeCard]}>
+            <View style={styles.nudgeRow}>
+              <GlowiAvatar state="idle" size={40} />
+              <View style={styles.nudgeText}>
+                <AppText variant="subheading">Ready for your weekly scan?</AppText>
+                <AppText variant="caption" color={palette.textSecondary}>
+                  {Math.floor(daysSinceLastScan)} days since your last check-in.
+                </AppText>
+              </View>
+            </View>
+            <View style={styles.nudgeActions}>
+              <GlowButton
+                label="Scan now"
+                onPress={() => router.push('/scan')}
+                style={styles.nudgeScanBtn}
+              />
+              <PressableScale onPress={() => setNudgeDismissed(true)} style={styles.nudgeDismiss}>
+                <AppText variant="caption" color={palette.textTertiary}>
+                  Not now
+                </AppText>
+              </PressableScale>
+            </View>
+          </GlassCard>
+        )}
+
         {/* Scan history */}
         <View style={styles.section}>
           <SectionHeader overline="History" title="All scans" />
@@ -258,6 +433,28 @@ const styles = StyleSheet.create({
   },
   deltaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1) },
 
+  // Before & After
+  beforeAfterContent: { gap: spacing(4), marginTop: spacing(2) },
+  aiDeltaBlock: { gap: spacing(3) },
+  aiHeadline: { lineHeight: 22 },
+  aiNarrative: { lineHeight: 20 },
+  changeRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing(2),
+  },
+  directionBadge: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: spacing(1.5),
+    paddingVertical: 2,
+    minWidth: 72,
+    alignItems: 'center',
+  },
+  directionText: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.6 },
+  changeObs: { flex: 1, lineHeight: 17 },
+  caveat: { fontStyle: 'italic', lineHeight: 17 },
+
   statsRow: { flexDirection: 'row', gap: spacing(3) },
   statBox: { flex: 1, gap: spacing(1) },
   statNum: { fontSize: 36, lineHeight: 42 },
@@ -279,6 +476,19 @@ const styles = StyleSheet.create({
   },
   trendBarFill: { height: 4, borderRadius: 2, backgroundColor: palette.accentBright },
   trendDelta: { width: 58, textAlign: 'right' },
+
+  // Weekly nudge
+  nudgeCard: { borderWidth: 1, borderColor: palette.accentDim },
+  nudgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
+  nudgeText: { flex: 1, gap: spacing(1) },
+  nudgeActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(4),
+    marginTop: spacing(4),
+  },
+  nudgeScanBtn: { flex: 1 },
+  nudgeDismiss: { paddingVertical: spacing(2) },
 
   scanRowWrap: { marginBottom: spacing(3) },
   scanRow: {
