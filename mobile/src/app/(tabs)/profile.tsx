@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, Switch, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import {
@@ -23,7 +24,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/stores/auth';
 import { useSettings } from '@/stores/settings';
-import { palette, radii, spacing } from '@/theme';
+import { fonts, palette, radii, spacing } from '@/theme';
 
 export default function ProfileTab() {
   const router = useRouter();
@@ -32,8 +33,14 @@ export default function ProfileTab() {
   const signOut = useAuth((s) => s.signOut);
   const aiMode = useSettings((s) => s.aiMode);
   const setAiMode = useSettings((s) => s.setAiMode);
+  const locationLabel = useSettings((s) => s.locationLabel);
+  const setLocation = useSettings((s) => s.setLocation);
+  const clearLocation = useSettings((s) => s.clearLocation);
 
   const [remindersOn, setRemindersOn] = useState(false);
+  const [locationInput, setLocationInput] = useState(locationLabel ?? '');
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const locationInputRef = useRef<TextInput>(null);
   const userId = session?.user.id;
   const initial = (profile?.display_name?.[0] ?? 'G').toUpperCase();
   const isGuest = profile?.is_guest;
@@ -47,6 +54,30 @@ export default function ProfileTab() {
       .maybeSingle()
       .then(({ data }) => setRemindersOn(!!data?.enabled));
   }, [userId]);
+
+  async function detectLocation() {
+    setDetectingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const [place] = await Location.reverseGeocodeAsync(pos.coords);
+      const label = [place?.city, place?.region, place?.country].filter(Boolean).join(', ');
+      setLocationInput(label);
+      setLocation(label, { latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+    } finally {
+      setDetectingLocation(false);
+    }
+  }
+
+  function commitLocationInput() {
+    const trimmed = locationInput.trim();
+    if (!trimmed) {
+      clearLocation();
+    } else {
+      setLocation(trimmed, null);
+    }
+  }
 
   async function toggleReminders(value: boolean) {
     if (!userId) return;
@@ -86,7 +117,7 @@ export default function ProfileTab() {
           </AppText>
           <GlowButton
             label="Create account"
-            onPress={() => router.push('/(auth)/sign-up')}
+            onPress={() => router.push('/upgrade')}
             style={styles.guestBtn}
           />
         </GlassCard>
@@ -131,6 +162,41 @@ export default function ProfileTab() {
                 </PressableScale>
               );
             })}
+          </View>
+        </GlassCard>
+
+        <GlassCard style={styles.block}>
+          <View style={styles.blockHead}>
+            <Ionicons name="location-outline" size={18} color={palette.accentBright} />
+            <AppText variant="heading">Location</AppText>
+          </View>
+          <AppText variant="caption" style={styles.blockHint}>
+            Used for Skin Weather forecasts. Type a city or detect automatically.
+          </AppText>
+          <View style={styles.locationRow}>
+            <TextInput
+              ref={locationInputRef}
+              value={locationInput}
+              onChangeText={setLocationInput}
+              onBlur={commitLocationInput}
+              onSubmitEditing={commitLocationInput}
+              placeholder="e.g. London, UK"
+              placeholderTextColor={palette.textTertiary}
+              returnKeyType="done"
+              style={styles.locationInput}
+            />
+            <PressableScale
+              onPress={detectLocation}
+              style={styles.detectBtn}
+              haptic={false}
+              disabled={detectingLocation}
+            >
+              {detectingLocation ? (
+                <ActivityIndicator size="small" color={palette.accentBright} />
+              ) : (
+                <Ionicons name="navigate-outline" size={18} color={palette.accentBright} />
+              )}
+            </PressableScale>
           </View>
         </GlassCard>
 
@@ -244,6 +310,34 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
   },
   segmentActive: { backgroundColor: palette.accent },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(2),
+    backgroundColor: palette.surfaceSunken,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: spacing(3),
+    paddingVertical: spacing(1),
+  },
+  locationInput: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: palette.text,
+    paddingVertical: spacing(2.5),
+  },
+  detectBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.accentDim,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(94,234,212,0.28)',
+  },
   reminderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowWrap: { marginBottom: spacing(3) },
   row: {
