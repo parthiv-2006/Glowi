@@ -82,9 +82,19 @@ const ENV_ARCHETYPES: ForecastEnvironment[] = [
   },
 ];
 
-/** Deterministic, plausible environment for a date — the mock weather source. */
-export function synthesizeEnvironment(date: Date = new Date()): ForecastEnvironment {
-  return ENV_ARCHETYPES[dayOfYear(date) % ENV_ARCHETYPES.length];
+/**
+ * Deterministic, plausible environment for a date + location — the mock weather source.
+ * Coords shift the archetype index so different cities produce different readings on the same day.
+ */
+export function synthesizeEnvironment(
+  date: Date = new Date(),
+  coords?: { latitude: number; longitude: number },
+): ForecastEnvironment {
+  const dayIdx = dayOfYear(date) % ENV_ARCHETYPES.length;
+  const locationOffset = coords
+    ? Math.abs(Math.round(coords.latitude + coords.longitude)) % ENV_ARCHETYPES.length
+    : 0;
+  return ENV_ARCHETYPES[(dayIdx + locationOffset) % ENV_ARCHETYPES.length];
 }
 
 // ─────────────── Level helpers (label + tone for UI coloring) ───────────────

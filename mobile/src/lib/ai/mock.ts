@@ -339,11 +339,13 @@ export const mockProvider: AIProvider = {
     const userId = await requireUserId();
     const today = new Date().toISOString().slice(0, 10);
 
+    const resolvedLabel = input.locationLabel ?? DEFAULT_LOCATION.label;
     if (!input.refresh) {
       const { data: existing } = await supabase
         .from('skin_forecasts')
         .select('*')
         .eq('forecast_date', today)
+        .eq('location_label', resolvedLabel)
         .maybeSingle();
       if (existing) return existing as SkinForecast;
     }
@@ -371,7 +373,11 @@ export const mockProvider: AIProvider = {
     }));
 
     const concerns = (latestScan?.concerns ?? []) as ScanConcern[];
-    const env = synthesizeEnvironment(new Date());
+    const coords =
+      typeof input.latitude === 'number' && typeof input.longitude === 'number'
+        ? { latitude: input.latitude, longitude: input.longitude }
+        : undefined;
+    const env = synthesizeEnvironment(new Date(), coords);
     const { headline, summary, guidance } = deriveForecast(env, {
       skinType: (latestScan?.skin_type_estimate as SkinType | null) ?? null,
       topConcern: concerns[0]?.display_name ?? null,
@@ -381,7 +387,7 @@ export const mockProvider: AIProvider = {
     const row = {
       user_id: userId,
       forecast_date: today,
-      location_label: input.locationLabel ?? DEFAULT_LOCATION.label,
+      location_label: resolvedLabel,
       environment: env,
       headline,
       summary,

@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, Switch, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import {
@@ -23,17 +25,43 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/stores/auth';
 import { useSettings } from '@/stores/settings';
-import { palette, radii, spacing } from '@/theme';
+import { fonts, palette, radii, spacing } from '@/theme';
+
+interface GeoSuggestion {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  country: string;
+  admin1?: string;
+}
 
 export default function ProfileTab() {
   const router = useRouter();
+  const qc = useQueryClient();
   const profile = useAuth((s) => s.profile);
   const session = useAuth((s) => s.session);
   const signOut = useAuth((s) => s.signOut);
   const aiMode = useSettings((s) => s.aiMode);
   const setAiMode = useSettings((s) => s.setAiMode);
+  const locationLabel = useSettings((s) => s.locationLabel);
+  const setLocation = useSettings((s) => s.setLocation);
+  const clearLocation = useSettings((s) => s.clearLocation);
 
   const [remindersOn, setRemindersOn] = useState(false);
+  const [locationInput, setLocationInput] = useState(locationLabel ?? '');
+  const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [locationSaved, setLocationSaved] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressBlurRef = useRef(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showSaved() {
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    setLocationSaved(true);
+    savedTimerRef.current = setTimeout(() => setLocationSaved(false), 2000);
+  }
   const userId = session?.user.id;
   const initial = (profile?.display_name?.[0] ?? 'G').toUpperCase();
   const isGuest = profile?.is_guest;
@@ -47,6 +75,68 @@ export default function ProfileTab() {
       .maybeSingle()
       .then(({ data }) => setRemindersOn(!!data?.enabled));
   }, [userId]);
+
+  // Debounced geocoding autocomplete — setState always inside the timer callback to satisfy lint.
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = locationInput.trim();
+    debounceRef.current = setTimeout(
+      async () => {
+        if (q.length < 2) {
+          setSuggestions([]);
+          return;
+        }
+        try {
+          const res = await fetch(
+            `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=en&format=json`,
+          );
+          const json = (await res.json()) as { results?: GeoSuggestion[] };
+          setSuggestions(json.results ?? []);
+        } catch {
+          setSuggestions([]);
+        }
+      },
+      q.length < 2 ? 0 : 300,
+    );
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [locationInput]);
+
+  function selectSuggestion(s: GeoSuggestion) {
+    haptics.tap();
+    const label = [s.name, s.admin1, s.country].filter(Boolean).join(', ');
+    setLocationInput(label);
+    setSuggestions([]);
+    setLocation(label, { latitude: s.latitude, longitude: s.longitude });
+    void qc.invalidateQueries({ queryKey: ['skin-forecast'] });
+    showSaved();
+  }
+
+  function clearSuggestions() {
+    if (suppressBlurRef.current) return;
+    setSuggestions([]);
+    const trimmed = locationInput.trim();
+    if (!trimmed) clearLocation();
+  }
+
+  async function detectLocation() {
+    setDetectingLocation(true);
+    setSuggestions([]);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const [place] = await Location.reverseGeocodeAsync(pos.coords);
+      const label = [place?.city, place?.region, place?.country].filter(Boolean).join(', ');
+      setLocationInput(label);
+      setLocation(label, { latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      void qc.invalidateQueries({ queryKey: ['skin-forecast'] });
+      showSaved();
+    } finally {
+      setDetectingLocation(false);
+    }
+  }
 
   async function toggleReminders(value: boolean) {
     if (!userId) return;
@@ -86,7 +176,7 @@ export default function ProfileTab() {
           </AppText>
           <GlowButton
             label="Create account"
-            onPress={() => router.push('/(auth)/sign-up')}
+            onPress={() => router.push('/upgrade')}
             style={styles.guestBtn}
           />
         </GlassCard>
@@ -131,6 +221,86 @@ export default function ProfileTab() {
                 </PressableScale>
               );
             })}
+          </View>
+        </GlassCard>
+
+        <GlassCard style={styles.block}>
+          <View style={styles.blockHead}>
+            <Ionicons name="location-outline" size={18} color={palette.accentBright} />
+            <AppText variant="heading">Location</AppText>
+          </View>
+          <AppText variant="caption" style={styles.blockHint}>
+            Used for Skin Weather forecasts. Type a city or detect automatically.
+          </AppText>
+          <View style={styles.locationWrap}>
+            <View style={styles.locationRow}>
+              <TextInput
+                value={locationInput}
+                onChangeText={setLocationInput}
+                onBlur={clearSuggestions}
+                onSubmitEditing={clearSuggestions}
+                placeholder="e.g. London, UK"
+                placeholderTextColor={palette.textTertiary}
+                returnKeyType="done"
+                style={styles.locationInput}
+              />
+              <PressableScale
+                onPress={detectLocation}
+                style={styles.detectBtn}
+                haptic={false}
+                disabled={detectingLocation}
+              >
+                {detectingLocation ? (
+                  <ActivityIndicator size="small" color={palette.accentBright} />
+                ) : (
+                  <Ionicons name="navigate-outline" size={18} color={palette.accentBright} />
+                )}
+              </PressableScale>
+            </View>
+
+            {suggestions.length > 0 ? (
+              <View style={styles.dropdown}>
+                {suggestions.map((s, i) => {
+                  const label = [s.name, s.admin1, s.country].filter(Boolean).join(', ');
+                  return (
+                    <PressableScale
+                      key={s.id}
+                      onPressIn={() => {
+                        suppressBlurRef.current = true;
+                      }}
+                      onPress={() => {
+                        suppressBlurRef.current = false;
+                        selectSuggestion(s);
+                      }}
+                      haptic={false}
+                      style={[
+                        styles.suggestionRow,
+                        i < suggestions.length - 1 && styles.suggestionBorder,
+                      ]}
+                    >
+                      <Ionicons
+                        name="location-outline"
+                        size={14}
+                        color={palette.textSecondary}
+                        style={styles.suggestionIcon}
+                      />
+                      <AppText variant="subheading" color={palette.text} numberOfLines={1}>
+                        {label}
+                      </AppText>
+                    </PressableScale>
+                  );
+                })}
+              </View>
+            ) : null}
+
+            {locationSaved ? (
+              <Animated.View entering={FadeIn.duration(200)} style={styles.savedBadge}>
+                <Ionicons name="checkmark-circle-outline" size={14} color={palette.accentBright} />
+                <AppText variant="caption" color={palette.accentBright}>
+                  Location saved
+                </AppText>
+              </Animated.View>
+            ) : null}
           </View>
         </GlassCard>
 
@@ -244,6 +414,60 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
   },
   segmentActive: { backgroundColor: palette.accent },
+  locationWrap: { gap: 0 },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(2),
+    backgroundColor: palette.surfaceSunken,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: spacing(3),
+    paddingVertical: spacing(1),
+  },
+  locationInput: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: palette.text,
+    paddingVertical: spacing(2.5),
+  },
+  detectBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.accentDim,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(94,234,212,0.28)',
+  },
+  dropdown: {
+    marginTop: spacing(1),
+    backgroundColor: palette.surfaceStrong,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+  },
+  suggestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing(3),
+    paddingVertical: spacing(3),
+  },
+  suggestionBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.07)',
+  },
+  suggestionIcon: { marginRight: spacing(2.5) },
+  savedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1.5),
+    paddingTop: spacing(2.5),
+  },
   reminderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowWrap: { marginBottom: spacing(3) },
   row: {

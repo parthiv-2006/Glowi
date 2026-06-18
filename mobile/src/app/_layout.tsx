@@ -70,6 +70,7 @@ function RootNavigator() {
       <Stack.Screen name="routine/index" />
       <Stack.Screen name="article/[slug]" />
       <Stack.Screen name="memory" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="upgrade" options={{ animation: 'slide_from_bottom' }} />
     </Stack>
   );
 }

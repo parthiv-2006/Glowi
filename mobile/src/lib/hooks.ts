@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/stores/auth';
+import { useSettings } from '@/stores/settings';
 import { getAIProvider } from './ai';
 import * as api from './api';
 import { qk } from './query';
@@ -109,9 +110,16 @@ export function useCheckIn() {
  */
 export function useSkinForecast() {
   const today = new Date().toISOString().slice(0, 10);
+  const locationLabel = useSettings((s) => s.locationLabel);
+  const locationCoords = useSettings((s) => s.locationCoords);
   return useQuery({
-    queryKey: qk.forecast(today),
-    queryFn: () => getAIProvider().skinForecast(),
+    queryKey: qk.forecast(today, locationLabel ?? undefined),
+    queryFn: () =>
+      getAIProvider().skinForecast(
+        locationCoords
+          ? { ...locationCoords, locationLabel: locationLabel ?? undefined }
+          : undefined,
+      ),
     staleTime: 6 * 60 * 60_000,
   });
 }
