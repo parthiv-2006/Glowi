@@ -30,7 +30,8 @@ behind a provider seam that also supports a fully on-device mock.
 │  Storage: private scan-images bucket (per-user prefix)    │
 │  Edge Functions (Deno):                                   │
 │    analyze-skin · chat · extract-memories ·               │
-│    skin-forecast · identify-product · auth-signup         │
+│    skin-forecast · identify-product · auth-signup ·       │
+│    compare-scans · check-conflicts                        │
 │        ├──────────► Anthropic Claude API (secret key)     │
 │        └──────────► Open-Meteo (keyless weather)          │
 └──────────────────────────────────────────────────────────┘
@@ -76,7 +77,10 @@ Two families of tables (full DDL in `supabase/migrations/0001_core_tables.sql`):
   `chat_messages`, `ai_memories`, `routines`, `routine_steps`, `routine_checkins`,
   `reminder_settings`, `skin_forecasts` (one Skin Weather forecast per user per day),
   `shelf_items` (The Shelf — the products a user owns, now incl. `key_ingredients`),
-  `conflict_reports` (cached Ingredient Conflict Checker results per user).
+  `conflict_reports` (cached Ingredient Conflict Checker results per user),
+  `scan_comparisons` (cached AI delta between two completed scans — unique on
+  `(user_id, scan_id_before, scan_id_after)`; populated by the `compare-scans` edge
+  function and never re-generated for the same pair).
 
 ### Security boundary — RLS
 
