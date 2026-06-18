@@ -54,15 +54,16 @@ export function SkinWeatherCard({
   const lead = forecast.guidance[0];
   const action = lead ? FORECAST_ACTION[lead.kind] : null;
 
-  // Compact strip: icon + "SKIN WEATHER · {condition}" + one-line guidance + chevron.
+  // Compact strip: icon + "SKIN WEATHER · {city or condition}" + one-line guidance + chevron.
   if (compact) {
+    const cityName = forecast.location_label?.split(',')[0] ?? env.condition;
     return (
       <PressableScale onPress={onPress}>
         <GlassCard tier="glow" style={styles.strip}>
           <Ionicons name={conditionIcon(env.condition)} size={22} color={palette.accentBright} />
           <View style={styles.stripBody}>
             <AppText variant="overline" color={palette.accentBright} style={styles.stripOverline}>
-              {`Skin Weather · ${env.condition}`}
+              {`Skin Weather · ${cityName}`}
             </AppText>
             <AppText variant="caption" color={palette.textBody} numberOfLines={1}>
               {lead?.text ?? forecast.headline}
