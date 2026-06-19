@@ -127,6 +127,13 @@ export function ScanTheater({ width, height, active = true, zones = [] }: ScanTh
   const beamTop = useDerivedValue(() => beamY.value - 24);
   const trailTop = useDerivedValue(() => beamY.value - 120);
 
+  // X-ray: teal tint that fills the "scanned" region as the beam descends.
+  const scannedHeight = useDerivedValue(() => beamY.value);
+  // Leading edge sits exactly at the beam front.
+  const leadingY = useDerivedValue(() => beamY.value - 1);
+  // Side-wall flares anchor 20px above the beam.
+  const sideGlowTop = useDerivedValue(() => beamY.value - 20);
+
   // Triangulated face-mapping mesh: a jittered grid of nodes, each connected
   // to its right/down/diagonal neighbor so the lines read as triangles.
   const cols = 6;
@@ -172,6 +179,18 @@ export function ScanTheater({ width, height, active = true, zones = [] }: ScanTh
     [width],
   );
 
+  // Static horizontal scan lines — 30 lines across the full frame height for CRT/X-ray texture.
+  const scanLinesPath = useMemo(() => {
+    const p = Skia.Path.Make();
+    const count = 30;
+    for (let i = 0; i <= count; i++) {
+      const y = (height / count) * i;
+      p.moveTo(0, y);
+      p.lineTo(width, y);
+    }
+    return p;
+  }, [width, height]);
+
   // Corner reticle brackets.
   const bracket = 26;
   const corners = useMemo(() => {
@@ -199,6 +218,18 @@ export function ScanTheater({ width, height, active = true, zones = [] }: ScanTh
   return (
     <View style={{ width, height, pointerEvents: 'none' }}>
       <Canvas style={{ width, height }}>
+        {/* X-ray scan lines — static CRT texture across the full frame */}
+        <Path
+          path={scanLinesPath}
+          style="stroke"
+          strokeWidth={0.5}
+          color={palette.accentBright}
+          opacity={active ? 0.07 : 0.03}
+        />
+
+        {/* X-ray scanned-region tint — grows with the beam to mark processed area */}
+        <Rect x={0} y={0} width={width} height={scannedHeight} color="rgba(45,212,191,0.07)" />
+
         {/* face-mapping mesh */}
         <Group opacity={active ? 0.22 : 0.06}>
           {meshLines.map((l, i) => (
@@ -216,8 +247,9 @@ export function ScanTheater({ width, height, active = true, zones = [] }: ScanTh
           ))}
         </Group>
 
-        {/* sweep trail */}
+        {/* sweep trail + enhanced beam */}
         <Group opacity={beamOpacity}>
+          {/* long trailing wake */}
           <Rect x={0} y={trailTop} width={width} height={120}>
             <LinearGradient
               start={vec(0, 0)}
@@ -225,17 +257,40 @@ export function ScanTheater({ width, height, active = true, zones = [] }: ScanTh
               colors={['rgba(45,212,191,0)', 'rgba(45,212,191,0.18)']}
             />
           </Rect>
-          {/* the beam */}
+          {/* core beam line */}
           <Rect x={0} y={beamTop} width={width} height={3} color={palette.accentBright}>
             <Blur blur={2} />
           </Rect>
-          <Rect x={0} y={beamTop} width={width} height={48} opacity={0.5}>
+          {/* expanded forward glow (90 px, was 48) */}
+          <Rect x={0} y={beamTop} width={width} height={90} opacity={0.55}>
             <LinearGradient
               start={vec(0, 0)}
-              end={vec(0, 48)}
-              colors={['rgba(94,234,212,0.5)', 'rgba(94,234,212,0)']}
+              end={vec(0, 90)}
+              colors={['rgba(94,234,212,0.6)', 'rgba(94,234,212,0)']}
             />
-            <Blur blur={6} />
+            <Blur blur={8} />
+          </Rect>
+          {/* crisp leading edge — the actual scan front */}
+          <Rect x={0} y={leadingY} width={width} height={2} color="rgba(220,255,250,0.92)">
+            <Blur blur={1.5} />
+          </Rect>
+          {/* left side-wall flare */}
+          <Rect x={0} y={sideGlowTop} width={10} height={70}>
+            <LinearGradient
+              start={vec(0, 0)}
+              end={vec(10, 0)}
+              colors={['rgba(94,234,212,0.7)', 'rgba(94,234,212,0)']}
+            />
+            <Blur blur={3} />
+          </Rect>
+          {/* right side-wall flare */}
+          <Rect x={width - 10} y={sideGlowTop} width={10} height={70}>
+            <LinearGradient
+              start={vec(0, 0)}
+              end={vec(10, 0)}
+              colors={['rgba(94,234,212,0)', 'rgba(94,234,212,0.7)']}
+            />
+            <Blur blur={3} />
           </Rect>
         </Group>
 
