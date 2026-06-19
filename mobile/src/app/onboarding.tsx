@@ -1,15 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
+  Easing,
   FadeIn,
   FadeInRight,
   FadeOutLeft,
   LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withTiming,
 } from 'react-native-reanimated';
 
 import { AuroraBackground } from '@/components/AuroraBackground';
+import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { AppText, GlassCard, GlowButton, PressableScale } from '@/components/ui';
 import { addMemory } from '@/lib/api';
 import { DISCLAIMER, GOAL_OPTIONS, SKIN_TYPE_OPTIONS } from '@/lib/constants';
@@ -101,10 +108,6 @@ export default function Onboarding() {
         <View style={styles.stepArea}>
           {step === 0 && (
             <Animated.View entering={FadeIn.duration(motion.slow)} style={styles.intro}>
-              <View style={styles.viewfinder}>
-                <View style={styles.viewfinderCircle} />
-              </View>
-
               <AppText variant="display" style={styles.bigTitle}>
                 {firstName ? (
                   <>
@@ -126,6 +129,14 @@ export default function Onboarding() {
                 A few quick questions so your first scan and every conversation are tuned to your
                 skin — not a generic average.
               </AppText>
+
+              <View style={styles.mascotPanel}>
+                <View style={styles.mascotPing}>
+                  <Ping delay={0} />
+                  <Ping delay={1300} />
+                  <GlowiAvatar state="idle" size={84} />
+                </View>
+              </View>
 
               <View style={styles.promiseList}>
                 {[
@@ -266,6 +277,21 @@ export default function Onboarding() {
   );
 }
 
+/** Expanding jade ring behind the onboarding mascot (§8 g-blip). */
+function Ping({ delay }: { delay: number }) {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    t.value = withDelay(
+      delay,
+      withRepeat(withTiming(1, { duration: 2600, easing: Easing.out(Easing.ease) }), -1, false),
+    );
+  }, [t, delay]);
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.4 + t.value * 1.6 }],
+    opacity: 0.9 * (1 - t.value),
+  }));
+  return <Animated.View style={[styles.ping, style]} />;
+}
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.bg },
@@ -280,8 +306,8 @@ const styles = StyleSheet.create({
   pipActive: { backgroundColor: palette.accent },
   pipCurrent: { width: 40, backgroundColor: palette.accentBright },
   stepArea: { flex: 1 },
-  intro: { gap: spacing(4), marginTop: spacing(6), alignItems: 'center' },
-  viewfinder: {
+  intro: { gap: spacing(4), marginTop: spacing(4), alignItems: 'stretch' },
+  mascotPanel: {
     width: '100%',
     aspectRatio: 4 / 3,
     borderRadius: radii.xl,
@@ -290,20 +316,20 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(94,234,212,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing(2),
     overflow: 'hidden',
   },
-  viewfinderCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 1.5,
-    borderColor: 'rgba(94,234,212,0.35)',
-    borderStyle: 'dashed',
+  mascotPing: { alignItems: 'center', justifyContent: 'center' },
+  ping: {
+    position: 'absolute',
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    borderWidth: 1,
+    borderColor: 'rgba(94,234,212,0.3)',
   },
-  bigTitle: { fontSize: 38, lineHeight: 44, textAlign: 'center' },
+  bigTitle: { fontSize: 38, lineHeight: 44 },
   nameItalic: { fontStyle: 'italic' },
-  introSub: { fontSize: 16, lineHeight: 24, textAlign: 'center' },
+  introSub: { fontSize: 16, lineHeight: 24 },
   promiseList: { gap: spacing(3), alignSelf: 'stretch', marginTop: spacing(2) },
   promiseRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
   promiseIcon: {
