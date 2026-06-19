@@ -211,6 +211,15 @@ export default function ResultsScreen() {
           }}
           style={styles.ctaGhost}
         />
+        <GlowButton
+          label="New scan"
+          variant="ghost"
+          onPress={() => {
+            haptics.tap();
+            router.replace('/scan');
+          }}
+          style={styles.ctaGhost}
+        />
       </View>
 
       {/* Disclaimer */}

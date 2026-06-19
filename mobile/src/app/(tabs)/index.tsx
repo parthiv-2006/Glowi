@@ -46,31 +46,34 @@ export default function Home() {
             {firstName ?? 'Guest'}
           </AppText>
         </View>
-        {initial ? (
-          <PressableScale
-            onPress={() => {
-              haptics.press();
-              router.push('/(tabs)/profile');
-            }}
-            style={styles.avatar}
-            haptic={false}
-          >
-            <AppText variant="heading" color={palette.textOnAccent} style={styles.avatarText}>
-              {initial}
-            </AppText>
-          </PressableScale>
-        ) : latest ? (
-          <PressableScale
-            onPress={() => {
-              haptics.press();
-              router.push('/scan');
-            }}
-            style={styles.headerScan}
-            haptic={false}
-          >
-            <Ionicons name="scan-outline" size={22} color={palette.accentBright} />
-          </PressableScale>
-        ) : null}
+        <View style={styles.headerActions}>
+          {latest ? (
+            <PressableScale
+              onPress={() => {
+                haptics.press();
+                router.push('/scan');
+              }}
+              style={styles.headerScan}
+              haptic={false}
+            >
+              <Ionicons name="scan-outline" size={22} color={palette.accentBright} />
+            </PressableScale>
+          ) : null}
+          {initial ? (
+            <PressableScale
+              onPress={() => {
+                haptics.press();
+                router.push('/(tabs)/profile');
+              }}
+              style={styles.avatar}
+              haptic={false}
+            >
+              <AppText variant="heading" color={palette.textOnAccent} style={styles.avatarText}>
+                {initial}
+              </AppText>
+            </PressableScale>
+          ) : null}
+        </View>
       </Animated.View>
 
       <Stagger delay={120}>
@@ -229,6 +232,7 @@ function QuickAction({
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerText: { flex: 1, minWidth: 0 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
   name: { fontSize: 32, marginTop: spacing(1) },
   avatar: {
     width: 44,

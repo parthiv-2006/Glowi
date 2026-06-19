@@ -224,11 +224,11 @@ export function ScanTheater({ width, height, active = true, zones = [] }: ScanTh
           style="stroke"
           strokeWidth={0.5}
           color={palette.accentBright}
-          opacity={active ? 0.07 : 0.03}
+          opacity={active ? 0.18 : 0.05}
         />
 
         {/* X-ray scanned-region tint — grows with the beam to mark processed area */}
-        <Rect x={0} y={0} width={width} height={scannedHeight} color="rgba(45,212,191,0.07)" />
+        <Rect x={0} y={0} width={width} height={scannedHeight} color="rgba(45,212,191,0.13)" />
 
         {/* face-mapping mesh */}
         <Group opacity={active ? 0.22 : 0.06}>
