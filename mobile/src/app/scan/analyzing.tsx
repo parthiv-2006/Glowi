@@ -87,6 +87,10 @@ export default function Analyzing() {
     return Math.min(1, edge);
   });
   const screenTintStyle = useAnimatedStyle(() => ({ height: sweepY.value }));
+  const screenUnscannedStyle = useAnimatedStyle(() => ({
+    top: sweepY.value + 2,
+    opacity: sweepOpacity.value * 0.35,
+  }));
   const sweepGlowStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: Math.max(0, sweepY.value - 70) }],
     opacity: sweepOpacity.value * 0.85,
@@ -163,23 +167,6 @@ export default function Analyzing() {
         { paddingTop: insets.top + spacing(6), paddingBottom: insets.bottom + spacing(6) },
       ]}
     >
-      {/* Full-screen X-ray sweep overlay — the signature scan moment */}
-      {!done && !error ? (
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          {/* Teal tint fills the scanned region from the top */}
-          <Animated.View style={[styles.screenTint, screenTintStyle]} />
-          {/* Soft glow halo around the scan line */}
-          <Animated.View style={[styles.screenGlow, sweepGlowStyle]}>
-            <LinearGradient
-              colors={['rgba(94,234,212,0)', 'rgba(94,234,212,0.18)', 'rgba(94,234,212,0.08)', 'rgba(94,234,212,0)']}
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
-          {/* The scan line itself */}
-          <Animated.View style={[styles.screenLine, sweepLineStyle]} />
-        </View>
-      ) : null}
-
       <View style={styles.header}>
         <View style={styles.markDot} />
         <AppText variant="overline" color={palette.accentBright}>
@@ -253,6 +240,25 @@ export default function Analyzing() {
           </AppText>
         </View>
       )}
+
+      {/* Full-screen X-ray sweep — last child so it renders above photo frame */}
+      {!done && !error ? (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {/* Teal tint fills the scanned region from top */}
+          <Animated.View style={[styles.screenTint, screenTintStyle]} />
+          {/* Dark wash over unscanned region below the line */}
+          <Animated.View style={[styles.screenUnscanned, screenUnscannedStyle]} />
+          {/* Glow halo around the scan line */}
+          <Animated.View style={[styles.screenGlow, sweepGlowStyle]}>
+            <LinearGradient
+              colors={['rgba(94,234,212,0)', 'rgba(94,234,212,0.22)', 'rgba(94,234,212,0.10)', 'rgba(94,234,212,0)']}
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
+          {/* The scan line itself */}
+          <Animated.View style={[styles.screenLine, sweepLineStyle]} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -308,7 +314,14 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(45,212,191,0.04)',
+    backgroundColor: 'rgba(45,212,191,0.14)',
+  },
+  screenUnscanned: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(7,9,11,0.45)',
   },
   screenGlow: {
     position: 'absolute',
