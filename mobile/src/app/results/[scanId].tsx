@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import {
@@ -239,7 +240,17 @@ function ConcernCard({ concern, onPress }: { concern: ScanConcern; onPress: () =
 
   return (
     <PressableScale onPress={onPress} style={styles.concernWrap} haptic={false}>
-      <GlassCard style={[styles.concernCard, { borderLeftWidth: 3, borderLeftColor: sColor }]}>
+      <GlassCard style={styles.concernCard}>
+        {/* Severity meter (recipe: track + accentDeep→severity gradient, width = severity%) */}
+        <View style={styles.severityMeter}>
+          <LinearGradient
+            colors={[palette.accentDeep, sColor]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.severityFill, { width: `${concern.severity}%` }]}
+          />
+        </View>
+
         {/* Title + badges */}
         <View style={styles.concernMeta}>
           <AppText variant="heading" style={styles.concernName}>
@@ -268,7 +279,7 @@ function ConcernCard({ concern, onPress }: { concern: ScanConcern; onPress: () =
         <AppText
           variant="caption"
           numberOfLines={2}
-          color={palette.textSecondary}
+          color={palette.textBody}
           style={styles.observations}
         >
           {concern.observations}
@@ -353,6 +364,17 @@ const styles = StyleSheet.create({
   },
   concernCard: {
     gap: spacing(3),
+  },
+  severityMeter: {
+    height: 4,
+    marginTop: -spacing(4),
+    marginHorizontal: -spacing(4),
+    marginBottom: spacing(1),
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  severityFill: {
+    height: 4,
   },
   concernMeta: {
     gap: spacing(2),
