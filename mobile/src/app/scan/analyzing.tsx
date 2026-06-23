@@ -38,8 +38,6 @@ const STAGES = [
 const STAGE_MS = 1300;
 const MIN_THEATER_MS = STAGES.length * STAGE_MS;
 
-// Illustrative detected-zone callouts — purely a sensory cue during the
-// cinematic sweep; the real findings render on the results screen.
 const ZONES: ScanZone[] = [
   { label: 'Congestion · 52', severity: 52, x: 0.66, y: 0.3, delay: 0 },
   { label: 'Breakouts · 38', severity: 38, x: 0.26, y: 0.52, delay: 1100 },
@@ -79,7 +77,7 @@ export default function Analyzing() {
   const pulse = useSharedValue(0.5);
   const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 
-  // Full-screen X-ray sweep — synced with the ScanTheater beam timing.
+  // Full-screen warm X-ray sweep
   const sweep = useSharedValue(0);
   const sweepY = useDerivedValue(() => sweep.value * screenH);
   const sweepOpacity = useDerivedValue(() => {
@@ -93,7 +91,7 @@ export default function Analyzing() {
   }));
   const sweepGlowStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: Math.max(0, sweepY.value - 70) }],
-    opacity: sweepOpacity.value * 0.85,
+    opacity: sweepOpacity.value * 0.8,
   }));
   const sweepLineStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: sweepY.value }],
@@ -122,7 +120,6 @@ export default function Analyzing() {
       }
       setDone(true);
       haptics.success();
-      // Schedule/reset the weekly scan reminder so it fires 7 days from now.
       void scheduleWeeklyScanReminder();
       await wait(650);
       router.replace(`/results/${scan.id}`);
@@ -147,7 +144,6 @@ export default function Analyzing() {
     void run();
   }, [run, pulse, sweep]);
 
-  // Stage ticker.
   useEffect(() => {
     if (error || done) return;
     if (stage >= STAGES.length - 1) return;
@@ -169,7 +165,7 @@ export default function Analyzing() {
     >
       <View style={styles.header}>
         <View style={styles.markDot} />
-        <AppText variant="overline" color={palette.accentBright}>
+        <AppText variant="overline" color={palette.clayBright}>
           Glowi analysis
         </AppText>
       </View>
@@ -198,11 +194,11 @@ export default function Analyzing() {
 
       {error ? (
         <Animated.View entering={FadeIn} style={styles.errorBox}>
-          <Ionicons name="alert-circle-outline" size={30} color={palette.warning} />
-          <AppText variant="heading" style={styles.center}>
+          <Ionicons name="alert-circle-outline" size={30} color={palette.ochre} />
+          <AppText variant="heading" color={palette.inkDark} style={styles.center}>
             We couldn&apos;t read that one
           </AppText>
-          <AppText variant="subheading" style={styles.center}>
+          <AppText variant="subheading" color={palette.inkSoftDark} style={styles.center}>
             {error}
           </AppText>
           <GlowButton
@@ -219,7 +215,7 @@ export default function Analyzing() {
           {done ? (
             <Animated.View entering={FadeIn} style={styles.statusRow}>
               <GlowiAvatar state="celebrating" size={28} />
-              <AppText variant="heading" color={palette.accentBright}>
+              <AppText variant="heading" color={palette.clayBright}>
                 Analysis complete
               </AppText>
             </Animated.View>
@@ -231,31 +227,34 @@ export default function Analyzing() {
             >
               <Animated.View style={[styles.statusRow, pulseStyle]}>
                 <GlowiAvatar state="scanning" size={28} />
-                <AppText variant="heading">{STAGES[stage]}…</AppText>
+                <AppText variant="heading" color={palette.inkDark}>
+                  {STAGES[stage]}…
+                </AppText>
               </Animated.View>
             </Animated.View>
           )}
-          <AppText variant="caption" style={styles.reassure}>
+          <AppText variant="caption" color={palette.inkFaintDark} style={styles.reassure}>
             {ZONES.length} zones mapped · analyzed only for your results.
           </AppText>
         </View>
       )}
 
-      {/* Full-screen X-ray sweep — last child so it renders above photo frame */}
+      {/* Full-screen warm sweep overlay */}
       {!done && !error ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          {/* Teal tint fills the scanned region from top */}
           <Animated.View style={[styles.screenTint, screenTintStyle]} />
-          {/* Dark wash over unscanned region below the line */}
           <Animated.View style={[styles.screenUnscanned, screenUnscannedStyle]} />
-          {/* Glow halo around the scan line */}
           <Animated.View style={[styles.screenGlow, sweepGlowStyle]}>
             <LinearGradient
-              colors={['rgba(94,234,212,0)', 'rgba(94,234,212,0.22)', 'rgba(94,234,212,0.10)', 'rgba(94,234,212,0)']}
+              colors={[
+                'rgba(210,119,78,0)',
+                'rgba(210,119,78,0.18)',
+                'rgba(210,119,78,0.08)',
+                'rgba(210,119,78,0)',
+              ]}
               style={StyleSheet.absoluteFill}
             />
           </Animated.View>
-          {/* The scan line itself */}
           <Animated.View style={[styles.screenLine, sweepLineStyle]} />
         </View>
       ) : null}
@@ -266,17 +265,22 @@ export default function Analyzing() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: palette.bg,
+    backgroundColor: palette.bgDarkDeep,
     paddingHorizontal: spacing(6),
     justifyContent: 'space-between',
   },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing(2), justifyContent: 'center' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(2),
+    justifyContent: 'center',
+  },
   markDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: palette.accentBright,
-    boxShadow: '0px 0px 8px rgba(94,234,212,0.9)',
+    backgroundColor: palette.clayBright,
+    boxShadow: '0px 0px 8px rgba(224,169,132,0.9)',
   },
   stageWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   frame: {
@@ -284,9 +288,9 @@ const styles = StyleSheet.create({
     aspectRatio: 4 / 5,
     borderRadius: radii.xl,
     overflow: 'hidden',
-    backgroundColor: palette.bgElevated,
+    backgroundColor: palette.cardDark,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.borderStrong,
+    borderColor: palette.lineDark,
   },
   photo: { width: '100%', height: '100%' },
   scrim: {
@@ -295,33 +299,32 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(7,9,11,0.35)',
+    backgroundColor: 'rgba(21,17,14,0.3)',
   },
   statusArea: { alignItems: 'center', gap: spacing(3) },
   progressTrack: {
     width: '70%',
     height: 3,
     borderRadius: 2,
-    backgroundColor: palette.surfaceStrong,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     overflow: 'hidden',
   },
-  progressFill: { height: 3, borderRadius: 2, backgroundColor: palette.accentBright },
+  progressFill: { height: 3, borderRadius: 2, backgroundColor: palette.clayBright },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2.5) },
-  spinnerDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: palette.accent },
   reassure: { textAlign: 'center' },
   screenTint: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(45,212,191,0.14)',
+    backgroundColor: 'rgba(210,119,78,0.1)',
   },
   screenUnscanned: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(7,9,11,0.45)',
+    backgroundColor: 'rgba(21,17,14,0.45)',
   },
   screenGlow: {
     position: 'absolute',
@@ -334,8 +337,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: palette.accentBright,
-    boxShadow: '0px 0px 18px rgba(94,234,212,0.95), 0px 0px 40px rgba(94,234,212,0.5)',
+    backgroundColor: palette.clayBright,
+    boxShadow: '0px 0px 18px rgba(224,169,132,0.9), 0px 0px 40px rgba(224,169,132,0.45)',
   },
   errorBox: { alignItems: 'center', gap: spacing(3), paddingHorizontal: spacing(4) },
   center: { textAlign: 'center' },

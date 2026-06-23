@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   },
   frameEmpty: {
     borderWidth: 1.5,
-    borderColor: 'rgba(94,234,212,0.25)',
+    borderColor: 'rgba(188,94,56,0.25)',
     borderStyle: 'dashed',
   },
   captureButtons: { flexDirection: 'row', gap: spacing(3) },
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: palette.border,
   },
-  chipActive: { backgroundColor: palette.accentDim, borderColor: 'rgba(94,234,212,0.5)' },
+  chipActive: { backgroundColor: palette.accentDim, borderColor: 'rgba(188,94,56,0.5)' },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -228,7 +228,7 @@ export function ScanTheater({ width, height, active = true, zones = [] }: ScanTh
         />
 
         {/* X-ray scanned-region tint — grows with the beam to mark processed area */}
-        <Rect x={0} y={0} width={width} height={scannedHeight} color="rgba(45,212,191,0.13)" />
+        <Rect x={0} y={0} width={width} height={scannedHeight} color="rgba(210,119,78,0.1)" />
 
         {/* face-mapping mesh */}
         <Group opacity={active ? 0.22 : 0.06}>
@@ -254,7 +254,7 @@ export function ScanTheater({ width, height, active = true, zones = [] }: ScanTh
             <LinearGradient
               start={vec(0, 0)}
               end={vec(0, 120)}
-              colors={['rgba(45,212,191,0)', 'rgba(45,212,191,0.18)']}
+              colors={['rgba(210,119,78,0)', 'rgba(210,119,78,0.18)']}
             />
           </Rect>
           {/* core beam line */}
@@ -266,12 +266,12 @@ export function ScanTheater({ width, height, active = true, zones = [] }: ScanTh
             <LinearGradient
               start={vec(0, 0)}
               end={vec(0, 90)}
-              colors={['rgba(94,234,212,0.6)', 'rgba(94,234,212,0)']}
+              colors={['rgba(224,169,132,0.6)', 'rgba(224,169,132,0)']}
             />
             <Blur blur={8} />
           </Rect>
           {/* crisp leading edge — the actual scan front */}
-          <Rect x={0} y={leadingY} width={width} height={2} color="rgba(220,255,250,0.92)">
+          <Rect x={0} y={leadingY} width={width} height={2} color="rgba(255,218,185,0.92)">
             <Blur blur={1.5} />
           </Rect>
           {/* left side-wall flare */}
@@ -279,7 +279,7 @@ export function ScanTheater({ width, height, active = true, zones = [] }: ScanTh
             <LinearGradient
               start={vec(0, 0)}
               end={vec(10, 0)}
-              colors={['rgba(94,234,212,0.7)', 'rgba(94,234,212,0)']}
+              colors={['rgba(224,169,132,0.7)', 'rgba(224,169,132,0)']}
             />
             <Blur blur={3} />
           </Rect>
@@ -288,7 +288,7 @@ export function ScanTheater({ width, height, active = true, zones = [] }: ScanTh
             <LinearGradient
               start={vec(0, 0)}
               end={vec(10, 0)}
-              colors={['rgba(94,234,212,0)', 'rgba(94,234,212,0.7)']}
+              colors={['rgba(224,169,132,0)', 'rgba(224,169,132,0.7)']}
             />
             <Blur blur={3} />
           </Rect>

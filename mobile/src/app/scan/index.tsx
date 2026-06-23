@@ -62,17 +62,22 @@ export default function ScanCapture() {
       >
         <View style={styles.headerRow}>
           <PressableScale onPress={() => router.back()} hitSlop={12}>
-            <Ionicons name="close" size={26} color={palette.text} />
+            <Ionicons name="close" size={26} color={palette.inkDark} />
           </PressableScale>
-          <AppText variant="overline">New scan</AppText>
+          <AppText variant="overline" color={palette.inkFaintDark}>
+            New scan
+          </AppText>
           <View style={{ width: 26 }} />
         </View>
 
         <Animated.View entering={FadeInDown.duration(motion.slow)}>
-          <AppText variant="title" style={styles.title}>
-            Let&apos;s look at your skin
+          <AppText variant="title" color={palette.inkDark} style={styles.title}>
+            Let&apos;s look at{' '}
+            <AppText variant="title" italic color={palette.clayDark}>
+              your skin
+            </AppText>
           </AppText>
-          <AppText variant="subheading" style={styles.sub}>
+          <AppText variant="subheading" color={palette.inkSoftDark} style={styles.sub}>
             Capture or upload a clear, well-lit photo of the area you want analyzed.
           </AppText>
         </Animated.View>
@@ -83,8 +88,8 @@ export default function ScanCapture() {
             <View style={styles.frame}>
               <Image source={{ uri }} style={styles.preview} resizeMode="cover" />
               <PressableScale onPress={() => setUri(null)} style={styles.retake}>
-                <Ionicons name="refresh" size={16} color={palette.text} />
-                <AppText variant="caption" color={palette.text}>
+                <Ionicons name="refresh" size={16} color={palette.inkDark} />
+                <AppText variant="caption" color={palette.inkDark}>
                   Retake
                 </AppText>
               </PressableScale>
@@ -92,18 +97,18 @@ export default function ScanCapture() {
           ) : (
             <View style={[styles.frame, styles.frameEmpty]}>
               <View style={styles.frameIcon}>
-                <Ionicons name="scan-outline" size={34} color={palette.accentBright} />
+                <Ionicons name="scan-outline" size={34} color={palette.clayDark} />
               </View>
               <View style={styles.captureButtons}>
                 <PressableScale onPress={() => pick('camera')} style={styles.captureBtn}>
-                  <Ionicons name="camera" size={20} color={palette.textOnAccent} />
-                  <AppText variant="subheading" color={palette.textOnAccent}>
+                  <Ionicons name="camera" size={20} color="#FFFFFF" />
+                  <AppText variant="subheading" color="#FFFFFF">
                     Take photo
                   </AppText>
                 </PressableScale>
                 <PressableScale onPress={() => pick('library')} style={styles.uploadBtn}>
-                  <Ionicons name="images-outline" size={20} color={palette.accentBright} />
-                  <AppText variant="subheading" color={palette.accentBright}>
+                  <Ionicons name="images-outline" size={20} color={palette.clayBright} />
+                  <AppText variant="subheading" color={palette.clayBright}>
                     Upload
                   </AppText>
                 </PressableScale>
@@ -115,15 +120,15 @@ export default function ScanCapture() {
         {/* Guidance */}
         <GlassCard tier="sunken" style={styles.tips}>
           <View style={styles.tipRow}>
-            <Ionicons name="location-outline" size={16} color={palette.accentBright} />
-            <AppText variant="caption" color={palette.textSecondary} style={styles.tipText}>
+            <Ionicons name="location-outline" size={16} color={palette.clayDark} />
+            <AppText variant="caption" color={palette.inkSoftDark} style={styles.tipText}>
               Best results: soft natural light, bare clean skin, camera steady and close.
             </AppText>
           </View>
         </GlassCard>
 
         {/* Area */}
-        <AppText variant="overline" style={styles.areaLabel}>
+        <AppText variant="overline" color={palette.inkFaintDark} style={styles.areaLabel}>
           Area (optional)
         </AppText>
         <View style={styles.areaWrap}>
@@ -139,7 +144,7 @@ export default function ScanCapture() {
               >
                 <Badge
                   label={a}
-                  color={active ? palette.accentBright : palette.textTertiary}
+                  color={active ? palette.clayBright : palette.inkFaintDark}
                   style={active ? styles.areaActive : undefined}
                 />
               </PressableScale>
@@ -156,7 +161,7 @@ export default function ScanCapture() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: palette.bg },
+  root: { flex: 1, backgroundColor: palette.bgDark },
   content: { paddingHorizontal: spacing(5) },
   headerRow: {
     flexDirection: 'row',
@@ -171,14 +176,14 @@ const styles = StyleSheet.create({
     aspectRatio: 4 / 5,
     borderRadius: radii.xl,
     overflow: 'hidden',
-    backgroundColor: palette.bgElevated,
+    backgroundColor: palette.cardDark,
   },
   frameEmpty: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing(5),
     borderWidth: 1.5,
-    borderColor: 'rgba(94,234,212,0.25)',
+    borderColor: 'rgba(210,119,78,0.4)',
     borderStyle: 'dashed',
   },
   frameIcon: {
@@ -187,14 +192,14 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: palette.accentDim,
+    backgroundColor: 'rgba(210,119,78,0.15)',
   },
   captureButtons: { flexDirection: 'row', gap: spacing(3) },
   captureBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(2),
-    backgroundColor: palette.accent,
+    backgroundColor: palette.clay,
     paddingVertical: spacing(3),
     paddingHorizontal: spacing(5),
     borderRadius: radii.full,
@@ -203,12 +208,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(2),
-    backgroundColor: palette.surface,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     paddingVertical: spacing(3),
     paddingHorizontal: spacing(5),
     borderRadius: radii.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.borderStrong,
+    borderColor: 'rgba(210,119,78,0.4)',
   },
   preview: { width: '100%', height: '100%' },
   retake: {
@@ -218,22 +223,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(1.5),
-    backgroundColor: 'rgba(7,9,11,0.7)',
+    backgroundColor: 'rgba(33,27,22,0.8)',
     paddingVertical: spacing(2),
     paddingHorizontal: spacing(3),
     borderRadius: radii.full,
   },
-  tips: { marginTop: spacing(4) },
+  tips: { marginTop: spacing(4), backgroundColor: palette.cardDark, borderColor: palette.lineDark },
   tipRow: { flexDirection: 'row', gap: spacing(2.5), alignItems: 'center' },
   tipText: { flex: 1, lineHeight: 18 },
   areaLabel: { marginTop: spacing(5), marginBottom: spacing(3) },
   areaWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) },
-  areaActive: { backgroundColor: palette.accentDim, borderColor: 'rgba(94,234,212,0.5)' },
+  areaActive: {
+    backgroundColor: 'rgba(210,119,78,0.18)',
+    borderColor: 'rgba(210,119,78,0.45)',
+  },
   footer: {
     paddingHorizontal: spacing(5),
     paddingTop: spacing(3),
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: palette.border,
-    backgroundColor: palette.bg,
+    borderTopColor: palette.lineDark,
+    backgroundColor: palette.bgDark,
   },
 });

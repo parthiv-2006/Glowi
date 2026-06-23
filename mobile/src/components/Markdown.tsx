@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   },
   tableHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(45,212,191,0.08)',
+    backgroundColor: 'rgba(188,94,56,0.06)',
     paddingVertical: spacing(2.5),
     paddingHorizontal: spacing(3),
     borderBottomWidth: StyleSheet.hairlineWidth,

@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: palette.accentDim,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.25)',
+    borderColor: 'rgba(188,94,56,0.22)',
   },
   hero: {
     alignItems: 'center',

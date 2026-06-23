@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: palette.accentDim,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.25)',
+    borderColor: 'rgba(188,94,56,0.25)',
   },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) },
   headline: { marginTop: spacing(2), fontSize: 26, lineHeight: 32 },

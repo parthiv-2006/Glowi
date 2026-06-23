@@ -29,8 +29,7 @@ function trendDirection(values: SparklineEntry[]): 'down' | 'up' | 'flat' {
 
 export function ConcernTrendSparkline({ name, values }: ConcernTrendSparklineProps) {
   const dir = trendDirection(values);
-  const iconName =
-    dir === 'down' ? 'trending-down' : dir === 'up' ? 'trending-up' : 'remove';
+  const iconName = dir === 'down' ? 'trending-down' : dir === 'up' ? 'trending-up' : 'remove';
   const iconColor =
     dir === 'down' ? palette.success : dir === 'up' ? palette.danger : palette.textSecondary;
 
@@ -42,10 +41,7 @@ export function ConcernTrendSparkline({ name, values }: ConcernTrendSparklinePro
 
       <View style={styles.bars}>
         {values.map((v, i) => {
-          const barH = Math.max(
-            BAR_MIN_HEIGHT,
-            Math.round((v.severity / 100) * BAR_MAX_HEIGHT),
-          );
+          const barH = Math.max(BAR_MIN_HEIGHT, Math.round((v.severity / 100) * BAR_MAX_HEIGHT));
           return (
             <View
               key={i}

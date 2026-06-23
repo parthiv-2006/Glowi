@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: palette.accentDim,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.25)',
+    borderColor: 'rgba(188,94,56,0.22)',
   },
   header: {
     flexDirection: 'row',
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: palette.accentDim,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.3)',
+    borderColor: 'rgba(188,94,56,0.25)',
     flexShrink: 0,
   },
   headerText: {
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
     backgroundColor: palette.accentDim,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.35)',
+    borderColor: 'rgba(188,94,56,0.28)',
   },
   tabItem: {
     flex: 1,

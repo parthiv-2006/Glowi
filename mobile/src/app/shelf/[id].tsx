@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: palette.accentDim,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.25)',
+    borderColor: 'rgba(188,94,56,0.22)',
   },
   hero: { flexDirection: 'row', alignItems: 'center', gap: spacing(4), marginBottom: spacing(6) },
   heroIcon: {
