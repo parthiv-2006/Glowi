@@ -127,10 +127,21 @@ export default function ProfileTab() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const [place] = await Location.reverseGeocodeAsync(pos.coords);
-      const label = [place?.city, place?.region, place?.country].filter(Boolean).join(', ');
+      const { latitude, longitude } = pos.coords;
+      // reverseGeocodeAsync was removed in Expo SDK 49 on web; use HTTP instead.
+      const res = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
+      );
+      const geo = (await res.json()) as {
+        city?: string;
+        principalSubdivision?: string;
+        countryName?: string;
+      };
+      const label = [geo.city, geo.principalSubdivision, geo.countryName]
+        .filter(Boolean)
+        .join(', ');
       setLocationInput(label);
-      setLocation(label, { latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      setLocation(label, { latitude, longitude });
       void qc.invalidateQueries({ queryKey: ['skin-forecast'] });
       showSaved();
     } finally {
