@@ -126,8 +126,7 @@ export default function ProgressScreen() {
 
   // Oldest vs. latest — used for before/after comparison and concern trends.
   const oldestScan = completedScans.length >= 2 ? completedScans[0] : null;
-  const latestScan =
-    completedScans.length >= 2 ? completedScans[completedScans.length - 1] : null;
+  const latestScan = completedScans.length >= 2 ? completedScans[completedScans.length - 1] : null;
 
   // AI delta between the first and most recent scan. staleTime: Infinity in the
   // hook because scan_comparisons caches the result server-side forever.
@@ -144,7 +143,10 @@ export default function ProgressScreen() {
   const concernTrends = useMemo(() => {
     if (completedScans.length < 2) return [];
     const recent = completedScans.slice(-8);
-    const slugMap = new Map<string, { name: string; values: { date: string; severity: number }[] }>();
+    const slugMap = new Map<
+      string,
+      { name: string; values: { date: string; severity: number }[] }
+    >();
     for (const scan of recent) {
       for (const c of scan.concerns) {
         if (!slugMap.has(c.concern_slug)) {
@@ -287,7 +289,10 @@ export default function ProgressScreen() {
                         >
                           <AppText
                             variant="overline"
-                            style={[styles.directionText, { color: directionColor(change.direction) }]}
+                            style={[
+                              styles.directionText,
+                              { color: directionColor(change.direction) },
+                            ]}
                           >
                             {change.direction}
                           </AppText>
@@ -356,9 +361,7 @@ export default function ProgressScreen() {
                   {c.name}
                 </AppText>
                 <View style={styles.trendBarTrack}>
-                  <View
-                    style={[styles.trendBarFill, { width: `${c.to}%` as `${number}%` }]}
-                  />
+                  <View style={[styles.trendBarFill, { width: `${c.to}%` as `${number}%` }]} />
                 </View>
                 <AppText variant="caption" color={palette.accentBright} style={styles.trendDelta}>
                   {c.from} → {c.to}

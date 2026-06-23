@@ -286,8 +286,8 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surface,
   },
   chipSelected: {
-    backgroundColor: 'rgba(45,212,191,0.12)',
-    borderColor: 'rgba(45,212,191,0.4)',
+    backgroundColor: 'rgba(188,94,56,0.1)',
+    borderColor: 'rgba(188,94,56,0.3)',
   },
   chipTextSelected: {
     fontWeight: '600',
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: 'rgba(94,234,212,0.18)',
+    backgroundColor: 'rgba(188,94,56,0.18)',
   },
   cardCategory: {
     position: 'absolute',

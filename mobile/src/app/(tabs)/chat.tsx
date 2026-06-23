@@ -146,7 +146,7 @@ export default function ChatTab() {
         </Stagger>
       ) : (
         <LinearGradient
-          colors={['rgba(15,118,110,0.18)', palette.surfaceSunken]}
+          colors={['rgba(188,94,56,0.1)', palette.surfaceSunken]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 0.9 }}
           style={styles.emptyBlock}
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     marginTop: spacing(6),
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.16)',
+    borderColor: 'rgba(188,94,56,0.16)',
   },
   mascotPing: { alignItems: 'center', justifyContent: 'center' },
   ping: {
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: 'rgba(94,234,212,0.3)',
+    borderColor: 'rgba(188,94,56,0.3)',
   },
   emptyTitle: { marginTop: spacing(1) },
   emptyText: { textAlign: 'center', lineHeight: 22, maxWidth: 280 },

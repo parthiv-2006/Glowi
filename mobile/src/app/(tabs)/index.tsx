@@ -41,7 +41,9 @@ export default function Home() {
     <Screen bottomInset={spacing(20)}>
       <Animated.View entering={FadeIn.duration(400)} style={styles.headerRow}>
         <View style={styles.headerText}>
-          <AppText variant="overline">{greeting()}</AppText>
+          <AppText variant="overline" color={palette.clay}>
+            {greeting()}
+          </AppText>
           <AppText variant="display" style={styles.name}>
             {firstName ?? 'Guest'}
           </AppText>
@@ -56,7 +58,7 @@ export default function Home() {
               style={styles.headerScan}
               haptic={false}
             >
-              <Ionicons name="scan-outline" size={22} color={palette.accentBright} />
+              <Ionicons name="scan-outline" size={22} color={palette.clay} />
             </PressableScale>
           ) : null}
           {initial ? (
@@ -68,7 +70,7 @@ export default function Home() {
               style={styles.avatar}
               haptic={false}
             >
-              <AppText variant="heading" color={palette.textOnAccent} style={styles.avatarText}>
+              <AppText variant="heading" color="#FFFFFF" style={styles.avatarText}>
                 {initial}
               </AppText>
             </PressableScale>
@@ -77,7 +79,6 @@ export default function Home() {
       </Animated.View>
 
       <Stagger delay={120}>
-        {/* Skin Weather — full card when empty, one-line strip when populated */}
         {forecastLoading ? (
           <GlassCard style={styles.forecastSkeleton}>
             <Skeleton width="40%" height={14} />
@@ -92,7 +93,6 @@ export default function Home() {
           />
         ) : null}
 
-        {/* Populated: latest-scan strip + 2×2 actions. Empty: hero scan + no-scans. */}
         {isLoading ? (
           <GlassCard style={styles.section}>
             <Skeleton width="50%" height={20} />
@@ -125,9 +125,7 @@ export default function Home() {
                           <View
                             style={[styles.chipDot, { backgroundColor: severityColor(c.severity) }]}
                           />
-                          <AppText variant="caption" color={palette.textSecondary}>
-                            {c.display_name}
-                          </AppText>
+                          <AppText variant="caption">{c.display_name}</AppText>
                         </View>
                       ))}
                     </View>
@@ -169,24 +167,23 @@ export default function Home() {
               style={styles.heroWrap}
             >
               <LinearGradient
-                colors={['#0F766E', '#0A2E2A']}
+                colors={['#E8A37A', '#C5704A', '#8E4730']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.hero}
               >
-                <View style={styles.heroGlow} />
                 <View style={styles.heroTopRow}>
                   <View style={styles.scanIcon}>
-                    <Ionicons name="scan-outline" size={22} color={palette.accentBright} />
+                    <Ionicons name="scan-outline" size={22} color="rgba(255,255,255,0.9)" />
                   </View>
                   <View style={styles.arrowBtn}>
-                    <Ionicons name="arrow-forward" size={18} color={palette.accentBright} />
+                    <Ionicons name="arrow-forward" size={18} color="rgba(255,255,255,0.9)" />
                   </View>
                 </View>
-                <AppText variant="title" style={styles.heroTitle}>
+                <AppText variant="title" color="#FFFFFF" style={styles.heroTitle}>
                   Start a skin scan
                 </AppText>
-                <AppText variant="subheading" color="rgba(244,246,245,0.7)" style={styles.heroSub}>
+                <AppText variant="subheading" color="rgba(255,255,255,0.78)" style={styles.heroSub}>
                   Point, capture, and get your personalized read in seconds.
                 </AppText>
               </LinearGradient>
@@ -196,7 +193,7 @@ export default function Home() {
               <AppText variant="heading" style={styles.emptyScanTitle}>
                 No scans yet
               </AppText>
-              <AppText variant="caption" color={palette.textSecondary} style={styles.emptyScanBody}>
+              <AppText variant="caption" style={styles.emptyScanBody}>
                 Your first scan unlocks tailored products, a nutrition plan, and routines built
                 around what Glowi finds.
               </AppText>
@@ -220,8 +217,8 @@ function QuickAction({
   return (
     <PressableScale onPress={onPress} style={styles.actionWrap}>
       <GlassCard style={styles.action}>
-        <Ionicons name={icon} size={22} color={palette.accentBright} />
-        <AppText variant="subheading" color={palette.text}>
+        <Ionicons name={icon} size={22} color={palette.clay} />
+        <AppText variant="subheading" color={palette.ink}>
           {label}
         </AppText>
       </GlassCard>
@@ -238,7 +235,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: palette.accent,
+    backgroundColor: palette.clay,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -251,7 +248,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: palette.accentDim,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.28)',
+    borderColor: 'rgba(188,94,56,0.22)',
   },
   forecastSkeleton: { marginBottom: spacing(1) },
   heroWrap: { marginTop: spacing(4) },
@@ -260,18 +257,6 @@ const styles = StyleSheet.create({
     padding: spacing(5),
     gap: spacing(3),
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.25)',
-  },
-  heroGlow: {
-    position: 'absolute',
-    top: -40,
-    right: -20,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: palette.glow,
-    opacity: 0.25,
   },
   heroTopRow: {
     flexDirection: 'row',
@@ -284,7 +269,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.28)',
+    backgroundColor: 'rgba(0,0,0,0.18)',
   },
   arrowBtn: {
     width: 36,
@@ -292,9 +277,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(94,234,212,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.35)',
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   heroTitle: { fontSize: 22 },
   heroSub: { lineHeight: 20 },
@@ -305,9 +290,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing(6),
     paddingHorizontal: spacing(5),
     borderRadius: radii.lg,
-    backgroundColor: palette.surfaceSunken,
+    backgroundColor: palette.well,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: palette.line,
   },
   emptyScanTitle: { fontSize: 15, marginBottom: spacing(1.5) },
   emptyScanBody: { textAlign: 'center', lineHeight: 18 },
