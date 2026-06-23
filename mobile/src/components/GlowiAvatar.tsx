@@ -19,9 +19,8 @@ interface GlowiAvatarProps {
 }
 
 /**
- * Glowi, the brand mascot — a glossy jade sphere with an expressive face.
- * Always render through this component (never a one-off mascot) so shading
- * and expression stay consistent. See MASCOT_AND_LOGO.md.
+ * Glowi mascot — a warm clay sphere with an expressive face.
+ * Redesigned from jade to warm editorial clay/blush tones.
  */
 export function GlowiAvatar({ state = 'idle', size = 96 }: GlowiAvatarProps) {
   const breath = useSharedValue(0);
@@ -48,8 +47,8 @@ export function GlowiAvatar({ state = 'idle', size = 96 }: GlowiAvatarProps) {
         <Svg width={haloSize} height={haloSize} viewBox="0 0 100 100">
           <Defs>
             <RadialGradient id="halo" cx="50" cy="50" r="50">
-              <Stop offset="0" stopColor="#5EEAD4" stopOpacity={0.5} />
-              <Stop offset="0.68" stopColor="#5EEAD4" stopOpacity={0} />
+              <Stop offset="0" stopColor="#E0A984" stopOpacity={0.45} />
+              <Stop offset="0.68" stopColor="#E0A984" stopOpacity={0} />
             </RadialGradient>
           </Defs>
           <Circle cx={50} cy={50} r={50} fill="url(#halo)" />
@@ -81,31 +80,35 @@ function Sphere({ size, state }: { size: number; state: GlowiState }) {
 
   const scanStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: scanLine.value * size - size / 2 }],
-    opacity: 0.55,
+    opacity: 0.5,
   }));
 
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} viewBox="0 0 100 100">
         <Defs>
+          {/* Warm clay body gradient */}
           <RadialGradient id="body" cx="40" cy="34" r="62">
-            <Stop offset="0" stopColor="#8FF4E5" />
-            <Stop offset="0.26" stopColor="#4FE0CC" />
-            <Stop offset="0.5" stopColor="#2DD4BF" />
-            <Stop offset="0.74" stopColor="#119C8C" />
-            <Stop offset="1" stopColor="#0B6B62" />
+            <Stop offset="0" stopColor="#F0C8A0" />
+            <Stop offset="0.26" stopColor="#E8A070" />
+            <Stop offset="0.5" stopColor="#C5704A" />
+            <Stop offset="0.74" stopColor="#9A4A2C" />
+            <Stop offset="1" stopColor="#6B2E18" />
           </RadialGradient>
+          {/* Specular sheen */}
           <RadialGradient id="sheen" cx="38" cy="30" r="26">
-            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.5} />
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.45} />
             <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
           </RadialGradient>
+          {/* Bounce light — warm blush */}
           <RadialGradient id="bounce" cx="64" cy="88" r="34">
-            <Stop offset="0" stopColor="#B4FFF4" stopOpacity={0.42} />
-            <Stop offset="1" stopColor="#B4FFF4" stopOpacity={0} />
+            <Stop offset="0" stopColor="#F5D5B8" stopOpacity={0.5} />
+            <Stop offset="1" stopColor="#F5D5B8" stopOpacity={0} />
           </RadialGradient>
+          {/* Inner shadow */}
           <RadialGradient id="innerShadow" cx="70" cy="76" r="48">
-            <Stop offset="0" stopColor="#062E29" stopOpacity={0.55} />
-            <Stop offset="0.7" stopColor="#062E29" stopOpacity={0} />
+            <Stop offset="0" stopColor="#3D1A0A" stopOpacity={0.5} />
+            <Stop offset="0.7" stopColor="#3D1A0A" stopOpacity={0} />
           </RadialGradient>
         </Defs>
 
@@ -114,9 +117,9 @@ function Sphere({ size, state }: { size: number; state: GlowiState }) {
         <Circle cx={50} cy={50} r={46} fill="url(#bounce)" />
         <Circle cx={50} cy={50} r={46} fill="url(#sheen)" />
 
-        {/* specular highlight */}
-        <Ellipse cx={33} cy={28} rx={14} ry={10} fill="#FFFFFF" opacity={0.22} />
-        <Circle cx={30} cy={24} r={3} fill="#FFFFFF" opacity={0.85} />
+        {/* Specular highlight */}
+        <Ellipse cx={33} cy={28} rx={14} ry={10} fill="#FFFFFF" opacity={0.18} />
+        <Circle cx={30} cy={24} r={3} fill="#FFFFFF" opacity={0.8} />
 
         <Face state={state} />
       </Svg>
@@ -131,7 +134,7 @@ function Sphere({ size, state }: { size: number; state: GlowiState }) {
           <Animated.View
             style={[
               { position: 'absolute', left: 0, right: 0, height: size * 0.1, top: size / 2 },
-              { backgroundColor: '#EAFFFB' },
+              { backgroundColor: '#F0C8A0' },
               scanStyle,
             ]}
           />
@@ -141,9 +144,9 @@ function Sphere({ size, state }: { size: number; state: GlowiState }) {
   );
 }
 
-const FACE_COLOR = '#07332C';
-const CHEEK_COLOR = 'rgba(255,122,122,0.28)';
-const GLINT_COLOR = '#EAFFFB';
+const FACE_COLOR = '#3D1A0A';
+const CHEEK_COLOR = 'rgba(188,94,56,0.28)';
+const GLINT_COLOR = '#FFF5EE';
 
 function Face({ state }: { state: GlowiState }) {
   const cheeks = (
@@ -204,7 +207,7 @@ function Face({ state }: { state: GlowiState }) {
         <Path d="M 39 58 Q 50 70 61 58 Q 50 64 39 58" fill={FACE_COLOR} />
         <Path
           d="M 47 64 Q 50 68 53 64"
-          stroke="#FB7185"
+          stroke="#E07060"
           strokeWidth={2.2}
           strokeLinecap="round"
           fill="none"
@@ -258,12 +261,12 @@ function Dot({ delay }: { delay: number }) {
     );
   }, [lift, delay]);
 
-  const style = useAnimatedStyle(() => ({
+  const dotStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: -lift.value * 6 }],
     opacity: 0.5 + lift.value * 0.5,
   }));
 
-  return <Animated.View style={[styles.dot, style]} />;
+  return <Animated.View style={[styles.dot, dotStyle]} />;
 }
 
 function Sparkles({ size }: { size: number }) {
@@ -298,15 +301,15 @@ function Sparkle({ x, y, delay }: { x: number; y: number; delay: number }) {
     );
   }, [twinkle, delay]);
 
-  const style = useAnimatedStyle(() => ({
+  const sparkleStyle = useAnimatedStyle(() => ({
     opacity: twinkle.value,
     transform: [{ scale: 0.6 + twinkle.value * 0.6 }],
   }));
 
   return (
-    <Animated.View style={[styles.sparkle, { left: x, top: y }, style]}>
+    <Animated.View style={[styles.sparkle, { left: x, top: y }, sparkleStyle]}>
       <Svg width={10} height={10} viewBox="0 0 10 10">
-        <Path d="M5 0 L6.2 3.8 L10 5 L6.2 6.2 L5 10 L3.8 6.2 L0 5 L3.8 3.8 Z" fill="#FFD700" />
+        <Path d="M5 0 L6.2 3.8 L10 5 L6.2 6.2 L5 10 L3.8 6.2 L0 5 L3.8 3.8 Z" fill="#E0A984" />
       </Svg>
     </Animated.View>
   );
@@ -321,7 +324,7 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: '#5EEAD4',
+    backgroundColor: '#E0A984',
   },
   sparkle: { position: 'absolute' },
 });

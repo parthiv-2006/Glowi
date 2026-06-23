@@ -9,7 +9,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { AuroraBackground } from '@/components/AuroraBackground';
 import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { AppText } from '@/components/ui';
 import { palette, spacing } from '@/theme';
@@ -38,7 +37,6 @@ export function SplashView() {
 
   return (
     <View style={styles.root}>
-      <AuroraBackground intensity={0.6} />
       <View style={styles.content}>
         <GlowiAvatar state="idle" size={132} />
         <View style={styles.wordmarkRow}>
@@ -77,7 +75,7 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 3.5,
     backgroundColor: palette.accentBright,
-    boxShadow: '0px 0px 6px rgba(94,234,212,0.9)',
+    boxShadow: '0px 0px 6px rgba(224,169,132,0.9)',
     marginBottom: 3,
   },
   iStem: { width: 4, height: 24, borderRadius: 2, backgroundColor: palette.text },

@@ -26,20 +26,20 @@ const styles = StyleSheet.create({
     height: 320,
     top: '8%',
     left: '-10%',
-    backgroundColor: 'rgba(15,118,110,0.4)',
+    backgroundColor: 'rgba(188,94,56,0.35)',
   },
   blob2: {
     width: 300,
     height: 300,
     top: '24%',
     right: '-14%',
-    backgroundColor: '#155E63',
+    backgroundColor: '#7A3A1A',
   },
   blob3: {
     width: 340,
     height: 340,
     bottom: '6%',
     left: '20%',
-    backgroundColor: '#0B3A52',
+    backgroundColor: '#4A1E0A',
   },
 });

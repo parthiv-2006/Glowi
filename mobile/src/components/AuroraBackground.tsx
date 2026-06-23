@@ -37,13 +37,13 @@ export function AuroraBackground({ intensity = 1 }: { intensity?: number }) {
     <Canvas style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
       <Fill color={palette.bg} />
       <Group opacity={0.55 * intensity}>
-        <Circle cx={c1x} cy={c1y} r={width * 0.5} color={palette.accentDeep}>
+        <Circle cx={c1x} cy={c1y} r={width * 0.5} color={palette.clayDeep}>
           <Blur blur={90} />
         </Circle>
-        <Circle cx={c2x} cy={c2y} r={width * 0.42} color="#155E63">
+        <Circle cx={c2x} cy={c2y} r={width * 0.42} color="#7A3A1A">
           <Blur blur={100} />
         </Circle>
-        <Circle cx={width * 0.5} cy={c3y} r={width * 0.45} color="#0B3A52">
+        <Circle cx={width * 0.5} cy={c3y} r={width * 0.45} color="#4A1E0A">
           <Blur blur={110} />
         </Circle>
       </Group>

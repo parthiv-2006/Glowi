@@ -1,5 +1,4 @@
-import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -10,17 +9,20 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { haptics } from '@/lib/haptics';
-import { palette, radii, spacing } from '@/theme';
+import { fonts, radii, spacing } from '@/theme';
+
+const ACTIVE_COLOR = '#E0A984'; // clayBright
+const INACTIVE_COLOR = '#9C9081'; // warm muted
 
 const ICONS: Record<
   string,
-  { on: keyof typeof Ionicons.glyphMap; off: keyof typeof Ionicons.glyphMap }
+  { on: keyof typeof Ionicons.glyphMap; off: keyof typeof Ionicons.glyphMap; label: string }
 > = {
-  index: { on: 'home', off: 'home-outline' },
-  chat: { on: 'chatbubble', off: 'chatbubble-outline' },
-  progress: { on: 'analytics', off: 'analytics-outline' },
-  learn: { on: 'book', off: 'book-outline' },
-  profile: { on: 'person', off: 'person-outline' },
+  index: { on: 'home', off: 'home-outline', label: 'HOME' },
+  chat: { on: 'chatbubble', off: 'chatbubble-outline', label: 'COACH' },
+  progress: { on: 'analytics', off: 'analytics-outline', label: 'TRACK' },
+  learn: { on: 'book', off: 'book-outline', label: 'LEARN' },
+  profile: { on: 'person', off: 'person-outline', label: 'YOU' },
 };
 
 function TabButton({
@@ -35,6 +37,7 @@ function TabButton({
   const scale = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const icons = ICONS[name] ?? ICONS.index;
+  const color = focused ? ACTIVE_COLOR : INACTIVE_COLOR;
 
   return (
     <Pressable
@@ -47,22 +50,13 @@ function TabButton({
       }}
     >
       <Animated.View style={[styles.tabInner, style]}>
-        {focused && <View style={styles.activeGlow} />}
-        <Ionicons
-          name={focused ? icons.on : icons.off}
-          size={24}
-          color={focused ? palette.accentBright : palette.textTertiary}
-        />
+        <Ionicons name={focused ? icons.on : icons.off} size={20} color={color} />
+        <Text style={[styles.tabLabel, { color }]}>{icons.label}</Text>
       </Animated.View>
     </Pressable>
   );
 }
 
-/**
- * Structural prop type — decoupled from @react-navigation's versioned types
- * (expo-router bundles its own copy, which conflicts on direct import).
- * The shape matches what expo-router's `Tabs` passes to `tabBar`.
- */
 interface TabBarProps {
   state: { index: number; routes: { key: string; name: string }[] };
   navigation: {
@@ -73,11 +67,10 @@ interface TabBarProps {
   };
 }
 
-/** Floating glass tab bar. */
+/** Floating dark espresso pill tab bar with Space Mono labels. */
 export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  // Cap the pill width so it never overflows narrow phones (SE = 375px).
   const barWidth = Math.min(width - spacing(8), 360);
 
   return (
@@ -87,31 +80,25 @@ export function TabBar({ state, navigation }: TabBarProps) {
         { paddingBottom: insets.bottom || spacing(3), pointerEvents: 'box-none' },
       ]}
     >
-      <View style={styles.barShadow}>
-        <BlurView
-          intensity={Platform.OS === 'ios' ? 40 : 0}
-          tint="dark"
-          style={[styles.bar, { width: barWidth }]}
-        >
-          {state.routes.map((route, index) => {
-            const focused = state.index === index;
-            return (
-              <TabButton
-                key={route.key}
-                name={route.name}
-                focused={focused}
-                onPress={() => {
-                  const event = navigation.emit({
-                    type: 'tabPress',
-                    target: route.key,
-                    canPreventDefault: true,
-                  });
-                  if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
-                }}
-              />
-            );
-          })}
-        </BlurView>
+      <View style={[styles.bar, { width: barWidth }]}>
+        {state.routes.map((route, index) => {
+          const focused = state.index === index;
+          return (
+            <TabButton
+              key={route.key}
+              name={route.name}
+              focused={focused}
+              onPress={() => {
+                const event = navigation.emit({
+                  type: 'tabPress',
+                  target: route.key,
+                  canPreventDefault: true,
+                });
+                if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+              }}
+            />
+          );
+        })}
       </View>
     </View>
   );
@@ -119,10 +106,6 @@ export function TabBar({ state, navigation }: TabBarProps) {
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
-  barShadow: {
-    boxShadow: '0px 16px 40px -12px rgba(0,0,0,0.7)',
-    borderRadius: radii.full,
-  },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -130,21 +113,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing(2),
     borderRadius: radii.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.borderStrong,
-    backgroundColor: Platform.OS === 'ios' ? 'rgba(12,15,19,0.6)' : palette.bgElevated,
-    overflow: 'hidden',
-  },
+    borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(43,37,33,0.94)',
+    // Subtle shadow to lift off the screen
+    boxShadow: '0px 8px 32px -8px rgba(0,0,0,0.55)',
+  } as any,
   tab: { flex: 1, alignItems: 'center' },
-  tabInner: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  activeGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 22,
-    backgroundColor: palette.accentDim,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(94,234,212,0.3)',
+  tabInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing(2),
+    gap: 3,
+  },
+  tabLabel: {
+    fontFamily: fonts.mono,
+    fontSize: 8,
+    letterSpacing: 1,
   },
 });
