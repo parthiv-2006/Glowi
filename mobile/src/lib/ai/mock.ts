@@ -476,7 +476,8 @@ export const mockProvider: AIProvider = {
             display_name: 'Surface dullness',
             direction: 'improved',
             magnitude: 20,
-            observation: 'Light reflects more evenly, suggesting improved hydration or exfoliation.',
+            observation:
+              'Light reflects more evenly, suggesting improved hydration or exfoliation.',
           },
         ],
         caveat: null,

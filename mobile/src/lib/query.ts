@@ -29,7 +29,8 @@ export const qk = {
   routines: ['routines'] as const,
   checkins: ['routine-checkins'] as const,
   reminders: ['reminders'] as const,
-  forecast: (date: string, location?: string) => ['skin-forecast', date, location ?? 'default'] as const,
+  forecast: (date: string, location?: string) =>
+    ['skin-forecast', date, location ?? 'default'] as const,
   shelf: ['shelf-items'] as const,
   conflictReport: ['conflict-report'] as const,
   comparison: (beforeId: string, afterId: string) =>
