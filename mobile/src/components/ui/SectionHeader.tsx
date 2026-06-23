@@ -22,7 +22,7 @@ export function SectionHeader({ overline, title, actionLabel, onAction }: Sectio
       </View>
       {actionLabel && onAction ? (
         <PressableScale onPress={onAction} hitSlop={8}>
-          <AppText variant="subheading" color={palette.accentBright}>
+          <AppText variant="subheading" color={palette.clay}>
             {actionLabel}
           </AppText>
         </PressableScale>

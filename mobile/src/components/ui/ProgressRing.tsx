@@ -10,13 +10,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
-import { motion, palette } from '@/theme';
+import { fonts, motion, palette } from '@/theme';
 import { AppText } from './AppText';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-// COMPONENT_FIDELITY §5: the reveal ring fills over 1.7s with a 0.35s delay,
-// and the number counts up in lockstep over the same window.
 const FILL_DURATION = 1700;
 const FILL_DELAY = 350;
 
@@ -33,15 +31,14 @@ interface ProgressRingProps {
 }
 
 /**
- * Animated arc ring — skin scores, concern severities, streaks. The number is
- * never printed statically: it counts up while the arc fills, so the metric
- * reads as *computed*, not asserted (DESIGN_PRINCIPLES §4).
+ * Animated arc ring — skin scores, concern severities, streaks.
+ * The number counts up while the arc fills so the metric reads as computed.
  */
 export function ProgressRing({
   value,
   size = 120,
   strokeWidth = 9,
-  color = palette.accent,
+  color = palette.sage,
   label,
   sublabel,
   delay = 0,
@@ -59,8 +56,6 @@ export function ProgressRing({
     );
   }, [clamped, delay, progress]);
 
-  // Tick the displayed integer only when it actually changes (≤100 updates),
-  // keeping the count-up in perfect sync with the dash fill.
   useAnimatedReaction(
     () => Math.round(progress.value * clamped),
     (current, previous) => {
@@ -75,16 +70,16 @@ export function ProgressRing({
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size}>
+        {/* Track */}
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={palette.surfaceStrong}
+          stroke={palette.line}
           strokeWidth={strokeWidth}
           fill="none"
         />
-        {/* Soft halo beneath the crisp arc — cross-platform stand-in for the
-            reference's `drop-shadow` glow on the progress stroke. */}
+        {/* Soft halo */}
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
@@ -93,11 +88,12 @@ export function ProgressRing({
           strokeWidth={strokeWidth + 6}
           strokeLinecap="round"
           fill="none"
-          opacity={0.3}
+          opacity={0.22}
           strokeDasharray={`${circumference} ${circumference}`}
           animatedProps={animatedProps}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
+        {/* Arc */}
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
@@ -114,13 +110,16 @@ export function ProgressRing({
       <View style={styles.center}>
         <AppText
           variant="title"
-          style={{ fontSize: size * 0.24, lineHeight: size * 0.3 }}
-          color={palette.text}
+          style={{ fontSize: size * 0.26, lineHeight: size * 0.3, fontFamily: fonts.serifMedium }}
+          color={palette.ink}
         >
           {label ?? display}
         </AppText>
         {sublabel ? (
-          <AppText variant="caption" style={{ fontSize: Math.max(10, size * 0.085) }}>
+          <AppText
+            variant="overline"
+            style={{ fontSize: Math.max(8, size * 0.075), letterSpacing: 1.5 }}
+          >
             {sublabel}
           </AppText>
         ) : null}

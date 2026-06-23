@@ -20,8 +20,8 @@ export function TextField({ label, error, style, ...rest }: TextFieldProps) {
         </AppText>
       ) : null}
       <TextInput
-        placeholderTextColor={palette.textTertiary}
-        selectionColor={palette.accent}
+        placeholderTextColor={palette.inkFaint}
+        selectionColor={palette.clay}
         {...rest}
         onFocus={(e) => {
           setFocused(true);
@@ -34,7 +34,7 @@ export function TextField({ label, error, style, ...rest }: TextFieldProps) {
         style={[styles.input, focused && styles.focused, error ? styles.errored : null, style]}
       />
       {error ? (
-        <AppText variant="caption" color={palette.danger}>
+        <AppText variant="caption" color={palette.rose}>
           {error}
         </AppText>
       ) : null}
@@ -44,18 +44,18 @@ export function TextField({ label, error, style, ...rest }: TextFieldProps) {
 
 const styles = StyleSheet.create({
   wrap: { gap: spacing(1.5) },
-  label: { color: palette.textSecondary },
+  label: { color: palette.inkSoft },
   input: {
-    backgroundColor: palette.bgInput,
+    backgroundColor: palette.well,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: palette.lineStrong,
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(3.5),
-    color: palette.text,
+    color: palette.ink,
     fontFamily: fonts.body,
     fontSize: 15,
   },
-  focused: { borderColor: palette.accent },
-  errored: { borderColor: palette.danger },
+  focused: { borderColor: palette.clay },
+  errored: { borderColor: palette.rose },
 });

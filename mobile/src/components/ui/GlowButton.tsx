@@ -20,13 +20,13 @@ interface GlowButtonProps {
   variant?: 'primary' | 'ghost' | 'danger';
   loading?: boolean;
   disabled?: boolean;
-  /** Slow diagonal sheen sweep (primary only) — e.g. the onboarding CTA (§4). */
+  /** Slow diagonal sheen sweep on the primary button — hero CTAs. */
   sheen?: boolean;
   style?: ViewStyle;
   icon?: React.ReactNode;
 }
 
-/** Primary CTA: jade gradient, negative-spread glow, spring press (§4). */
+/** Clay gradient CTA — spring press, optional sheen sweep. */
 export function GlowButton({
   label,
   onPress,
@@ -42,9 +42,7 @@ export function GlowButton({
   const content = (
     <View style={styles.content}>
       {loading ? (
-        <ActivityIndicator
-          color={variant === 'primary' ? palette.textOnAccent : palette.accentBright}
-        />
+        <ActivityIndicator color={variant === 'primary' ? '#FFFFFF' : palette.clay} />
       ) : (
         <>
           {icon}
@@ -52,9 +50,9 @@ export function GlowButton({
             variant="heading"
             style={[
               styles.label,
-              variant === 'primary' && { color: palette.textOnAccent },
-              variant === 'ghost' && { color: palette.accentBright },
-              variant === 'danger' && { color: palette.danger },
+              variant === 'primary' && { color: '#FFFFFF' },
+              variant === 'ghost' && { color: palette.clay },
+              variant === 'danger' && { color: palette.rose },
             ]}
           >
             {label}
@@ -70,7 +68,8 @@ export function GlowButton({
       disabled={inactive}
       style={[
         styles.base,
-        variant === 'primary' && glowShadow({ y: 12, blur: 34, spread: -8, color: palette.glow }),
+        variant === 'primary' &&
+          glowShadow({ y: 16, blur: 34, spread: -12, color: 'rgba(188,94,56,0.55)' }),
         inactive && styles.disabled,
         style,
       ]}
@@ -79,7 +78,7 @@ export function GlowButton({
     >
       {variant === 'primary' ? (
         <LinearGradient
-          colors={[palette.accentBright, palette.accent]}
+          colors={[palette.clayBright, palette.clay]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fill}
@@ -96,7 +95,7 @@ export function GlowButton({
   );
 }
 
-/** A 60px band of light sweeping across the button face, looping (§4 g-sheen). */
+/** Diagonal light sweep across the button face (hero CTAs). */
 function Sheen() {
   const [width, setWidth] = useState(0);
   const x = useSharedValue(-120);
@@ -106,7 +105,6 @@ function Sheen() {
   }));
 
   if (width === 0) {
-    // Measure once, then kick off the loop (-120% → 220% over 4s, §8).
     x.value = withDelay(
       400,
       withRepeat(withTiming(220, { duration: 4000, easing: motion.easing }), -1, false),
@@ -120,7 +118,7 @@ function Sheen() {
     >
       <Animated.View style={[styles.sheenBand, animatedStyle]}>
         <LinearGradient
-          colors={['transparent', 'rgba(255,255,255,0.4)', 'transparent']}
+          colors={['transparent', 'rgba(255,255,255,0.32)', 'transparent']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}
@@ -139,12 +137,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ghostFill: {
-    backgroundColor: palette.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: palette.borderStrong,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: palette.clay,
     borderRadius: radii.full,
   },
-  dangerFill: { borderColor: 'rgba(251,113,133,0.35)' },
+  dangerFill: { borderColor: palette.rose },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
   label: { fontFamily: fonts.bodySemiBold, fontSize: 16 },
   sheenClip: { overflow: 'hidden', pointerEvents: 'none' },
