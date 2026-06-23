@@ -5,14 +5,20 @@ import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
+  Newsreader_400Regular,
+  Newsreader_400Regular_Italic,
+  Newsreader_500Medium,
+  Newsreader_500Medium_Italic,
   useFonts,
-} from '@expo-google-fonts/inter';
+} from '@expo-google-fonts/newsreader';
+import {
+  HankenGrotesk_400Regular,
+  HankenGrotesk_500Medium,
+  HankenGrotesk_600SemiBold,
+  HankenGrotesk_700Bold,
+} from '@expo-google-fonts/hanken-grotesk';
+import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/space-mono';
 
 import { SplashView } from '@/components/SplashView';
 import { queryClient } from '@/lib/query';
@@ -21,7 +27,6 @@ import { useAuth } from '@/stores/auth';
 
 void SplashScreen.preventAutoHideAsync();
 
-/** Redirects between (auth) / onboarding / app based on session + onboarded state. */
 function useAuthGate() {
   const initializing = useAuth((s) => s.initializing);
   const session = useAuth((s) => s.session);
@@ -79,12 +84,16 @@ export default function RootLayout() {
   const init = useAuth((s) => s.init);
   const initializing = useAuth((s) => s.initializing);
   const [fontsLoaded] = useFonts({
-    Fraunces_600SemiBold,
-    Fraunces_700Bold,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    Newsreader_400Regular,
+    Newsreader_400Regular_Italic,
+    Newsreader_500Medium,
+    Newsreader_500Medium_Italic,
+    HankenGrotesk_400Regular,
+    HankenGrotesk_500Medium,
+    HankenGrotesk_600SemiBold,
+    HankenGrotesk_700Bold,
+    SpaceMono_400Regular,
+    SpaceMono_700Bold,
   });
 
   useEffect(() => {
@@ -96,9 +105,6 @@ export default function RootLayout() {
   }, [fontsLoaded, initializing]);
 
   if (!fontsLoaded || initializing) {
-    // Fonts aren't loaded yet on the very first paint, so this initial frame
-    // still renders with system fonts for an instant — acceptable since the
-    // native splash (app.json) covers it until fonts resolve.
     return <SplashView />;
   }
 
@@ -106,7 +112,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style="light" />
+          <StatusBar style="dark" />
           <RootNavigator />
         </QueryClientProvider>
       </SafeAreaProvider>

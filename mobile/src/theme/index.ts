@@ -1,45 +1,69 @@
 /**
- * Glowi design tokens — "clinical luxe".
- * Near-black depths, glass surfaces, a single jade glow accent.
+ * Glowi design tokens — "Warm Editorial".
+ * Cream paper, espresso ink, clay accent, sage/ochre/rose semantics.
  * Every screen and component derives from these; no ad-hoc colors.
  */
 import { Easing } from 'react-native-reanimated';
 
 export const palette = {
-  // Depths
-  bg: '#07090B',
-  bgElevated: '#0C0F13',
-  bgInput: 'rgba(255,255,255,0.06)',
-
-  // Glass surfaces
-  surface: 'rgba(255,255,255,0.05)',
-  surfaceStrong: 'rgba(255,255,255,0.09)',
-  border: 'rgba(255,255,255,0.08)',
-  borderStrong: 'rgba(255,255,255,0.16)',
+  // ── Light theme (primary) ─────────────────────────────────────────────
+  bg: '#F3ECE1', // paper — screen background
+  card: '#FCF8F1', // raised card fill
+  well: '#EFE4D6', // sunken inputs / segmented track
 
   // Ink
-  text: '#F2F5F4',
-  textBody: '#C4CBC7', // primary reading copy — body paragraphs, card descriptions, chat text
-  textSecondary: '#9BA6A2',
-  textTertiary: '#646E6A',
-  textOnAccent: '#04211C',
+  ink: '#2B2521',
+  inkSoft: '#6F6358',
+  inkFaint: '#A99C8D',
 
-  // The accent — jade/teal glow
-  accent: '#2DD4BF',
-  accentBright: '#5EEAD4',
-  accentDeep: '#0F766E',
-  accentDim: 'rgba(45,212,191,0.14)',
-  glow: 'rgba(94,234,212,0.45)',
+  // Lines
+  line: '#E6DCCD',
+  lineStrong: '#E0D4C2',
 
-  // Surface tiers — every card declares one (see GlassCard `tier`)
-  surfaceSunken: '#0B0F0E', // recessed wells: inputs, search bars, empty-state interiors
-  surfaceRaised: 'rgba(255,255,255,0.055)', // default card fill
-  surfaceGlow: 'rgba(94,234,212,0.13)', // hero/active cards — one per screen, max
+  // Clay accent
+  clay: '#BC5E38',
+  clayDeep: '#9A4A2C',
+  clayBright: '#E0A984',
 
-  // Semantic
-  danger: '#FB7185',
-  warning: '#FBBF24',
-  success: '#34D399',
+  // Semantic — warm editorial
+  sage: '#75876A', // "good" / positive / improvement
+  ochre: '#C2913B', // "moderate" severity
+  rose: '#BC5340', // "significant" severity
+  blush: '#E8C8B5', // soft fills, avatar gradients
+
+  // ── Dark theme (scan screens, tab bar) ────────────────────────────────
+  bgDark: '#211B16',
+  bgDarkDeep: '#15110E',
+  cardDark: '#2B2420',
+  inkDark: '#EFE6D8',
+  inkSoftDark: '#B6A893',
+  inkFaintDark: '#8C7F6E',
+  lineDark: 'rgba(255,255,255,0.08)',
+  clayDark: '#D2774E',
+
+  // ── Backward-compat aliases (existing screens use these tokens) ────────
+  text: '#2B2521',
+  textBody: '#6F6358',
+  textSecondary: '#A99C8D',
+  textTertiary: '#A99C8D',
+  textOnAccent: '#FFFFFF',
+  accent: '#BC5E38',
+  accentBright: '#E0A984',
+  accentDeep: '#9A4A2C',
+  accentDim: 'rgba(188,94,56,0.12)',
+  glow: 'rgba(188,94,56,0.4)',
+  border: '#E6DCCD',
+  borderStrong: '#E0D4C2',
+  surface: '#FCF8F1',
+  surfaceStrong: '#EFE4D6',
+  bgElevated: '#FCF8F1',
+  bgInput: '#EFE4D6',
+  surfaceSunken: '#EFE4D6',
+  surfaceRaised: '#FCF8F1',
+  surfaceGlow: 'rgba(188,94,56,0.08)',
+  danger: '#BC5340',
+  warning: '#C2913B',
+  success: '#75876A',
 } as const;
 
 /** 4pt spacing scale: spacing(4) = 16. */
@@ -48,35 +72,43 @@ export const spacing = (n: number): number => n * 4;
 export const radii = {
   sm: 10,
   md: 16,
-  lg: 22,
-  xl: 28,
+  lg: 20,
+  xl: 26,
   full: 999,
 } as const;
 
 export const fonts = {
-  display: 'Fraunces_600SemiBold',
-  displayBold: 'Fraunces_700Bold',
-  body: 'Inter_400Regular',
-  bodyMedium: 'Inter_500Medium',
-  bodySemiBold: 'Inter_600SemiBold',
-  bodyBold: 'Inter_700Bold',
+  // Newsreader — serif display & headlines
+  serif: 'Newsreader_400Regular',
+  serifMedium: 'Newsreader_500Medium',
+  serifItalic: 'Newsreader_400Regular_Italic',
+  serifMediumItalic: 'Newsreader_500Medium_Italic',
+  // Hanken Grotesk — UI / body
+  body: 'HankenGrotesk_400Regular',
+  bodyMedium: 'HankenGrotesk_500Medium',
+  bodySemiBold: 'HankenGrotesk_600SemiBold',
+  bodyBold: 'HankenGrotesk_700Bold',
+  // Space Mono — overlines, data, labels
+  mono: 'SpaceMono_400Regular',
+  monoBold: 'SpaceMono_700Bold',
+  // Backward-compat aliases
+  display: 'Newsreader_500Medium',
+  displayBold: 'Newsreader_500Medium',
 } as const;
 
 export const motion = {
   fast: 160,
   base: 280,
   slow: 460,
-  /** The Glowi ease — fast start, long luxurious settle. */
   easing: Easing.bezier(0.22, 1, 0.36, 1),
-  /** Stagger interval between sibling entrances. */
   stagger: 70,
 } as const;
 
-/** Severity 0-100 → semantic color (calm jade → amber → rose). */
+/** Severity 0-100 → warm semantic color. */
 export function severityColor(severity: number): string {
-  if (severity <= 33) return palette.success;
-  if (severity <= 66) return palette.warning;
-  return palette.danger;
+  if (severity <= 33) return palette.sage;
+  if (severity <= 66) return palette.ochre;
+  return palette.rose;
 }
 
 export function severityLabel(severity: number): string {
@@ -85,30 +117,30 @@ export function severityLabel(severity: number): string {
   return 'Significant';
 }
 
-/** Skin score 0-100 → color (inverse of severity: high score is good). */
+/** Skin score 0-100 → color (inverse: high score = good). */
 export function scoreColor(score: number): string {
-  if (score >= 67) return palette.success;
-  if (score >= 34) return palette.warning;
-  return palette.danger;
+  if (score >= 67) return palette.sage;
+  if (score >= 34) return palette.ochre;
+  return palette.rose;
 }
 
-/** Named gradient pairs (articles, product cards, hero panels). */
+/** Named gradient pairs — warm editorial tones (articles, product cards). */
 export const gradients: Record<string, [string, string]> = {
-  jade: ['#134E4A', '#07090B'],
-  amber: ['#78350F', '#07090B'],
-  rose: ['#881337', '#07090B'],
-  violet: ['#4C1D95', '#07090B'],
-  ocean: ['#0C4A6E', '#07090B'],
-  ember: ['#7C2D12', '#07090B'],
-  moss: ['#1A2E05', '#07090B'],
-  slate: ['#1E293B', '#07090B'],
+  warm: ['#FBEFE2', '#EED8C0'],
+  clay: ['#E8A37A', '#C5704A'],
+  sage: ['#EBF0E7', '#C8D8BC'],
+  ochre: ['#F5E8C8', '#E0C880'],
+  rose: ['#F5DDD8', '#E0B0A8'],
+  bark: ['#D4BCA8', '#C0A088'],
+  dusk: ['#D8CCBE', '#C4B0A0'],
+  ember: ['#E8D0B8', '#D0A87A'],
 };
 
 export function gradientFor(name: string | null | undefined): [string, string] {
-  return gradients[name ?? 'jade'] ?? gradients.jade;
+  return gradients[name ?? 'warm'] ?? gradients.warm;
 }
 
-/** Deterministic gradient for product cards, keyed by brand name. */
+/** Deterministic warm gradient for product/brand cards. */
 export function brandGradient(brand: string): [string, string] {
   const names = Object.keys(gradients);
   let hash = 0;
