@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-import { AuroraBackground } from '@/components/AuroraBackground';
 import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { AppText, GlowButton, PressableScale } from '@/components/ui';
 import { haptics } from '@/lib/haptics';
@@ -29,7 +28,6 @@ export default function Welcome() {
 
   return (
     <View style={styles.root}>
-      <AuroraBackground />
       <View
         style={[
           styles.content,
@@ -38,7 +36,7 @@ export default function Welcome() {
       >
         <Animated.View entering={FadeInDown.duration(motion.slow)} style={styles.markRow}>
           <GlowiAvatar state="idle" size={40} />
-          <AppText variant="overline" color={palette.accentBright}>
+          <AppText variant="overline" color={palette.clay}>
             Glowi
           </AppText>
         </Animated.View>
@@ -47,7 +45,7 @@ export default function Welcome() {
           <Animated.View entering={FadeInUp.delay(120).duration(motion.slow)}>
             <AppText variant="display" style={styles.title}>
               Understand your skin,{'\n'}
-              <AppText variant="display" color={palette.accentBright}>
+              <AppText variant="display" italic color={palette.clay}>
                 scientifically.
               </AppText>
             </AppText>
@@ -61,7 +59,7 @@ export default function Welcome() {
         </View>
 
         <Animated.View entering={FadeIn.delay(440).duration(motion.slow)} style={styles.actions}>
-          <GlowButton label="Create account" onPress={() => router.push('/(auth)/sign-up')} />
+          <GlowButton label="Create account" onPress={() => router.push('/(auth)/sign-up')} sheen />
           <GlowButton
             label={loading ? 'Setting up…' : 'Continue as guest'}
             variant="ghost"
@@ -70,7 +68,10 @@ export default function Welcome() {
           />
           <PressableScale onPress={() => router.push('/(auth)/sign-in')} style={styles.signin}>
             <AppText variant="subheading">
-              Already have an account? <AppText color={palette.accentBright}>Sign in</AppText>
+              Already have an account?{' '}
+              <AppText variant="subheading" color={palette.clay}>
+                Sign in
+              </AppText>
             </AppText>
           </PressableScale>
         </Animated.View>
