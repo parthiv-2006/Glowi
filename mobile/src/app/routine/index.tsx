@@ -36,8 +36,9 @@ import {
 import { CATEGORY_LABEL } from '@/lib/constants';
 import { getProductsForConcern, saveRoutine } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
-import { useRoutines, useScans } from '@/lib/hooks';
+import { useCheckIn, useRecentCheckins, useRoutines, useScans } from '@/lib/hooks';
 import { generateRoutineSteps } from '@/lib/routineGenerator';
+import { checkedInToday } from '@/lib/streak';
 import type { ProductForConcern, RoutineStep } from '@/lib/types';
 import { useAuth } from '@/stores/auth';
 import { motion, palette, radii, spacing } from '@/theme';
@@ -212,6 +213,8 @@ export default function RoutineScreen() {
 
   const { data: routinesRaw, isLoading: routinesLoading } = useRoutines();
   const { data: scans } = useScans();
+  const { data: checkins = [] } = useRecentCheckins();
+  const { mutate: checkIn, isPending: checkingIn } = useCheckIn();
 
   const [period, setPeriod] = useState<Period>('am');
   const [generating, setGenerating] = useState(false);
@@ -243,6 +246,15 @@ export default function RoutineScreen() {
 
   const hasRoutine = amRoutine != null || pmRoutine != null;
   const isDirty = localSteps[period] != null;
+
+  const amCheckedIn = checkedInToday(
+    checkins.filter((c) => c.routine_id === amRoutine?.id).map((c) => c.checkin_date),
+  );
+  const pmCheckedIn = checkedInToday(
+    checkins.filter((c) => c.routine_id === pmRoutine?.id).map((c) => c.checkin_date),
+  );
+  const activeCheckedIn = period === 'am' ? amCheckedIn : pmCheckedIn;
+  const activeRoutineId = (period === 'am' ? amRoutine : pmRoutine)?.id ?? null;
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -298,6 +310,12 @@ export default function RoutineScreen() {
     } finally {
       setGenerating(false);
     }
+  }
+
+  function handleCheckIn() {
+    if (!activeRoutineId || activeCheckedIn) return;
+    haptics.success();
+    checkIn(activeRoutineId);
   }
 
   async function handleSaveChanges() {
@@ -359,9 +377,12 @@ export default function RoutineScreen() {
           saving={saving}
           generating={generating}
           hasLatestScan={latestScan != null}
+          isCheckedIn={activeCheckedIn}
+          checkingIn={checkingIn}
           onRemoveStep={removeStep}
           onSaveChanges={handleSaveChanges}
           onRegenerate={handleGenerate}
+          onCheckIn={handleCheckIn}
         />
       ) : latestScan ? (
         <GenerateFromScanCard generating={generating} onGenerate={handleGenerate} />
@@ -408,9 +429,12 @@ function RoutineContent({
   saving,
   generating,
   hasLatestScan,
+  isCheckedIn,
+  checkingIn,
   onRemoveStep,
   onSaveChanges,
   onRegenerate,
+  onCheckIn,
 }: {
   steps: RoutineStep[];
   period: Period;
@@ -418,9 +442,12 @@ function RoutineContent({
   saving: boolean;
   generating: boolean;
   hasLatestScan: boolean;
+  isCheckedIn: boolean;
+  checkingIn: boolean;
   onRemoveStep: (idx: number) => void;
   onSaveChanges: () => void;
   onRegenerate: () => void;
+  onCheckIn: () => void;
 }) {
   return (
     <View style={styles.contentWrap}>
@@ -468,6 +495,34 @@ function RoutineContent({
           )}
         </View>
       ) : null}
+
+      {/* Check-in CTA — only when steps exist and no unsaved edits */}
+      {steps.length > 0 && !isDirty && !generating && (
+        isCheckedIn ? (
+          <Animated.View entering={FadeIn.duration(300)} style={styles.doneCard}>
+            <GlassCard tier="raised" style={styles.doneInner}>
+              <Ionicons name="checkmark-circle" size={22} color={palette.success} />
+              <AppText variant="subheading" color={palette.success}>
+                {period === 'am' ? 'Morning' : 'Evening'} routine done for today
+              </AppText>
+            </GlassCard>
+          </Animated.View>
+        ) : (
+          <View style={styles.checkInRow}>
+            <GlowButton
+              label="Complete routine"
+              onPress={onCheckIn}
+              loading={checkingIn}
+              icon={
+                !checkingIn ? (
+                  <Ionicons name="checkmark-circle-outline" size={16} color={palette.textOnAccent} />
+                ) : undefined
+              }
+              style={styles.actionButton}
+            />
+          </View>
+        )
+      )}
     </View>
   );
 }
@@ -585,6 +640,13 @@ const styles = StyleSheet.create({
   emptyText: { textAlign: 'center' },
 
   actionRow: { marginTop: spacing(2) },
+  checkInRow: { marginTop: spacing(4) },
+  doneCard: { marginTop: spacing(4) },
+  doneInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+  },
   regenerateRow: {
     alignItems: 'center',
     marginTop: spacing(2),
