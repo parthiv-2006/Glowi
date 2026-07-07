@@ -38,6 +38,7 @@ import { getProductsForConcern, saveRoutine } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useCheckIn, useRecentCheckins, useRoutines, useScans } from '@/lib/hooks';
 import { generateRoutineSteps } from '@/lib/routineGenerator';
+import { sequenceWarnings, waitAfter } from '@/lib/routineSequence';
 import { checkedInToday } from '@/lib/streak';
 import type { ProductForConcern, RoutineStep } from '@/lib/types';
 import { useAuth } from '@/stores/auth';
@@ -203,6 +204,46 @@ function StepRow({
     </Animated.View>
   );
 }
+
+// ─── Wait-time connector ──────────────────────────────────────────────────────
+
+function WaitConnector({ minutes, note }: { minutes: number; note: string }) {
+  return (
+    <View style={waitStyles.row}>
+      <View style={waitStyles.line} />
+      <View style={waitStyles.pill}>
+        <Ionicons name="time-outline" size={13} color={palette.textSecondary} />
+        <AppText variant="caption" color={palette.textSecondary}>
+          wait ~{minutes} min — {note}
+        </AppText>
+      </View>
+      <View style={waitStyles.line} />
+    </View>
+  );
+}
+
+const waitStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(2),
+    paddingVertical: spacing(1),
+    paddingHorizontal: spacing(2),
+  },
+  line: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: palette.border },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1.5),
+    paddingHorizontal: spacing(2.5),
+    paddingVertical: spacing(1),
+    borderRadius: radii.full,
+    backgroundColor: palette.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.border,
+    flexShrink: 1,
+  },
+});
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
@@ -449,8 +490,29 @@ function RoutineContent({
   onRegenerate: () => void;
   onCheckIn: () => void;
 }) {
+  const warnings = sequenceWarnings(steps, period);
+
   return (
     <View style={styles.contentWrap}>
+      {warnings.length > 0 && (
+        <Animated.View entering={FadeIn.duration(280)}>
+          <GlassCard style={styles.warningsCard}>
+            {warnings.map((w) => (
+              <View key={w.message} style={styles.warningRow}>
+                <Ionicons
+                  name={w.severity === 'fix' ? 'alert-circle' : 'information-circle-outline'}
+                  size={16}
+                  color={w.severity === 'fix' ? palette.danger : palette.warning}
+                />
+                <AppText variant="caption" color={palette.textSecondary} style={styles.warningText}>
+                  {w.message}
+                </AppText>
+              </View>
+            ))}
+          </GlassCard>
+        </Animated.View>
+      )}
+
       {steps.length === 0 ? (
         <View style={styles.emptyPeriod}>
           <AppText variant="subheading" color={palette.textSecondary} style={styles.emptyText}>
@@ -459,11 +521,15 @@ function RoutineContent({
         </View>
       ) : (
         <Stagger delay={60}>
-          {steps.map((step, idx) => (
-            <View key={step.id ?? `step-${idx}`} style={styles.stepSpacing}>
-              <StepRow step={step} index={idx} onRemove={() => onRemoveStep(idx)} />
-            </View>
-          ))}
+          {steps.map((step, idx) => {
+            const wait = waitAfter(step, steps[idx + 1]);
+            return (
+              <View key={step.id ?? `step-${idx}`} style={styles.stepSpacing}>
+                <StepRow step={step} index={idx} onRemove={() => onRemoveStep(idx)} />
+                {wait ? <WaitConnector minutes={wait.minutes} note={wait.note} /> : null}
+              </View>
+            );
+          })}
         </Stagger>
       )}
 
@@ -497,8 +563,10 @@ function RoutineContent({
       ) : null}
 
       {/* Check-in CTA — only when steps exist and no unsaved edits */}
-      {steps.length > 0 && !isDirty && !generating && (
-        isCheckedIn ? (
+      {steps.length > 0 &&
+        !isDirty &&
+        !generating &&
+        (isCheckedIn ? (
           <Animated.View entering={FadeIn.duration(300)} style={styles.doneCard}>
             <GlassCard tier="raised" style={styles.doneInner}>
               <Ionicons name="checkmark-circle" size={22} color={palette.success} />
@@ -515,14 +583,17 @@ function RoutineContent({
               loading={checkingIn}
               icon={
                 !checkingIn ? (
-                  <Ionicons name="checkmark-circle-outline" size={16} color={palette.textOnAccent} />
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={16}
+                    color={palette.textOnAccent}
+                  />
                 ) : undefined
               }
               style={styles.actionButton}
             />
           </View>
-        )
-      )}
+        ))}
     </View>
   );
 }
@@ -611,6 +682,9 @@ const styles = StyleSheet.create({
   skeletonWrap: { gap: spacing(3) },
 
   contentWrap: { gap: spacing(3) },
+  warningsCard: { gap: spacing(2.5) },
+  warningRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing(2) },
+  warningText: { flex: 1, lineHeight: 17 },
   stepSpacing: {},
   stepCard: { gap: spacing(3) },
   stepRow: { flexDirection: 'row', gap: spacing(3.5), alignItems: 'flex-start' },
