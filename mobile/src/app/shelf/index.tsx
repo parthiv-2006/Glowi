@@ -19,8 +19,9 @@ import {
   Stagger,
 } from '@/components/ui';
 import { ShelfItemCard } from '@/components/ShelfItemCard';
-import { useShelfItems } from '@/lib/hooks';
+import { useReactionLogs, useShelfItems } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
+import { riskyShelfItems } from '@/lib/reactions';
 import { expiryStatus, stockStatus, summarizeShelf } from '@/lib/shelf';
 import type { ShelfItem } from '@/lib/types';
 import { palette, radii, spacing } from '@/theme';
@@ -38,12 +39,14 @@ function attentionRank(item: ShelfItem): number {
 export default function ShelfScreen() {
   const router = useRouter();
   const { data: items, isLoading } = useShelfItems();
+  const { data: reactions = [] } = useReactionLogs();
 
   const sorted = useMemo(
     () => (items ? [...items].sort((a, b) => attentionRank(a) - attentionRank(b)) : []),
     [items],
   );
   const summary = useMemo(() => (items ? summarizeShelf(items) : null), [items]);
+  const risks = useMemo(() => riskyShelfItems(reactions, items ?? []), [reactions, items]);
 
   const nudge = summary
     ? [
@@ -103,6 +106,17 @@ export default function ShelfScreen() {
             Your shelf
           </AppText>
 
+          {risks.length ? (
+            <GlassCard style={styles.nudge}>
+              <Ionicons name="warning-outline" size={18} color={palette.danger} />
+              <AppText variant="subheading" color={palette.text} style={styles.nudgeText}>
+                {risks.length === 1
+                  ? `${risks[0].item.name} shares ${risks[0].ingredients.join(', ')} with a product that reacted.`
+                  : `${risks.length} products share ingredients with something that reacted.`}
+              </AppText>
+            </GlassCard>
+          ) : null}
+
           {nudge.length ? (
             <GlassCard style={styles.nudge}>
               <Ionicons name="notifications-outline" size={18} color={palette.warning} />
@@ -146,6 +160,30 @@ export default function ShelfScreen() {
             onPress={() => {
               haptics.press();
               router.push('/shelf/conflicts');
+            }}
+          />
+          <GlowButton
+            label="Reaction log"
+            variant="ghost"
+            onPress={() => {
+              haptics.press();
+              router.push('/reactions');
+            }}
+          />
+          <GlowButton
+            label="Shelf budget"
+            variant="ghost"
+            onPress={() => {
+              haptics.press();
+              router.push('/shelf/budget');
+            }}
+          />
+          <GlowButton
+            label="Comparing in a store?"
+            variant="ghost"
+            onPress={() => {
+              haptics.press();
+              router.push('/compare');
             }}
           />
         </>

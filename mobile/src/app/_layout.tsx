@@ -67,7 +67,11 @@ function RootNavigator() {
       <Stack.Screen name="forecast" />
       <Stack.Screen name="shelf/index" />
       <Stack.Screen name="shelf/[id]" />
+      <Stack.Screen name="shelf/budget" />
       <Stack.Screen name="shelf/add" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="reactions/index" />
+      <Stack.Screen name="reactions/add" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="compare" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="scan" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="results/[scanId]" />
       <Stack.Screen name="concern/[scanId]/[slug]" />
