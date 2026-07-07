@@ -20,6 +20,7 @@ import {
   Skeleton,
 } from '@/components/ui';
 import { getShelfImageUrl } from '@/lib/api';
+import { costPerUse, formatUsd } from '@/lib/budget';
 import { categoryIcon, expiryColor, stockColor, CATEGORY_LABEL } from '@/lib/constants';
 import {
   useDeleteShelfItem,
@@ -83,6 +84,7 @@ export default function ShelfItemDetail() {
 
   const expiry = expiryStatus(item);
   const stock = stockStatus(item.amount_remaining);
+  const cpu = costPerUse(item);
 
   return (
     <Screen bottomInset={spacing(8)}>
@@ -151,6 +153,12 @@ export default function ShelfItemDetail() {
             Used {item.times_used} {item.times_used === 1 ? 'time' : 'times'}
             {item.last_used_at ? ` · last ${format(parseISO(item.last_used_at), 'MMM d')}` : ''}
           </AppText>
+          {item.price_usd != null ? (
+            <AppText variant="caption" color={palette.textTertiary}>
+              {formatUsd(item.price_usd)}
+              {cpu != null ? ` · ${formatUsd(cpu)} per use` : ''}
+            </AppText>
+          ) : null}
         </GlassCard>
       </View>
 
@@ -205,6 +213,14 @@ export default function ShelfItemDetail() {
             }}
           />
         ) : null}
+        <GlowButton
+          label="Log a reaction to this"
+          variant="ghost"
+          onPress={() => {
+            haptics.press();
+            router.push('/reactions/add');
+          }}
+        />
         <GlowButton
           label="Remove from shelf"
           variant="danger"

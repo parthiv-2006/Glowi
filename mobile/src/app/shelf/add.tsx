@@ -53,6 +53,7 @@ export default function AddShelfItem() {
   const [opened, setOpened] = useState(true);
   const [shelfLife, setShelfLife] = useState('');
   const [sizeLabel, setSizeLabel] = useState('');
+  const [price, setPrice] = useState('');
   const [amount, setAmount] = useState(100);
   const [matchedSlug, setMatchedSlug] = useState<string | null>(null);
   const [keyIngredients, setKeyIngredients] = useState<string[]>([]);
@@ -108,10 +109,10 @@ export default function AddShelfItem() {
     setSaving(true);
     setError(null);
     try {
-      const productId = matchedSlug
-        ? ((await api.getProductsBySlug([matchedSlug]))[0]?.id ?? null)
-        : null;
+      const matched = matchedSlug ? (await api.getProductsBySlug([matchedSlug]))[0] : undefined;
+      const productId = matched?.id ?? null;
       const parsedShelfLife = shelfLife ? Math.round(Number(shelfLife)) : null;
+      const parsedPrice = price ? Number(price) : (matched?.price_usd ?? null);
       const item = await addItem.mutateAsync({
         name: name.trim(),
         brand: brand.trim() || null,
@@ -122,6 +123,10 @@ export default function AddShelfItem() {
         shelf_life_months: parsedShelfLife && parsedShelfLife > 0 ? parsedShelfLife : null,
         size_label: sizeLabel.trim() || null,
         amount_remaining: amount,
+        price_usd:
+          parsedPrice != null && Number.isFinite(parsedPrice) && parsedPrice >= 0
+            ? parsedPrice
+            : null,
       });
       if (uri) {
         try {
@@ -319,6 +324,14 @@ export default function AddShelfItem() {
                 />
               </View>
             </View>
+
+            <TextField
+              label="Price (USD, optional)"
+              value={price}
+              onChangeText={setPrice}
+              placeholder="e.g. 18.99"
+              keyboardType="decimal-pad"
+            />
 
             {opened && paoPreview ? (
               <AppText variant="caption" color={palette.textTertiary}>
