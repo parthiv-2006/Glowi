@@ -3,7 +3,14 @@
  * intelligence is the deployed Claude edge functions (live) or the on-device
  * simulator (mock) is a runtime configuration detail. See docs/adr/0003.
  */
-import type { AIDelta, ConflictReport, ProductIdentification, Scan, SkinForecast } from '../types';
+import type {
+  AIDelta,
+  ConflictReport,
+  ProductComparison,
+  ProductIdentification,
+  Scan,
+  SkinForecast,
+} from '../types';
 
 export interface AnalyzeScanInput {
   scanId: string;
@@ -65,6 +72,18 @@ export interface AIProvider {
    * the same pair hits the cache on the second call.
    */
   compareScans(input: CompareScanInput): Promise<AIDelta>;
+  /**
+   * In-store decision support: reads two product photos and returns a verdict
+   * grounded in the user's latest scan, shelf, and reaction log. Stateless —
+   * persists nothing.
+   */
+  compareProducts(input: CompareProductsInput): Promise<ProductComparison>;
+}
+
+export interface CompareProductsInput {
+  /** Base64-encoded product photos (no data: prefix). */
+  imageABase64: string;
+  imageBBase64: string;
 }
 
 export interface IdentifyProductInput {

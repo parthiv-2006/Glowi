@@ -1,7 +1,7 @@
 import type { Ionicons } from '@expo/vector-icons';
 
 import { palette } from '@/theme';
-import type { ForecastActionKind } from './types';
+import type { ForecastActionKind, ReactionSeverity } from './types';
 import type { Tone } from './ai/forecast';
 import type { ExpiryKind, StockKind } from './shelf';
 
@@ -94,6 +94,13 @@ export function stockColor(kind: StockKind): string {
   if (kind === 'low') return palette.warning;
   return palette.danger; // out
 }
+
+/** Reaction severity → label + semantic color. */
+export const REACTION_SEVERITY: Record<ReactionSeverity, { label: string; color: string }> = {
+  mild: { label: 'Mild', color: palette.warning },
+  moderate: { label: 'Moderate', color: palette.accent },
+  severe: { label: 'Severe', color: palette.danger },
+};
 
 /** Product category → Ionicons name, for shelf items. */
 export const CATEGORY_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {

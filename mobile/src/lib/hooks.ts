@@ -168,6 +168,33 @@ export function useMarkShelfItemUsed() {
   });
 }
 
+// ─────────────── Reaction Log ───────────────
+
+export function useReactionLogs() {
+  return useQuery({ queryKey: qk.reactions, queryFn: api.getReactionLogs });
+}
+
+export function useAddReactionLog() {
+  const qc = useQueryClient();
+  const userId = useAuth((s) => s.session?.user.id);
+  return useMutation({
+    mutationFn: (input: api.ReactionLogInput) => api.addReactionLog(userId!, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.reactions });
+      // The log writes a gotcha memory in the same call.
+      qc.invalidateQueries({ queryKey: qk.memories });
+    },
+  });
+}
+
+export function useDeleteReactionLog() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteReactionLog,
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.reactions }),
+  });
+}
+
 export function useScanComparison(scanIdBefore: string | null, scanIdAfter: string | null) {
   return useQuery({
     queryKey: qk.comparison(scanIdBefore ?? '', scanIdAfter ?? ''),

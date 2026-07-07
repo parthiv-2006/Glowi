@@ -14,6 +14,7 @@ import type {
   AIDelta,
   ConflictReport,
   ProductCategory,
+  ProductComparison,
   ProductIdentification,
   Scan,
   ScanConcern,
@@ -25,6 +26,7 @@ import type {
   AnalyzeScanInput,
   ChatInput,
   ChatResult,
+  CompareProductsInput,
   CompareScanInput,
   ExtractResult,
   IdentifyProductInput,
@@ -523,6 +525,50 @@ export const mockProvider: AIProvider = {
     ];
 
     return MOCK_DELTAS[scenario];
+  },
+
+  async compareProducts({
+    imageABase64,
+    imageBBase64,
+  }: CompareProductsInput): Promise<ProductComparison> {
+    await requireUserId();
+    await wait(1800 + Math.random() * 900);
+
+    // Deterministic pair keyed by the image payloads so a repeat comparison in
+    // a demo returns the same verdict without any network call.
+    const idx = (imageABase64.length + imageBBase64.length) % MOCK_IDENTIFICATIONS.length;
+    const a = MOCK_IDENTIFICATIONS[idx];
+    const b = MOCK_IDENTIFICATIONS[(idx + 1) % MOCK_IDENTIFICATIONS.length];
+    const toIdent = (p: (typeof MOCK_IDENTIFICATIONS)[number]): ProductIdentification => ({
+      ...p,
+      not_product: false,
+      reject_reason: null,
+      confidence: 0.9,
+    });
+
+    // Ground the mock in real user data, mirroring the live prompt inputs.
+    const { data: latestScan } = await supabase
+      .from('scans')
+      .select('concerns')
+      .eq('status', 'complete')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const topConcern = ((latestScan?.concerns ?? []) as ScanConcern[])[0]?.display_name ?? null;
+
+    return {
+      verdict: 'a',
+      product_a: toIdent(a),
+      product_b: toIdent(b),
+      rationale: `${a.brand} ${a.name} is the better fit${
+        topConcern ? ` for your ${topConcern.toLowerCase()}` : ''
+      }: its ${a.key_ingredients[0] ?? 'formula'} targets what your last scan actually flagged, while ${b.brand} ${b.name} overlaps with what you already own.`,
+      considerations: [
+        `${b.brand} ${b.name} duplicates a category already on your shelf.`,
+        'Neither product contains anything from your reaction log.',
+        'Prices are close — pick on fit, not cost.',
+      ],
+    };
   },
 
   async extractMemories(sessionId: string): Promise<ExtractResult> {

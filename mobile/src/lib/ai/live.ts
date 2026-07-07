@@ -1,11 +1,19 @@
 /** Live provider — the deployed Claude edge functions do the thinking. */
 import { supabase } from '../supabase';
-import type { AIDelta, ConflictReport, ProductIdentification, Scan, SkinForecast } from '../types';
+import type {
+  AIDelta,
+  ConflictReport,
+  ProductComparison,
+  ProductIdentification,
+  Scan,
+  SkinForecast,
+} from '../types';
 import type {
   AIProvider,
   AnalyzeScanInput,
   ChatInput,
   ChatResult,
+  CompareProductsInput,
   CompareScanInput,
   ExtractResult,
   IdentifyProductInput,
@@ -66,5 +74,12 @@ export const liveProvider: AIProvider = {
   async compareScans({ scanIdBefore, scanIdAfter }: CompareScanInput): Promise<AIDelta> {
     const result = await invoke<{ delta: AIDelta }>('compare-scans', { scanIdBefore, scanIdAfter });
     return result.delta;
+  },
+
+  async compareProducts({
+    imageABase64,
+    imageBBase64,
+  }: CompareProductsInput): Promise<ProductComparison> {
+    return invoke<ProductComparison>('compare-products', { imageABase64, imageBBase64 });
   },
 };

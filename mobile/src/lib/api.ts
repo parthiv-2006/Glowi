@@ -3,6 +3,7 @@
  * Feature screens consume these via the react-query hooks in hooks.ts;
  * nothing in the UI talks to the `supabase` client directly.
  */
+import { reactionMemoryContent } from './reactions';
 import { supabase } from './supabase';
 import type {
   Article,
@@ -13,6 +14,7 @@ import type {
   NutritionGuide,
   Product,
   ProductForConcern,
+  ReactionLog,
   Routine,
   RoutineCheckin,
   RoutineStep,
@@ -260,11 +262,12 @@ export type ShelfItemInput = Partial<
     | 'amount_remaining'
     | 'status'
     | 'notes'
+    | 'price_usd'
   >
 >;
 
 const SHELF_COLS =
-  'id, product_id, name, brand, category, key_ingredients, image_path, size_label, opened_at, shelf_life_months, amount_remaining, times_used, last_used_at, status, notes, created_at, updated_at';
+  'id, product_id, name, brand, category, key_ingredients, image_path, size_label, opened_at, shelf_life_months, amount_remaining, times_used, last_used_at, status, notes, price_usd, created_at, updated_at';
 
 export async function getShelfItems(): Promise<ShelfItem[]> {
   return unwrap(
@@ -338,4 +341,54 @@ export async function uploadShelfImage(
 export async function getShelfImageUrl(imagePath: string): Promise<string | null> {
   const { data } = await supabase.storage.from('scan-images').createSignedUrl(imagePath, 3600);
   return data?.signedUrl ?? null;
+}
+
+// ─────────────── Reaction Log ───────────────
+
+/** Editable fields when logging a reaction. */
+export type ReactionLogInput = Pick<
+  ReactionLog,
+  'product_name' | 'reacted_on' | 'symptoms' | 'severity'
+> &
+  Partial<Pick<ReactionLog, 'shelf_item_id' | 'brand' | 'key_ingredients' | 'notes'>>;
+
+export async function getReactionLogs(): Promise<ReactionLog[]> {
+  return unwrap(
+    await supabase
+      .from('reaction_logs')
+      .select('*')
+      .order('reacted_on', { ascending: false })
+      .order('created_at', { ascending: false }),
+  );
+}
+
+/**
+ * Logs a reaction and writes the matching 'gotcha' memory in the same call,
+ * so the coach and Skin Weather inherit the constraint immediately.
+ */
+export async function addReactionLog(
+  userId: string,
+  input: ReactionLogInput,
+): Promise<ReactionLog> {
+  const log = unwrap(
+    await supabase
+      .from('reaction_logs')
+      .insert({ user_id: userId, ...input })
+      .select()
+      .single(),
+  ) as ReactionLog;
+  await supabase.from('ai_memories').insert({
+    user_id: userId,
+    type: 'gotcha',
+    content: reactionMemoryContent(log),
+    importance: 5,
+    source: 'system',
+    source_ref: log.id,
+  });
+  return log;
+}
+
+export async function deleteReactionLog(id: string): Promise<void> {
+  const { error } = await supabase.from('reaction_logs').delete().eq('id', id);
+  if (error) throw new Error(error.message);
 }
