@@ -104,6 +104,14 @@ See [README.md](README.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and
 - The orchestrator stays responsible for verifying delegated work before declaring it
   done — a cheaper model doing the work doesn't lower the quality bar.
 
+### 9. Navigate with the code index
+- **Start at [docs/CODE_INDEX.md](docs/CODE_INDEX.md) before exploring the codebase.**
+  It maps every route, lib module, component, edge function, and migration to its file —
+  read it first and open only the files you need, instead of globbing/grepping around.
+- **Keep it current:** any change that adds, moves, or removes a route, lib module,
+  component, edge function, or migration must update `docs/CODE_INDEX.md` in the same
+  commit. A stale index is worse than none.
+
 ---
 
 ## Quality gate
