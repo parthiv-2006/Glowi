@@ -7,8 +7,10 @@ $100–$200/month on skincare, owns 15+ products, and wants synthesis — not mo
 > #3 shipped as the Reaction Log ([ADR-0009](adr/0009-reaction-log.md)); #4 shipped as
 > derived wait times + order warnings on the routine screen; #5 shipped as In-Store
 > Compare ([ADR-0010](adr/0010-in-store-compare.md)); #6 shipped as the Shelf Budget
-> screen. #1 (Scan-to-Trend Correlation) remains open — the Skin Progress Timeline
-> covers trend display but not routine-change correlation.
+> screen. #1 shipped 2026-07-07 as Scan-to-Trend Correlation — a pure client-side
+> engine (`mobile/src/lib/correlation.ts`) that lines shelf additions and logged
+> reactions up against scan movement and surfaces the insights on the Progress tab.
+> **All six features are now shipped.**
 
 ---
 

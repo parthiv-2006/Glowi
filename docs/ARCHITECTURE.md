@@ -148,7 +148,8 @@ clients, and HTTP/CORS helpers. All AI functions require a valid JWT.
 
 - TypeScript strict; ESLint (expo flat config); Jest unit tests for the pure logic
   (streak math, routine generation and sequencing, Skin Weather forecast derivation,
-  Shelf expiry/stock, budget/cost-per-use, reaction–shelf ingredient matching).
+  Shelf expiry/stock, budget/cost-per-use, reaction–shelf ingredient matching,
+  scan-to-trend correlation).
 - The React Compiler `immutability`/`purity` lint rules are scoped off because they
   don't model Reanimated's `sharedValue.value` API; `rules-of-hooks`, dependency checks,
   and type safety remain enforced.
