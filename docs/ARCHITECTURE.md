@@ -12,7 +12,9 @@ behind a provider seam that also supports a fully on-device mock.
 │                                                            │
 │  expo-router screens                                       │
 │    (auth) · onboarding · (tabs) · scan · results ·         │
-│     concern · chat · routine · article · memory            │
+│     concern · chat · routine · article · memory ·          │
+│     forecast · shelf (+budget/conflicts) · reactions ·     │
+│     compare                                                │
 │        │                                                   │
 │        ▼                                                   │
 │  data hooks (TanStack Query)  ── lib/api.ts ──┐            │
@@ -31,7 +33,7 @@ behind a provider seam that also supports a fully on-device mock.
 │  Edge Functions (Deno):                                   │
 │    analyze-skin · chat · extract-memories ·               │
 │    skin-forecast · identify-product · auth-signup ·       │
-│    compare-scans · check-conflicts                        │
+│    compare-scans · check-conflicts · compare-products     │
 │        ├──────────► Anthropic Claude API (secret key)     │
 │        └──────────► Open-Meteo (keyless weather)          │
 └──────────────────────────────────────────────────────────┘
@@ -76,11 +78,16 @@ Two families of tables (full DDL in `supabase/migrations/0001_core_tables.sql`):
 - **User-owned** (RLS: owner only): `profiles`, `scans`, `chat_sessions`,
   `chat_messages`, `ai_memories`, `routines`, `routine_steps`, `routine_checkins`,
   `reminder_settings`, `skin_forecasts` (one Skin Weather forecast per user per day),
-  `shelf_items` (The Shelf — the products a user owns, now incl. `key_ingredients`),
+  `shelf_items` (The Shelf — the products a user owns, incl. `key_ingredients` and an
+  optional `price_usd` that powers the budget/cost-per-use screen),
   `conflict_reports` (cached Ingredient Conflict Checker results per user),
   `scan_comparisons` (cached AI delta between two completed scans — unique on
   `(user_id, scan_id_before, scan_id_after)`; populated by the `compare-scans` edge
-  function and never re-generated for the same pair).
+  function and never re-generated for the same pair),
+  `reaction_logs` (the Reaction Log — products that reacted badly, with an ingredient
+  snapshot taken at log time; inserting one also writes a top-ranked `gotcha`
+  `ai_memories` row so every AI surface inherits the constraint — see
+  [ADR-0009](adr/0009-reaction-log.md)).
 
 ### Security boundary — RLS
 
@@ -100,7 +107,8 @@ flag); `set_updated_at` triggers maintain timestamps.
 
 The app depends only on the `AIProvider` interface (`lib/ai/types.ts`):
 `analyzeScan`, `chat`, `extractMemories`, `skinForecast`, `identifyProduct`,
-`checkConflicts`. Two implementations ([ADR-0003](adr/0003-ai-provider-seam.md)):
+`checkConflicts`, `compareScans`, `compareProducts`. Two implementations
+([ADR-0003](adr/0003-ai-provider-seam.md)):
 
 - **Live** (`lib/ai/live.ts`) invokes edge functions.
 - **Mock** (`lib/ai/mock.ts`) runs on-device with realistic, staged behavior and writes
@@ -116,6 +124,7 @@ The app depends only on the `AIProvider` interface (`lib/ai/types.ts`):
 | `skin-forecast` | Fetches today's local weather + air quality from Open-Meteo (keyless), assembles memory context (incl. the user's shelf), asks Claude for environment-grounded routine guidance that **names products the user owns**, **validates** it against the action enum, and upserts the day's forecast. Falls back to a deterministic forecast if Open-Meteo or Claude is unavailable. Idempotent per user per day ([ADR-0005](adr/0005-skin-weather-forecasting.md)). |
 | `identify-product` | Reads a product photo with Claude vision and returns structured details (name, brand, category, key ingredients, PAO, catalog match) for The Shelf, **validated** against the category enum and catalog. Persists nothing — the client confirms before saving ([ADR-0006](adr/0006-the-shelf-inventory.md)). |
 | `check-conflicts` | Filters the user's active shelf items down to those with known `key_ingredients`; if a cached `conflict_reports` row is at least as new as the latest shelf change, returns it with no Claude call. Otherwise asks Claude (temperature 0) for strict-JSON ingredient interactions, parses via `extractJson`, caches, and returns the report ([ADR-0008](adr/0008-ingredient-conflict-checker.md)). |
+| `compare-products` | In-store decision support: reads two product photos in a single Claude vision call whose prompt embeds the user's latest scan concerns, shelf ingredients, and reaction log; **validates** the verdict/category enums server-side and persists nothing ([ADR-0010](adr/0010-in-store-compare.md)). |
 | `auth-signup` | Creates pre-confirmed email and guest users via the admin API ([ADR-0002](adr/0002-prefilled-auth-signup-function.md)). |
 
 A `_shared` module holds the Anthropic client (with balanced-JSON extraction), the
@@ -138,7 +147,8 @@ clients, and HTTP/CORS helpers. All AI functions require a valid JWT.
 ## Quality & tooling
 
 - TypeScript strict; ESLint (expo flat config); Jest unit tests for the pure logic
-  (streak math, routine generation, Skin Weather forecast derivation, Shelf expiry/stock).
+  (streak math, routine generation and sequencing, Skin Weather forecast derivation,
+  Shelf expiry/stock, budget/cost-per-use, reaction–shelf ingredient matching).
 - The React Compiler `immutability`/`purity` lint rules are scoped off because they
   don't model Reanimated's `sharedValue.value` API; `rules-of-hooks`, dependency checks,
   and type safety remain enforced.

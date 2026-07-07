@@ -39,11 +39,24 @@ skincare coach that remembers you across every conversation.
   your shelf and asks Claude to flag real interactions — layering a BHA with a retinoid,
   applying a photosensitizing retinoid in the morning — with severity, a citation, and a
   concrete recommendation, not just a warning.
+- **Reaction Log** — Log a product that broke you out (symptoms, severity, when) and
+  the coach never recommends it again. Glowi snapshots the product's ingredients and
+  warns you when anything else on your shelf shares a formulation with something that
+  already burned you.
+- **In-Store Compare** — Standing in an aisle holding two products? Photograph both
+  labels and get a one-shot verdict judged against your latest scan, what's already
+  in your cabinet, and your reaction log.
 - **Coach** — A memory-aware chatbot answers anything skincare, recommends products
   inline, and *remembers you*: skin type, goals, what's reacted badly, and where you
   left off last time. It's also weather-aware and shelf-aware — it sees today's forecast
   and what's in your cabinet.
-- **Routine** — An AM/PM routine generated from your scan, editable and persisted.
+- **Routine** — An AM/PM routine generated from your scan, editable and persisted —
+  with derived wait times between steps ("vitamin C → wait 10 min") and warnings when
+  the order undermines an active (SPF not last, retinoid in the morning, acid layered
+  with retinoid).
+- **Shelf Budget** — Attach what you paid and Glowi tracks your shelf's value, 90-day
+  spend, and a cost-per-use "value leaderboard" showing which products actually earn
+  their price.
 - **Progress** — Scan history, a skin-score trend, before/after comparison, daily
   routine streaks with reminders.
 - **Learn** — A library of evidence-based articles with a clean reader.
@@ -68,6 +81,13 @@ skincare coach that remembers you across every conversation.
   whole shelf but only calls Claude when the shelf actually changes — results are cached
   per user and invalidated against `shelf_items.updated_at`
   ([ADR-0008](docs/adr/0008-ingredient-conflict-checker.md)).
+- **A safety net that rides the memory system.** Logging a reaction writes a structured
+  row *and* a top-ranked "gotcha" memory in one call, so every AI surface — coach,
+  forecast, in-store compare — honors "never again" with zero new plumbing
+  ([ADR-0009](docs/adr/0009-reaction-log.md)).
+- **Purchase decisions in one vision call.** In-Store Compare reads two labels and
+  judges them in a single Claude request whose prompt embeds the scan, shelf, and
+  reaction context server-side ([ADR-0010](docs/adr/0010-in-store-compare.md)).
 - **Security at the data layer.** Row Level Security on every user table; a private,
   per-user image bucket; the Anthropic key lives only in edge-function secrets and never
   ships in the app bundle.
@@ -101,7 +121,7 @@ Profile → AI engine once an `ANTHROPIC_API_KEY` secret is set on your Supabase
 supabase link --project-ref <your-ref>
 supabase db push                      # apply migrations in supabase/migrations
 # seed catalog: run the SQL files in supabase/seed in order
-supabase functions deploy             # analyze-skin, chat, extract-memories, skin-forecast, identify-product, auth-signup
+supabase functions deploy             # analyze-skin, chat, extract-memories, skin-forecast, identify-product, check-conflicts, compare-scans, compare-products, auth-signup
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 # optional: lock edge-function CORS to specific browser origins (comma-separated).
 # Unset → '*', which is fine for native clients. See ADR-0007.
@@ -120,7 +140,7 @@ mobile/                 Expo app
     theme/              design tokens — "clinical luxe"
 supabase/
   migrations/           schema, RLS, storage, triggers (source of truth)
-  functions/            analyze-skin · chat · extract-memories · skin-forecast · identify-product · auth-signup · _shared
+  functions/            analyze-skin · chat · extract-memories · skin-forecast · identify-product · check-conflicts · compare-scans · compare-products · auth-signup · _shared
   seed/                 curated catalog (products, nutrition, tips, articles)
 docs/                   ARCHITECTURE · MEMORY_SYSTEM · ADRs
 ```

@@ -3,6 +3,13 @@
 Features derived from the ideal Glowi consumer persona: a 25–40 year old spending
 $100–$200/month on skincare, owns 15+ products, and wants synthesis — not more information.
 
+> **Status (2026-07-06):** #2 shipped 2026-06-15 ([ADR-0008](adr/0008-ingredient-conflict-checker.md));
+> #3 shipped as the Reaction Log ([ADR-0009](adr/0009-reaction-log.md)); #4 shipped as
+> derived wait times + order warnings on the routine screen; #5 shipped as In-Store
+> Compare ([ADR-0010](adr/0010-in-store-compare.md)); #6 shipped as the Shelf Budget
+> screen. #1 (Scan-to-Trend Correlation) remains open — the Skin Progress Timeline
+> covers trend display but not routine-change correlation.
+
 ---
 
 ## 1. Scan-to-Trend Correlation

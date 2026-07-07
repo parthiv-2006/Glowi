@@ -29,7 +29,11 @@ Memories live in `ai_memories` (per-user, RLS-protected):
 | `last_accessed_at` | Bumped on retrieval — powers recency ranking |
 
 Onboarding seeds the first memories (skin type → `profile_fact`, goals → `goal`). Scans
-write an `event` memory each time. Conversations are mined for the rest.
+write an `event` memory each time. Logging a product reaction
+([ADR-0009](adr/0009-reaction-log.md)) writes an importance-5 `gotcha` in the same call
+as the `reaction_logs` row (`source: system`, `source_ref` = the log id), which is how
+"never recommend this again" reaches every AI surface. Conversations are mined for the
+rest.
 
 ## Read path — assembling context
 
