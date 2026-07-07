@@ -20,8 +20,15 @@ import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { ConcernTrendSparkline } from '@/components/ConcernTrendSparkline';
 import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { ScoreTrend } from '@/components/ScoreTrend';
-import { useRecentCheckins, useScans, useScanComparison } from '@/lib/hooks';
+import {
+  useReactionLogs,
+  useRecentCheckins,
+  useScans,
+  useScanComparison,
+  useShelfItems,
+} from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
+import { CORRELATION_CAVEAT, correlateScanTrends } from '@/lib/correlation';
 import { computeStreak } from '@/lib/streak';
 import { getSignedScanImageUrl } from '@/lib/supabase';
 import { palette, scoreColor, spacing } from '@/theme';
@@ -92,6 +99,8 @@ export default function ProgressScreen() {
   const router = useRouter();
   const { data: scans = [], isLoading: scansLoading } = useScans();
   const { data: checkins = [] } = useRecentCheckins();
+  const { data: shelfItems = [] } = useShelfItems();
+  const { data: reactions = [] } = useReactionLogs();
 
   const dates = useMemo(() => [...new Set(checkins.map((c) => c.checkin_date))], [checkins]);
   const streak = computeStreak(dates);
@@ -163,6 +172,12 @@ export default function ProgressScreen() {
       )
       .slice(0, 5);
   }, [completedScans]);
+
+  // Routine changes (shelf adds, reactions) correlated against scan movement.
+  const correlations = useMemo(
+    () => correlateScanTrends(completedScans, shelfItems, reactions),
+    [completedScans, shelfItems, reactions],
+  );
 
   // Weekly nudge: shown when the most recent scan is more than 6 days old.
   const daysSinceLastScan = useMemo(() => {
@@ -329,6 +344,55 @@ export default function ProgressScreen() {
           </GlassCard>
         )}
 
+        {/* Scan-to-trend correlations */}
+        {correlations.length > 0 && (
+          <GlassCard style={styles.section}>
+            <SectionHeader overline="Insights" title="What changed your skin" />
+            {correlations.map((insight) => (
+              <View
+                key={`${insight.event.kind}-${insight.event.label}-${insight.event.date}`}
+                style={styles.insightRow}
+              >
+                <View style={styles.insightIcon}>
+                  <Ionicons
+                    name={
+                      insight.event.kind === 'shelf_add'
+                        ? 'add-circle-outline'
+                        : 'alert-circle-outline'
+                    }
+                    size={18}
+                    color={palette.accentBright}
+                  />
+                </View>
+                <View style={styles.insightBody}>
+                  <AppText variant="caption" color={palette.textSecondary}>
+                    {insight.event.label} · {formatDate(insight.event.date)}
+                  </AppText>
+                  <AppText variant="subheading" style={styles.insightHeadline}>
+                    {insight.headline}
+                  </AppText>
+                </View>
+                <View
+                  style={[
+                    styles.directionBadge,
+                    { borderColor: directionColor(insight.direction) },
+                  ]}
+                >
+                  <AppText
+                    variant="overline"
+                    style={[styles.directionText, { color: directionColor(insight.direction) }]}
+                  >
+                    {insight.direction}
+                  </AppText>
+                </View>
+              </View>
+            ))}
+            <AppText variant="caption" color={palette.textTertiary} style={styles.caveat}>
+              ⓘ {CORRELATION_CAVEAT}
+            </AppText>
+          </GlassCard>
+        )}
+
         {/* Stats row */}
         <View style={[styles.section, styles.statsRow]}>
           <GlassCard style={styles.statBox}>
@@ -457,6 +521,24 @@ const styles = StyleSheet.create({
   directionText: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.6 },
   changeObs: { flex: 1, lineHeight: 17 },
   caveat: { fontStyle: 'italic', lineHeight: 17 },
+
+  // Scan-to-trend correlations
+  insightRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing(3),
+    marginBottom: spacing(4),
+  },
+  insightIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: palette.accentDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  insightBody: { flex: 1, gap: spacing(1) },
+  insightHeadline: { fontSize: 14, lineHeight: 19 },
 
   statsRow: { flexDirection: 'row', gap: spacing(3) },
   statBox: { flex: 1, gap: spacing(1) },
