@@ -29,6 +29,7 @@ function item(partial: Partial<ShelfItem>): ShelfItem {
     last_used_at: null,
     status: 'active',
     notes: null,
+    price_usd: null,
     created_at: '2026-06-01',
     updated_at: '2026-06-01',
     ...partial,

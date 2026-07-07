@@ -234,6 +234,8 @@ export interface ShelfItem {
   last_used_at: string | null;
   status: ShelfItemStatus;
   notes: string | null;
+  /** What the user paid, in USD — null when unknown. */
+  price_usd: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -279,6 +281,40 @@ export interface ScanComparison {
   scan_id_after: string;
   ai_delta: AIDelta;
   created_at: string;
+}
+
+export type ReactionSeverity = 'mild' | 'moderate' | 'severe';
+
+/** A logged bad reaction to a product — one row in the Reaction Log. */
+export interface ReactionLog {
+  id: string;
+  /** Optional link to the shelf item; survives the item's deletion. */
+  shelf_item_id: string | null;
+  product_name: string;
+  brand: string | null;
+  /** Snapshot of the product's actives at log time. */
+  key_ingredients: string[];
+  /** ISO date the reaction happened. */
+  reacted_on: string;
+  symptoms: string[];
+  severity: ReactionSeverity;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Which of two candidate products wins an in-store comparison. */
+export type ComparisonVerdict = 'a' | 'b' | 'either' | 'neither';
+
+/** Result of comparing two product photos against the user's skin context. */
+export interface ProductComparison {
+  verdict: ComparisonVerdict;
+  product_a: ProductIdentification;
+  product_b: ProductIdentification;
+  /** One-paragraph explanation grounded in the user's scan, shelf, and reactions. */
+  rationale: string;
+  /** Short bullets: conflicts, reaction risks, price/value notes. */
+  considerations: string[];
 }
 
 /** What the AI reads off a product label when adding to the Shelf. */
