@@ -112,9 +112,13 @@ cp .env.example .env        # fill in your Supabase URL + publishable key
 npx expo start              # press i / a, or scan the QR with Expo Go
 ```
 
-The app runs fully in **demo mode** (`EXPO_PUBLIC_AI_MODE=mock`) with no API key —
-realistic scans, chat, and memory all work offline. Flip to **live AI** in
-Profile → AI engine once an `ANTHROPIC_API_KEY` secret is set on your Supabase project.
+**Live AI is the default** (`EXPO_PUBLIC_AI_MODE=live`) — it calls the deployed edge
+functions, which requires an `ANTHROPIC_API_KEY` secret set on your Supabase project
+(see step 2). No key yet, or want to demo offline? Switch to **mock** in
+Profile → Developer — the full app (scans, chat, memory) runs realistically with no
+API key and zero token cost. ⚠️ The mode is persisted on-device once launched, so
+editing `.env` only affects fresh installs; use the in-app toggle to change an
+existing one.
 
 ```bash
 # 2. Backend (optional — only to run your own)
