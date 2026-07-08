@@ -74,6 +74,8 @@ Run WS1 first. WS2's asset work and WS4 can proceed in parallel with anything. T
 
 ## WS1 — Flip the AI seam to live mode
 
+**Status: ✅ DONE (2026-07-08).** See [Result](#ws1-result) at the end of this section.
+
 **Model: Sonnet.** Goal: the app stops being a demo of itself. Set the Anthropic key on
 Supabase, default the app to live mode, clear the one outstanding security-advisor item,
 and QA all 8 AI capabilities against real Claude.
@@ -144,6 +146,45 @@ reuse cached paths (6, 7) for the cache assertion rather than regenerating.
 
 **Memory update (persistent store, see final section):** the seam is live; key set on
 project `rfuuznnbctfyqttslrbv` (never store the key itself); leaked-password outcome.
+
+<a id="ws1-result"></a>
+### Result
+
+- **Secret:** `ANTHROPIC_API_KEY` set on `rfuuznnbctfyqttslrbv` (user set it via dashboard;
+  CLI secret-set requires an access token this environment doesn't have).
+- **Edge functions:** 9/9 now deployed. `compare-scans` was **missing entirely** (only 8
+  of 9 were live) — deployed it from local source. The other 8 were already current
+  (timestamp deltas were clock-skew noise; content diffed byte-identical against deployed
+  source for the two closest cases, `check-conflicts` and `compare-products`).
+- **Leaked-password protection:** confirmed **Pro-gated** on this project — toggle isn't
+  available on the current plan. Advisor still shows the WARN; this is accepted as a
+  finding, not a workstream failure, per the ground rule.
+- **Live mode default:** `mobile/.env`, `.env.example`, and `README.md` updated. The
+  persisted-`aiMode` gotcha is now documented inline in both.
+- **Finding + fix (not in the original plan):** migration `0011_scan_comparisons.sql` was
+  merged into `main` weeks ago but **had never been applied** to the remote project — the
+  table didn't exist, so every `compare-scans` call was silently failing its cache-insert
+  (best-effort `catch`, so users never saw an error, but every comparison re-called Claude
+  and nothing ever cached). Applied it live via `apply_migration`; verified a row now
+  persists and a second view of the same pair hits the cache.
+- **Also found while reconciling branches:** `docs/next-four-orchestration` (this file's
+  branch) had 1 unmerged commit sitting off `main`; all other `feat/*` branches were
+  already fully merged. Fast-forwarded this doc onto `main` before starting WS1 proper.
+- **QA matrix — 8/8 exercised against real Claude** (web preview, guest test account,
+  existing seed scans/shelf data):
+
+| # | Capability | Result |
+|---|---|---|
+| 1 | `analyzeScan` | Live confirmed via **rejection path** (uploaded a non-skin test image; Claude correctly returned `not_skin` with a friendly reason, edge function set `status: 'failed'`, UI degraded gracefully). Happy-path (real face → `complete` + score) needs on-device verification with an actual photo — no test photo was available in this session. |
+| 2 | `chat` | ✅ Pass. Grounded reply cited the real scan concern ("post-breakout marks, severity 44/100"), today's live weather (UV 8.3, SF), and resolved a real catalog product (EltaMD UV Clear SPF 46, $43, Amazon link). |
+| 3 | `extractMemories` | ✅ Pass. Triggered via in-app navigation away from an active session; a real AI-generated session summary appeared in the chat list referencing the conversation content and existing profile facts. |
+| 4 | `skinForecast` | ✅ Pass. Fresh row created for 2026-07-08 on first load; confirmed exactly 1 row after a reload (idempotent). |
+| 5 | `identifyProduct` | Live confirmed via **rejection path** (same reasoning as #1 — non-product test image correctly rejected inline with no console error). Happy-path needs a real label photo. |
+| 6 | `checkConflicts` | ✅ Pass. Fresh report generated against real shelf items (BHA, Hyaluronic Acid, Moisturizer → "No conflicts found"); re-check confirmed cache hit (row count unchanged, no second Claude call). |
+| 7 | `compareScans` | ✅ Pass, **after the migration fix above**. Claude honestly reported the two source scans weren't skin photos rather than fabricating a delta (exactly matching the "rigorously honest" system prompt). Cache row confirmed in `scan_comparisons` post-fix. |
+| 8 | `compareProducts` | ✅ Pass. Two non-product test images correctly produced a "Skip both" verdict with grounded per-image reasoning; nothing persisted (by design). |
+
+- **Quality gate:** typecheck ✅ · lint ✅ · 73/73 tests ✅ · format (no changes needed).
 
 ---
 
