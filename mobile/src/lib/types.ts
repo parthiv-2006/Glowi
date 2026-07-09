@@ -69,6 +69,24 @@ export interface ScanConcern {
 
 export type ScanStatus = 'pending' | 'analyzing' | 'complete' | 'failed';
 
+/** Post-capture lighting verdict — mirrors CaptureVerdict in lib/captureQuality.ts. */
+export type CaptureVerdict = 'good' | 'too_dark' | 'too_bright' | 'uneven';
+
+/**
+ * Client capture context recorded on a guided scan (WS4, migration 0014).
+ * Null for legacy scans and library uploads, which have no guided-capture
+ * context. Lets later features weight trends by photo consistency.
+ */
+export interface CaptureMeta {
+  /** True when taken through the in-app alignment-overlay camera. */
+  guided: boolean;
+  /** Version of the alignment-overlay geometry used (OVERLAY_VERSION). */
+  overlay_version: number;
+  /** Mean rec-709 luma of the capture, 0–255 — null when the read failed. */
+  mean_luminance: number | null;
+  verdict: CaptureVerdict | null;
+}
+
 export interface Scan {
   id: string;
   user_id: string;
@@ -80,6 +98,7 @@ export interface Scan {
   concerns: ScanConcern[];
   area: string | null;
   notes: string | null;
+  capture_meta: CaptureMeta | null;
   created_at: string;
 }
 

@@ -7,6 +7,7 @@ import { reactionMemoryContent } from './reactions';
 import { supabase } from './supabase';
 import type {
   Article,
+  CaptureMeta,
   ChatMessage,
   ChatSession,
   Concern,
@@ -91,12 +92,18 @@ export async function getScan(id: string): Promise<Scan> {
 
 export async function createScan(
   userId: string,
-  input: { area?: string; notes?: string },
+  input: { area?: string; notes?: string; captureMeta?: CaptureMeta | null },
 ): Promise<Scan> {
   return unwrap(
     await supabase
       .from('scans')
-      .insert({ user_id: userId, status: 'pending', area: input.area, notes: input.notes })
+      .insert({
+        user_id: userId,
+        status: 'pending',
+        area: input.area,
+        notes: input.notes,
+        capture_meta: input.captureMeta ?? null,
+      })
       .select()
       .single(),
   );

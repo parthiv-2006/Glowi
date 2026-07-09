@@ -25,6 +25,7 @@ import { attachScanImage, createScan } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { scheduleWeeklyScanReminder } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
+import type { CaptureMeta } from '@/lib/types';
 import { useAuth } from '@/stores/auth';
 import { motion, palette, radii, spacing } from '@/theme';
 
@@ -59,10 +60,12 @@ async function uploadImage(userId: string, scanId: string, uri: string): Promise
 export default function Analyzing() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { uri, area, notes } = useLocalSearchParams<{
+  const { uri, area, notes, meta } = useLocalSearchParams<{
     uri: string;
     area?: string;
     notes?: string;
+    /** JSON-encoded CaptureMeta from the guided camera; absent for library uploads. */
+    meta?: string;
   }>();
   const userId = useAuth((s) => s.session?.user.id);
 
@@ -104,7 +107,19 @@ export default function Analyzing() {
       return;
     }
     try {
-      const scan = await createScan(userId, { area: area || undefined, notes: notes || undefined });
+      let captureMeta: CaptureMeta | null = null;
+      if (meta) {
+        try {
+          captureMeta = JSON.parse(meta) as CaptureMeta;
+        } catch {
+          captureMeta = null;
+        }
+      }
+      const scan = await createScan(userId, {
+        area: area || undefined,
+        notes: notes || undefined,
+        captureMeta,
+      });
       const path = await uploadImage(userId, scan.id, uri);
       await attachScanImage(scan.id, path);
 
@@ -127,7 +142,7 @@ export default function Analyzing() {
       setError(e instanceof Error ? e.message : 'Analysis failed. Please try again.');
       haptics.error();
     }
-  }, [userId, uri, area, notes, router]);
+  }, [userId, uri, area, notes, meta, router]);
 
   useEffect(() => {
     if (started.current) return;

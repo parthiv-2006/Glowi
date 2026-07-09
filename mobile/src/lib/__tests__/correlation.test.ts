@@ -28,6 +28,7 @@ function scan(partial: Partial<Scan>): Scan {
     concerns: [],
     area: null,
     notes: null,
+    capture_meta: null,
     created_at: '2026-06-01T12:00:00Z',
     ...partial,
   };
