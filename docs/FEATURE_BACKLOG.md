@@ -106,6 +106,20 @@ real use. **All four shipped:**
   post-capture lighting check, recording `capture_meta` on each scan
   ([ADR-0012](adr/0012-guided-scan-capture.md)).
 
+## Next: the Glow Loop (planned 2026-07-09)
+
+Three retention features selected by the user from a verified-clean baseline (full
+feature audit 2026-07-09: quality gate green, backend healthy, all routes error-free,
+live AI verified end to end). Execution contract:
+[docs/ORCHESTRATION_GLOW_LOOP.md](ORCHESTRATION_GLOW_LOOP.md).
+
+- **WS-A — Smart Replenishment.** Expiring/low-stock shelf items generate ranked,
+  reaction-safe replacement suggestions from the catalog. Pure client-side, zero tokens.
+- **WS-B — Lifestyle Diary + correlation v2.** 10-second daily check-in (sleep, stress,
+  diet flags, water; cycle phase opt-in) feeding the correlation engine and coach context.
+- **WS-C — Weekly Glow Report.** AI-written week-in-review with a branded shareable
+  card and a weekly notification. One cached Claude call per user per week.
+
 ## Deferred
 
 - **ML face alignment (react-native-vision-camera).** Real-time face-box tracking
