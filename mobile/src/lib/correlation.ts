@@ -8,6 +8,9 @@
  * These are correlations, not causation — the UI must always show
  * CORRELATION_CAVEAT alongside the insights. Free of I/O so it is shared by
  * the Progress tab and unit tests.
+ *
+ * ⚠ Lockstep: mirror of supabase/functions/_shared/correlation.ts —
+ * change both or neither.
  */
 import type { ChangeDirection, ReactionLog, Scan, ShelfItem } from './types';
 
@@ -37,6 +40,7 @@ export interface CorrelationEvent {
 
 /** One concern's severity movement between the flanking scans. */
 export interface ConcernDelta {
+  slug: string;
   name: string;
   from: number;
   to: number;
@@ -95,7 +99,13 @@ function concernDeltas(before: Scan, after: Scan): ConcernDelta[] {
     if (!a) continue;
     const delta = a.severity - b.severity;
     if (Math.abs(delta) < MIN_CONCERN_DELTA) continue;
-    deltas.push({ name: b.display_name, from: b.severity, to: a.severity, delta });
+    deltas.push({
+      slug: b.concern_slug,
+      name: b.display_name,
+      from: b.severity,
+      to: a.severity,
+      delta,
+    });
   }
   return deltas.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 2);
 }

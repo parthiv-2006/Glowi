@@ -29,6 +29,8 @@ import {
 } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
 import { CORRELATION_CAVEAT, correlateScanTrends } from '@/lib/correlation';
+import type { CorrelationInsight } from '@/lib/correlation';
+import { concernsTargetedBy, normalizeIngredient } from '@/lib/ingredientConcerns';
 import { computeStreak } from '@/lib/streak';
 import { getSignedScanImageUrl } from '@/lib/supabase';
 import { palette, scoreColor, spacing } from '@/theme';
@@ -40,6 +42,22 @@ function formatDate(iso: string): string {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+function titleCase(s: string): string {
+  return s.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** "Niacinamide targets dark spots — this lines up." when an ingredient behind the
+ * event plausibly targets the insight's top-moved concern; null otherwise. */
+function whyLine(insight: CorrelationInsight): string | null {
+  const top = insight.concernDeltas[0];
+  if (!top) return null;
+  const matched = insight.event.key_ingredients.find((ingredient) =>
+    concernsTargetedBy([ingredient]).includes(top.slug),
+  );
+  if (!matched) return null;
+  return `${titleCase(normalizeIngredient(matched))} targets ${top.name.toLowerCase()} — this lines up.`;
 }
 
 /** Fetches a 1-hour signed URL for a private scan image. */
@@ -348,45 +366,57 @@ export default function ProgressScreen() {
         {correlations.length > 0 && (
           <GlassCard style={styles.section}>
             <SectionHeader overline="Insights" title="What changed your skin" />
-            {correlations.map((insight) => (
-              <View
-                key={`${insight.event.kind}-${insight.event.label}-${insight.event.date}`}
-                style={styles.insightRow}
-              >
-                <View style={styles.insightIcon}>
-                  <Ionicons
-                    name={
-                      insight.event.kind === 'shelf_add'
-                        ? 'add-circle-outline'
-                        : 'alert-circle-outline'
-                    }
-                    size={18}
-                    color={palette.accentBright}
-                  />
-                </View>
-                <View style={styles.insightBody}>
-                  <AppText variant="caption" color={palette.textSecondary}>
-                    {insight.event.label} · {formatDate(insight.event.date)}
-                  </AppText>
-                  <AppText variant="subheading" style={styles.insightHeadline}>
-                    {insight.headline}
-                  </AppText>
-                </View>
+            {correlations.map((insight) => {
+              const why = whyLine(insight);
+              return (
                 <View
-                  style={[
-                    styles.directionBadge,
-                    { borderColor: directionColor(insight.direction) },
-                  ]}
+                  key={`${insight.event.kind}-${insight.event.label}-${insight.event.date}`}
+                  style={styles.insightRow}
                 >
-                  <AppText
-                    variant="overline"
-                    style={[styles.directionText, { color: directionColor(insight.direction) }]}
+                  <View style={styles.insightIcon}>
+                    <Ionicons
+                      name={
+                        insight.event.kind === 'shelf_add'
+                          ? 'add-circle-outline'
+                          : 'alert-circle-outline'
+                      }
+                      size={18}
+                      color={palette.accentBright}
+                    />
+                  </View>
+                  <View style={styles.insightBody}>
+                    <AppText variant="caption" color={palette.textSecondary}>
+                      {insight.event.label} · {formatDate(insight.event.date)}
+                    </AppText>
+                    <AppText variant="subheading" style={styles.insightHeadline}>
+                      {insight.headline}
+                    </AppText>
+                    {why && (
+                      <AppText
+                        variant="caption"
+                        color={palette.textTertiary}
+                        style={styles.whyLine}
+                      >
+                        {why}
+                      </AppText>
+                    )}
+                  </View>
+                  <View
+                    style={[
+                      styles.directionBadge,
+                      { borderColor: directionColor(insight.direction) },
+                    ]}
                   >
-                    {insight.direction}
-                  </AppText>
+                    <AppText
+                      variant="overline"
+                      style={[styles.directionText, { color: directionColor(insight.direction) }]}
+                    >
+                      {insight.direction}
+                    </AppText>
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
             <AppText variant="caption" color={palette.textTertiary} style={styles.caveat}>
               ⓘ {CORRELATION_CAVEAT}
             </AppText>
@@ -539,6 +569,7 @@ const styles = StyleSheet.create({
   },
   insightBody: { flex: 1, gap: spacing(1) },
   insightHeadline: { fontSize: 14, lineHeight: 19 },
+  whyLine: { fontStyle: 'italic', lineHeight: 16 },
 
   statsRow: { flexDirection: 'row', gap: spacing(3) },
   statBox: { flex: 1, gap: spacing(1) },
