@@ -6,8 +6,19 @@
  * See docs/MEMORY_SYSTEM.md for the full design.
  */
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import {
+  correlateScanTrends,
+  type CorrelationReactionLog,
+  type CorrelationScan,
+  type CorrelationShelfItem,
+} from './correlation.ts';
+import { concernsTargetedBy, normalizeIngredient } from './ingredientConcerns.ts';
 
 const MAX_RANKED_MEMORIES = 12;
+
+function capitalize(s: string): string {
+  return s.length ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
 
 export interface MemoryContext {
   block: string;
@@ -20,8 +31,18 @@ export async function assembleMemoryContext(
   opts: { excludeSessionId?: string } = {},
 ): Promise<MemoryContext> {
   const today = new Date().toISOString().slice(0, 10);
-  const [profileRes, gotchaRes, rankedRes, scanRes, sessionRes, forecastRes, shelfRes] =
-    await Promise.all([
+  const [
+    profileRes,
+    gotchaRes,
+    rankedRes,
+    scanRes,
+    sessionRes,
+    forecastRes,
+    shelfRes,
+    correlationScansRes,
+    correlationShelfRes,
+    correlationReactionsRes,
+  ] = await Promise.all([
     svc.from('profiles').select('display_name, skin_type, goals').eq('id', userId).maybeSingle(),
     // Gotchas (allergies, bad reactions) are safety-relevant: always included.
     svc
@@ -71,6 +92,21 @@ export async function assembleMemoryContext(
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(20),
+    svc
+      .from('scans')
+      .select('created_at, skin_score, concerns, status')
+      .eq('user_id', userId)
+      .eq('status', 'complete')
+      .order('created_at', { ascending: true }),
+    svc
+      .from('shelf_items')
+      .select('created_at, name, key_ingredients')
+      .eq('user_id', userId)
+      .eq('status', 'active'),
+    svc
+      .from('reaction_logs')
+      .select('reacted_on, product_name, key_ingredients')
+      .eq('user_id', userId),
   ]);
 
   const lines: string[] = [];
@@ -133,13 +169,47 @@ export async function assembleMemoryContext(
 
   if (shelfRes.data?.length) {
     const items = shelfRes.data
-      .map((s: { name: string; brand: string | null; category: string | null; amount_remaining: number }) => {
-        const label = [s.brand, s.name].filter(Boolean).join(' ');
-        const low = s.amount_remaining <= 20 ? ', running low' : '';
-        return `${label} (${s.category ?? 'product'}${low})`;
-      })
+      .map(
+        (s: {
+          name: string;
+          brand: string | null;
+          category: string | null;
+          amount_remaining: number;
+        }) => {
+          const label = [s.brand, s.name].filter(Boolean).join(' ');
+          const low = s.amount_remaining <= 20 ? ', running low' : '';
+          return `${label} (${s.category ?? 'product'}${low})`;
+        },
+      )
       .join('; ');
     lines.push(`PRODUCTS ON THEIR SHELF (recommend what they own): ${items}`);
+  }
+
+  const insights = correlateScanTrends(
+    (correlationScansRes.data ?? []) as CorrelationScan[],
+    (correlationShelfRes.data ?? []) as CorrelationShelfItem[],
+    (correlationReactionsRes.data ?? []) as CorrelationReactionLog[],
+  );
+  if (insights.length > 0) {
+    lines.push(
+      'ROUTINE CORRELATIONS (measured from their scan history — correlations, not proof):',
+    );
+    for (const insight of insights) {
+      const top = insight.concernDeltas[0];
+      const matchedIngredient = top
+        ? insight.event.key_ingredients.find((ing) => concernsTargetedBy([ing]).includes(top.slug))
+        : undefined;
+      const why =
+        top && matchedIngredient
+          ? ` ${capitalize(normalizeIngredient(matchedIngredient))} targets ${top.name.toLowerCase()}.`
+          : '';
+      lines.push(
+        `  • ${insight.event.label} (${insight.event.date.slice(0, 10)}): ${insight.headline}${why}`,
+      );
+    }
+    lines.push(
+      '  ↳ Use these to explain what seems to be working or not; always keep the correlation caveat.',
+    );
   }
 
   return {
