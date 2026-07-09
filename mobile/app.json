@@ -24,7 +24,10 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "output": "static",
@@ -36,7 +39,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Glowi uses the camera to photograph skin concerns for AI analysis."
+          "cameraPermission": "Glowi uses the camera to photograph skin concerns for AI analysis.",
+          "recordAudioAndroid": false
         }
       ],
       [
@@ -59,6 +63,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "049c9cf2-9aa9-42c0-854a-ad20a5a80b55"
+      }
+    },
+    "owner": "parthiv-2006s-team"
   }
 }
