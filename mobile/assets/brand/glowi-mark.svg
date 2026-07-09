@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Glowi brand mark — the idle GlowiAvatar sphere with its warm clay halo,
+  on a transparent field. This is an EXACT transcription of the sphere/face
+  geometry in mobile/src/components/GlowiAvatar.tsx (the source of truth for
+  the mascot). Do not approximate the gradient stops, face coordinates, or the
+  halo falloff — mirror the component so the icon and the in-app mascot match.
+
+  Coordinate system: the sphere lives in a 100-unit box (r46 @ 50,50, matching
+  the component). The halo is 1.55x that box (component `haloSize = size*1.55`),
+  so the composed viewBox is 155 units with the sphere centered (translate 27.5).
+  The solid background field is applied at render time by scripts/generate-assets.mjs
+  so this same mark can also feed the transparent Android foreground + splash.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 155 155" width="155" height="155">
+  <defs>
+    <radialGradient id="halo" gradientUnits="userSpaceOnUse" cx="77.5" cy="77.5" r="77.5">
+      <stop offset="0" stop-color="#E0A984" stop-opacity="0.45" />
+      <stop offset="0.68" stop-color="#E0A984" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Glow halo behind the sphere -->
+  <circle cx="77.5" cy="77.5" r="77.5" fill="url(#halo)" />
+
+  <!-- Sphere + face, centered in the halo box -->
+  <g transform="translate(27.5 27.5)">
+    <defs>
+      <!-- Warm clay body gradient -->
+      <radialGradient id="body" gradientUnits="userSpaceOnUse" cx="40" cy="34" r="62">
+        <stop offset="0" stop-color="#F0C8A0" />
+        <stop offset="0.26" stop-color="#E8A070" />
+        <stop offset="0.5" stop-color="#C5704A" />
+        <stop offset="0.74" stop-color="#9A4A2C" />
+        <stop offset="1" stop-color="#6B2E18" />
+      </radialGradient>
+      <!-- Inner shadow bottom-right -->
+      <radialGradient id="innerShadow" gradientUnits="userSpaceOnUse" cx="70" cy="76" r="48">
+        <stop offset="0" stop-color="#3D1A0A" stop-opacity="0.5" />
+        <stop offset="0.7" stop-color="#3D1A0A" stop-opacity="0" />
+      </radialGradient>
+      <!-- Bounce light bottom -->
+      <radialGradient id="bounce" gradientUnits="userSpaceOnUse" cx="64" cy="88" r="34">
+        <stop offset="0" stop-color="#F5D5B8" stop-opacity="0.5" />
+        <stop offset="1" stop-color="#F5D5B8" stop-opacity="0" />
+      </radialGradient>
+      <!-- Specular sheen top-left -->
+      <radialGradient id="sheen" gradientUnits="userSpaceOnUse" cx="38" cy="30" r="26">
+        <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45" />
+        <stop offset="1" stop-color="#FFFFFF" stop-opacity="0" />
+      </radialGradient>
+    </defs>
+
+    <circle cx="50" cy="50" r="46" fill="url(#body)" />
+    <circle cx="50" cy="50" r="46" fill="url(#innerShadow)" />
+    <circle cx="50" cy="50" r="46" fill="url(#bounce)" />
+    <circle cx="50" cy="50" r="46" fill="url(#sheen)" />
+
+    <!-- Specular highlight -->
+    <ellipse cx="33" cy="28" rx="14" ry="10" fill="#FFFFFF" opacity="0.18" />
+    <circle cx="30" cy="24" r="3" fill="#FFFFFF" opacity="0.8" />
+
+    <!-- Face (idle) -->
+    <circle cx="32" cy="62" r="5.5" fill="#BC5E38" fill-opacity="0.28" />
+    <circle cx="68" cy="62" r="5.5" fill="#BC5E38" fill-opacity="0.28" />
+    <circle cx="40" cy="46" r="3.6" fill="#3D1A0A" />
+    <circle cx="60" cy="46" r="3.6" fill="#3D1A0A" />
+    <circle cx="41.3" cy="44.3" r="1.1" fill="#FFF5EE" />
+    <circle cx="61.3" cy="44.3" r="1.1" fill="#FFF5EE" />
+    <path d="M 42 60 Q 50 66 58 60" stroke="#3D1A0A" stroke-width="2.6" stroke-linecap="round" fill="none" />
+  </g>
+</svg>

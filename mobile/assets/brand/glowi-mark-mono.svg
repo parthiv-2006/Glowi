@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Glowi monochrome mark — a single-colour (white) silhouette of the sphere with
+  the idle face as negative space, for the Android adaptive-icon monochrome
+  layer (the system tints it to match the wallpaper). White where the icon is,
+  transparent everywhere else. Face geometry mirrors GlowiAvatar's idle state.
+  The sphere fills its 100-unit box here; generate-assets.mjs scales it into the
+  adaptive safe zone.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <mask id="face">
+    <!-- everything white shows through; black punches the face out -->
+    <rect x="0" y="0" width="100" height="100" fill="#FFFFFF" />
+    <circle cx="40" cy="46" r="3.6" fill="#000000" />
+    <circle cx="60" cy="46" r="3.6" fill="#000000" />
+    <path d="M 42 60 Q 50 66 58 60" stroke="#000000" stroke-width="3.2" stroke-linecap="round" fill="none" />
+  </mask>
+  <circle cx="50" cy="50" r="46" fill="#FFFFFF" mask="url(#face)" />
+</svg>
