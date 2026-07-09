@@ -29,7 +29,7 @@ worse than no entries.
 |---|---|---|
 | `/(auth)/welcome`, `sign-in`, `sign-up` | `(auth)/*.tsx` | Auth funnel (guest mode = pre-confirmed user via `auth-signup` fn, ADR-0002) |
 | `/onboarding` | `onboarding.tsx` | Skin type + goals wizard |
-| `/` (Home tab) | `(tabs)/index.tsx` | Skin Weather card, scan CTA, latest results |
+| `/` (Home tab) | `(tabs)/index.tsx` | Skin Weather card, daily lifestyle check-in, scan CTA, latest results |
 | `/progress` | `(tabs)/progress.tsx` | Score trend, before/after + AI delta, concern sparklines, **scan-to-trend correlations**, streak, scan history |
 | `/chat` | `(tabs)/chat.tsx` | Coach session list; thread at `chat/[sessionId].tsx` |
 | `/learn` | `(tabs)/learn.tsx` | Articles; reader at `article/[slug].tsx` |
@@ -60,17 +60,17 @@ worse than no entries.
 | `haptics.ts` / `responsive.ts` | Haptic + layout helpers |
 
 **Pure domain logic (unit-tested in `lib/__tests__/`):**
-`streak.ts` (check-in streaks) · `shelf.ts` (PAO expiry, stock) · `reactions.ts` (ingredient risk cross-referencing) · `routineSequence.ts` (wait times, order warnings) · `routineGenerator.ts` (scan → routine steps) · `budget.ts` (cost-per-use, quarter spend) · `correlation.ts` (scan-to-trend correlation insights; ⚠ lockstep mirror of `supabase/functions/_shared/correlation.ts`) · `ingredientConcerns.ts` (ingredient → concern targeting map for the correlation "why" line; ⚠ lockstep mirror of `supabase/functions/_shared/ingredientConcerns.ts`) · `captureQuality.ts` (`assessCapture` — pure rec-709 luma exposure verdict for guided-scan photos; Skia decode lives in `scan/camera.tsx`)
+`streak.ts` (check-in streaks) · `shelf.ts` (PAO expiry, stock) · `reactions.ts` (ingredient risk cross-referencing) · `routineSequence.ts` (wait times, order warnings) · `routineGenerator.ts` (scan → routine steps) · `budget.ts` (cost-per-use, quarter spend) · `correlation.ts` (scan-to-trend correlation insights, incl. lifestyle sustained-streak events; ⚠ lockstep mirror of `supabase/functions/_shared/correlation.ts`) · `ingredientConcerns.ts` (ingredient → concern targeting map for the correlation "why" line; ⚠ lockstep mirror of `supabase/functions/_shared/ingredientConcerns.ts`) · `captureQuality.ts` (`assessCapture` — pure rec-709 luma exposure verdict for guided-scan photos; Skia decode lives in `scan/camera.tsx`)
 
 **AI seam (`lib/ai/`, ADR-0003 — sacred):** `types.ts` = `AIProvider` interface; `live.ts` invokes edge functions; `mock.ts` = deterministic offline twin (keep in lockstep); `forecast.ts` = pure mock-weather synthesis; `index.ts` = `getAIProvider()` (mode from `EXPO_PUBLIC_AI_MODE`).
 
-**Stores (`mobile/src/stores/`):** `auth.ts` (session), `settings.ts` (AI mode, location, reminders — persisted).
+**Stores (`mobile/src/stores/`):** `auth.ts` (session), `settings.ts` (AI mode, location, reminders, cycle-tracking opt-in — persisted).
 
 ## Components
 
 **Primitives (`components/ui/` — always reuse first):** `AppText`, `Badge`, `EmptyState`, `GlassCard` (tier="sunken|raised|glow"), `GlowButton`, `PressableScale`, `ProgressRing`, `Screen`, `SectionHeader`, `Skeleton`, `Stagger`, `TextField`, `effects.tsx` (InnerHighlight, glowShadow, GradientText — never fake these as flat fills).
 
-**Feature (`components/`):** `AuroraBackground` (+`.web`), `BeforeAfterSlider`, `ConcernTrendSparkline`, `GlowiAvatar` (the mascot — never draw a one-off), `Markdown`, `ProductCard`, `ScoreTrend`, `ShelfItemCard`, `SkinWeatherCard`, `SplashView`, `TabBar`, `chat/` (MessageBubble, TypingDots), `scan/` (ScanTheater +`.web`).
+**Feature (`components/`):** `AuroraBackground` (+`.web`), `BeforeAfterSlider`, `ConcernTrendSparkline`, `DailyCheckinCard` (Home lifestyle check-in — tap-to-upsert scales/chips, opt-in cycle row), `GlowiAvatar` (the mascot — never draw a one-off), `Markdown`, `ProductCard`, `ScoreTrend`, `ShelfItemCard`, `SkinWeatherCard`, `SplashView`, `TabBar`, `chat/` (MessageBubble, TypingDots), `scan/` (ScanTheater +`.web`).
 
 ## Backend (`supabase/`)
 
@@ -89,7 +89,7 @@ worse than no entries.
 | `auth-signup` | Pre-confirmed guest/user creation, IP rate-limited |
 | `_shared/` | `http.ts` (CORS/serve), `anthropic.ts`, `images.ts` (magic-byte sniffing), `memory.ts` (`assembleMemoryContext`), `correlation.ts` + `ingredientConcerns.ts` (⚠ lockstep mirrors of the mobile modules of the same name, ported into the memory context), db helpers |
 
-**Migrations (append-only source of truth):** 0001 core tables · 0002 RLS · 0003 storage+triggers · 0004 guest flag · 0005 skin_forecasts · 0006 shelf_items · 0007 rate limit · 0008 drop raw_model_output · 0009 lock trigger fns · 0010 conflicts + key_ingredients · 0011 scan_comparisons · 0012 reaction_logs · 0013 shelf price_usd · 0014 scans.capture_meta (guided-capture context).
+**Migrations (append-only source of truth):** 0001 core tables · 0002 RLS · 0003 storage+triggers · 0004 guest flag · 0005 skin_forecasts · 0006 shelf_items · 0007 rate limit · 0008 drop raw_model_output · 0009 lock trigger fns · 0010 conflicts + key_ingredients · 0011 scan_comparisons · 0012 reaction_logs · 0013 shelf price_usd · 0014 scans.capture_meta (guided-capture context) · 0015 lifestyle_logs (daily check-in: sleep/stress/water 0–2, diet flags, opt-in cycle_phase).
 
 Every user table has RLS (`crud_own` convention); the scan-images bucket is private per-user.
 

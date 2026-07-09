@@ -1,6 +1,8 @@
 # Orchestration Plan — The Glow Loop (Three Retention Features)
 
-**Status:** WS-A ⬜ · WS-B ⬜ · WS-C ⬜ — planned, not started
+**Status:** WS-A ⬜ · WS-B ✅ code-complete on branch `feat/ws-b-lifestyle-diary`
+(migration 0015 apply + `chat`/`skin-forecast` redeploy + live-coach check deferred to
+merge, per the user's decision) · WS-C ⬜
 · **Written:** 2026-07-09 · **Owner:** orchestrator session
 
 This document is an execution contract, in the same mold as
@@ -312,6 +314,19 @@ privacy stance — RLS, cycle opt-in default-off, deletable; streak-event design
 rejected alternatives: AI-extracting lifestyle facts from chat, a separate diary tab);
 `docs/MEMORY_SYSTEM.md` gains the LIFESTYLE context source; README feature bullet;
 CODE_INDEX; memory-store note (new table, engine signature change, cycle-opt-in flag).
+
+**Landed 2026-07-09 (branch `feat/ws-b-lifestyle-diary`, not merged):** migration
+`0015_lifestyle_logs.sql`; `LifestyleLevel`/`CyclePhase`/`LifestyleLog` types +
+`getLifestyleLogs`/`upsertLifestyleLog` + `qk.lifestyleLogs` + `useLifestyleLogs`/
+`useUpsertLifestyleLog` (optimistic across every window); `DailyCheckinCard` on Home +
+`cycleTrackingEnabled` settings flag + Profile "Track cycle phase" opt-in; correlation v2
+(`MIN_STREAK_DAYS`, `'lifestyle'` kind, `lifestyleEvents`, optional 4th param) in **both
+mirrors** with the parity fixture extended by 2 lifestyle cases and 8 new engine tests;
+`LIFESTYLE` block + lifestyle-fed correlations in `_shared/memory.ts`; Progress tab wired.
+Quality gate green (tsc + eslint + 119 jest tests). ADR-0013 written; README/MEMORY_SYSTEM/
+CODE_INDEX updated. **Deferred to merge (user decision):** apply 0015 to
+`rfuuznnbctfyqttslrbv`; redeploy `chat` + `skin-forecast` (rule 11 byte-diff); live-coach
+lifestyle-citation check via throwaway guest (rule 9) — the table must exist first.
 
 ---
 

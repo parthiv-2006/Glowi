@@ -66,6 +66,13 @@ injected into the system prompt for both `chat` and (future) scan interpretation
    when the event's ingredients plausibly target the concern that moved. Emitted only
    when at least one insight exists, capped at 4, always paired with the correlation
    caveat (see [ADR-0011](adr/0011-correlation-insights-in-coach-context.md)).
+9. **Lifestyle (last two weeks)** — a compact recap of the user's daily check-ins
+   (`lifestyle_logs`): logged-day count, sleep/stress tendencies, diet-flag frequencies,
+   and the current cycle phase when present. The same 14 days of logs are also fed into
+   the correlation engine (step 8) as sustained-streak events, so "your breakouts track
+   your low-sleep weeks" reaches the coach through the same read path. Emitted only when
+   at least one day is logged — new users pay zero extra tokens (see
+   [ADR-0013](adr/0013-lifestyle-diary.md)).
 
 The assembled block is prepended to the system prompt as a "what you know about this
 user" section, framed as ground truth. Retrieved memory ids are then **touched**
@@ -83,8 +90,10 @@ LATEST SKIN SCAN (Tue Jun 09 2026) — score 74/100 … Concerns: Congestion (52
 LAST CONVERSATION SUMMARY: Discussed starting a BHA; agreed to 2 nights/week …
 TODAY'S SKIN WEATHER (San Francisco, CA) — High UV and low humidity. Skin like yours …
 PRODUCTS ON THEIR SHELF (recommend what they own): EltaMD UV Clear SPF 46 (spf, running low); …
+LIFESTYLE (last 2 weeks, logged 9 of 14 days): sleep mostly poor; stress mostly high; sugar flagged 5 of 9 days. Current cycle phase: luteal.
 ROUTINE CORRELATIONS (measured from their scan history — correlations, not proof):
   • Added Niacinamide 10% + Zinc 1% (2026-06-23): Dark spots dropped 15 points across the next scan. Niacinamide targets dark spots.
+  • Low-sleep stretch (4 days) (2026-06-25): Breakouts rose 8 points across the next scan.
   ↳ Use these to explain what seems to be working or not; always keep the correlation caveat.
 ```
 

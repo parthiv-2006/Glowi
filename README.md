@@ -45,6 +45,10 @@ skincare coach that remembers you across every conversation.
   the coach never recommends it again. Glowi snapshots the product's ingredients and
   warns you when anything else on your shelf shares a formulation with something that
   already burned you.
+- **Lifestyle Diary** — A 10-second daily check-in on the Home screen (sleep, stress,
+  water, diet flags, and an optional opt-in cycle phase). Glowi turns sustained rough
+  stretches into correlation evidence ("your breakouts track your low-sleep weeks") and
+  feeds a two-week recap into the coach's context — no extra AI call ([ADR-0013](docs/adr/0013-lifestyle-diary.md)).
 - **In-Store Compare** — Standing in an aisle holding two products? Photograph both
   labels and get a one-shot verdict judged against your latest scan, what's already
   in your cabinet, and your reaction log.
