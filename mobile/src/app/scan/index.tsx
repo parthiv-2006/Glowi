@@ -18,24 +18,23 @@ export default function ScanCapture() {
   const [uri, setUri] = useState<string | null>(null);
   const [area, setArea] = useState<string | null>('Whole face');
 
-  async function pick(source: 'camera' | 'library') {
+  /** Guided in-app camera (alignment overlay + lighting check). */
+  function goGuided() {
     haptics.tap();
-    const opts: ImagePicker.ImagePickerOptions = {
+    router.push({ pathname: '/scan/camera', params: { area: area ?? '' } });
+  }
+
+  /** Library fallback — an existing photo, no guided-capture metadata. */
+  async function pickLibrary() {
+    haptics.tap();
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 5],
       quality: 0.7,
-    };
-    const perm =
-      source === 'camera'
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return;
-
-    const result =
-      source === 'camera'
-        ? await ImagePicker.launchCameraAsync(opts)
-        : await ImagePicker.launchImageLibraryAsync(opts);
+    });
     if (!result.canceled && result.assets[0]) {
       setUri(result.assets[0].uri);
       haptics.success();
@@ -100,19 +99,22 @@ export default function ScanCapture() {
                 <Ionicons name="scan-outline" size={34} color={palette.clayDark} />
               </View>
               <View style={styles.captureButtons}>
-                <PressableScale onPress={() => pick('camera')} style={styles.captureBtn}>
+                <PressableScale onPress={goGuided} style={styles.captureBtn}>
                   <Ionicons name="camera" size={20} color="#FFFFFF" />
                   <AppText variant="subheading" color="#FFFFFF">
                     Take photo
                   </AppText>
                 </PressableScale>
-                <PressableScale onPress={() => pick('library')} style={styles.uploadBtn}>
+                <PressableScale onPress={pickLibrary} style={styles.uploadBtn}>
                   <Ionicons name="images-outline" size={20} color={palette.clayBright} />
                   <AppText variant="subheading" color={palette.clayBright}>
                     Upload
                   </AppText>
                 </PressableScale>
               </View>
+              <AppText variant="caption" color={palette.inkFaintDark} style={styles.nudge}>
+                Guided photos compare best week to week.
+              </AppText>
             </View>
           )}
         </Animated.View>
@@ -195,6 +197,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(210,119,78,0.15)',
   },
   captureButtons: { flexDirection: 'row', gap: spacing(3) },
+  nudge: { textAlign: 'center', marginTop: -spacing(2), paddingHorizontal: spacing(6) },
   captureBtn: {
     flexDirection: 'row',
     alignItems: 'center',
