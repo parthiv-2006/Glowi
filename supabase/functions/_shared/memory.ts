@@ -8,6 +8,7 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import {
   correlateScanTrends,
+  type CorrelationLifestyleLog,
   type CorrelationReactionLog,
   type CorrelationScan,
   type CorrelationShelfItem,
@@ -18,6 +19,47 @@ const MAX_RANKED_MEMORIES = 12;
 
 function capitalize(s: string): string {
   return s.length ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+/** Fetched lifestyle row — the correlation shape plus cycle phase (context only). */
+type LifestyleRow = CorrelationLifestyleLog & { cycle_phase: string | null };
+
+/** Bucket a 0–2 average into low/mid/high labels by thirds. */
+function band(avg: number, labels: [string, string, string]): string {
+  if (avg < 2 / 3) return labels[0];
+  if (avg < 4 / 3) return labels[1];
+  return labels[2];
+}
+
+/**
+ * Compact two-week lifestyle recap for the coach — logged-day count, sleep/stress
+ * tendencies, diet-flag frequencies, and the current cycle phase when present.
+ * Returns '' when nothing was logged, so new users pay zero tokens.
+ */
+function summarizeLifestyle(logs: LifestyleRow[]): string {
+  const n = logs.length;
+  if (n === 0) return '';
+  const avg = (vals: number[]) => vals.reduce((a, b) => a + b, 0) / vals.length;
+  const answered = (pick: (l: LifestyleRow) => number | null) =>
+    logs.map(pick).filter((v): v is number => v != null);
+
+  const parts: string[] = [];
+  const sleep = answered((l) => l.sleep_quality);
+  if (sleep.length) parts.push(`sleep ${band(avg(sleep), ['mostly poor', 'mixed', 'mostly good'])}`);
+  const stress = answered((l) => l.stress_level);
+  if (stress.length)
+    parts.push(`stress ${band(avg(stress), ['mostly low', 'moderate', 'mostly high'])}`);
+  const dairy = logs.filter((l) => l.diet_dairy).length;
+  if (dairy) parts.push(`dairy flagged ${dairy} of ${n} days`);
+  const sugar = logs.filter((l) => l.diet_sugar).length;
+  if (sugar) parts.push(`sugar flagged ${sugar} of ${n} days`);
+  const alcohol = logs.filter((l) => l.diet_alcohol).length;
+  if (alcohol) parts.push(`alcohol flagged ${alcohol} of ${n} days`);
+
+  const cyclePhase = logs[0]?.cycle_phase; // logs are newest-first
+  const cycle = cyclePhase ? ` Current cycle phase: ${cyclePhase}.` : '';
+  const body = parts.length ? `: ${parts.join('; ')}` : '';
+  return `LIFESTYLE (last 2 weeks, logged ${n} of 14 days)${body}.${cycle}`;
 }
 
 export interface MemoryContext {
@@ -31,6 +73,7 @@ export async function assembleMemoryContext(
   opts: { excludeSessionId?: string } = {},
 ): Promise<MemoryContext> {
   const today = new Date().toISOString().slice(0, 10);
+  const twoWeeksAgo = new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10);
   const [
     profileRes,
     gotchaRes,
@@ -42,6 +85,7 @@ export async function assembleMemoryContext(
     correlationScansRes,
     correlationShelfRes,
     correlationReactionsRes,
+    lifestyleRes,
   ] = await Promise.all([
     svc.from('profiles').select('display_name, skin_type, goals').eq('id', userId).maybeSingle(),
     // Gotchas (allergies, bad reactions) are safety-relevant: always included.
@@ -107,6 +151,14 @@ export async function assembleMemoryContext(
       .from('reaction_logs')
       .select('reacted_on, product_name, key_ingredients')
       .eq('user_id', userId),
+    svc
+      .from('lifestyle_logs')
+      .select(
+        'log_date, sleep_quality, stress_level, diet_dairy, diet_sugar, diet_alcohol, cycle_phase',
+      )
+      .eq('user_id', userId)
+      .gte('log_date', twoWeeksAgo)
+      .order('log_date', { ascending: false }),
   ]);
 
   const lines: string[] = [];
@@ -185,10 +237,15 @@ export async function assembleMemoryContext(
     lines.push(`PRODUCTS ON THEIR SHELF (recommend what they own): ${items}`);
   }
 
+  const lifestyleLogs = (lifestyleRes.data ?? []) as LifestyleRow[];
+  const lifestyleBlock = summarizeLifestyle(lifestyleLogs);
+  if (lifestyleBlock) lines.push(lifestyleBlock);
+
   const insights = correlateScanTrends(
     (correlationScansRes.data ?? []) as CorrelationScan[],
     (correlationShelfRes.data ?? []) as CorrelationShelfItem[],
     (correlationReactionsRes.data ?? []) as CorrelationReactionLog[],
+    lifestyleLogs,
   );
   if (insights.length > 0) {
     lines.push(
