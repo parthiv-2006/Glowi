@@ -31,6 +31,14 @@ export function useProductsBySlug(slugs: string[]) {
     enabled: slugs.length > 0,
   });
 }
+/** The full product catalog — static seed data, so it's cached long. */
+export function useCatalogProducts() {
+  return useQuery({
+    queryKey: qk.catalogProducts,
+    queryFn: api.getCatalogProducts,
+    staleTime: 24 * 60 * 60_000,
+  });
+}
 export function useNutritionGuide(slug: string) {
   return useQuery({
     queryKey: qk.nutrition(slug),

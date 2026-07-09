@@ -17,6 +17,7 @@ export const qk = {
   concern: (slug: string) => ['concern', slug] as const,
   productsForConcern: (slug: string) => ['products', 'concern', slug] as const,
   products: (slugs: string[]) => ['products', 'by-slug', ...slugs] as const,
+  catalogProducts: ['products', 'catalog'] as const,
   nutrition: (slug: string) => ['nutrition', slug] as const,
   tips: (slug: string) => ['tips', slug] as const,
   articles: ['articles'] as const,
