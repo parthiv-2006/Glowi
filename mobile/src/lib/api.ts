@@ -12,6 +12,7 @@ import type {
   ChatSession,
   Concern,
   AiMemory,
+  LifestyleLog,
   NutritionGuide,
   Product,
   ProductForConcern,
@@ -398,4 +399,48 @@ export async function addReactionLog(
 export async function deleteReactionLog(id: string): Promise<void> {
   const { error } = await supabase.from('reaction_logs').delete().eq('id', id);
   if (error) throw new Error(error.message);
+}
+
+// ─────────────── Lifestyle Diary ───────────────
+
+const LIFESTYLE_COLS =
+  'id, log_date, sleep_quality, stress_level, water_level, diet_dairy, diet_sugar, diet_alcohol, cycle_phase, created_at, updated_at';
+
+/** A day's check-in write — always carries the target date plus the fields to set. */
+export type LifestyleLogInput = Pick<LifestyleLog, 'log_date'> &
+  Partial<
+    Pick<
+      LifestyleLog,
+      | 'sleep_quality'
+      | 'stress_level'
+      | 'water_level'
+      | 'diet_dairy'
+      | 'diet_sugar'
+      | 'diet_alcohol'
+      | 'cycle_phase'
+    >
+  >;
+
+export async function getLifestyleLogs(sinceISO: string): Promise<LifestyleLog[]> {
+  return unwrap(
+    await supabase
+      .from('lifestyle_logs')
+      .select(LIFESTYLE_COLS)
+      .gte('log_date', sinceISO)
+      .order('log_date', { ascending: false }),
+  );
+}
+
+/** Insert-or-replace a day's row, keyed on (user_id, log_date). */
+export async function upsertLifestyleLog(
+  userId: string,
+  log: LifestyleLogInput,
+): Promise<LifestyleLog> {
+  return unwrap(
+    await supabase
+      .from('lifestyle_logs')
+      .upsert({ user_id: userId, ...log }, { onConflict: 'user_id,log_date' })
+      .select(LIFESTYLE_COLS)
+      .single(),
+  );
 }

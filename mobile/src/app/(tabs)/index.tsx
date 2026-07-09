@@ -15,6 +15,7 @@ import {
   Stagger,
 } from '@/components/ui';
 import { SkinWeatherCard } from '@/components/SkinWeatherCard';
+import { DailyCheckinCard } from '@/components/DailyCheckinCard';
 import { useScans, useSkinForecast } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/stores/auth';
@@ -92,6 +93,10 @@ export default function Home() {
             onPress={() => router.push('/forecast')}
           />
         ) : null}
+
+        <View style={styles.section}>
+          <DailyCheckinCard />
+        </View>
 
         {isLoading ? (
           <GlassCard style={styles.section}>

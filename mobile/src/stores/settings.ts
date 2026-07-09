@@ -18,6 +18,9 @@ interface SettingsState {
   locationCoords: LocationCoords | null;
   setLocation: (label: string, coords: LocationCoords | null) => void;
   clearLocation: () => void;
+  /** Opt-in (default off): show the menstrual-cycle phase row in the daily check-in. */
+  cycleTrackingEnabled: boolean;
+  setCycleTrackingEnabled: (enabled: boolean) => void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -29,6 +32,8 @@ export const useSettings = create<SettingsState>()(
       locationCoords: null,
       setLocation: (locationLabel, locationCoords) => set({ locationLabel, locationCoords }),
       clearLocation: () => set({ locationLabel: null, locationCoords: null }),
+      cycleTrackingEnabled: false,
+      setCycleTrackingEnabled: (cycleTrackingEnabled) => set({ cycleTrackingEnabled }),
     }),
     { name: 'glowi-settings', storage: createJSONStorage(() => AsyncStorage) },
   ),

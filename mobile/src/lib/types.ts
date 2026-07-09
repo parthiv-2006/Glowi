@@ -322,6 +322,32 @@ export interface ReactionLog {
   updated_at: string;
 }
 
+/** 3-level self-report scale on a daily lifestyle log: 0 poor/low → 2 good/high. */
+export type LifestyleLevel = 0 | 1 | 2;
+
+/** Menstrual-cycle phase — opt-in, off by default in the client. */
+export type CyclePhase = 'menstrual' | 'follicular' | 'ovulation' | 'luteal';
+
+/**
+ * A single day's lifestyle check-in — one row in the Lifestyle Diary.
+ * Level fields are null until answered (unanswered ≠ zero); diet flags default
+ * false. `cycle_phase` is null unless the user opted into cycle tracking.
+ */
+export interface LifestyleLog {
+  id: string;
+  /** ISO date (yyyy-mm-dd) the check-in is for. Unique per user per day. */
+  log_date: string;
+  sleep_quality: LifestyleLevel | null;
+  stress_level: LifestyleLevel | null;
+  water_level: LifestyleLevel | null;
+  diet_dairy: boolean;
+  diet_sugar: boolean;
+  diet_alcohol: boolean;
+  cycle_phase: CyclePhase | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Which of two candidate products wins an in-store comparison. */
 export type ComparisonVerdict = 'a' | 'b' | 'either' | 'neither';
 

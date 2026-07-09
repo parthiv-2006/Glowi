@@ -47,6 +47,8 @@ export default function ProfileTab() {
   const locationLabel = useSettings((s) => s.locationLabel);
   const setLocation = useSettings((s) => s.setLocation);
   const clearLocation = useSettings((s) => s.clearLocation);
+  const cycleTrackingEnabled = useSettings((s) => s.cycleTrackingEnabled);
+  const setCycleTrackingEnabled = useSettings((s) => s.setCycleTrackingEnabled);
 
   const [remindersOn, setRemindersOn] = useState(false);
   const [locationInput, setLocationInput] = useState(locationLabel ?? '');
@@ -331,6 +333,28 @@ export default function ProfileTab() {
               thumbColor={palette.text}
             />
           </View>
+        </GlassCard>
+
+        <GlassCard style={styles.block}>
+          <View style={styles.reminderRow}>
+            <View style={styles.blockHead}>
+              <Ionicons name="ellipse-outline" size={18} color={palette.accentBright} />
+              <AppText variant="heading">Track cycle phase</AppText>
+            </View>
+            <Switch
+              value={cycleTrackingEnabled}
+              onValueChange={(value) => {
+                haptics.tap();
+                setCycleTrackingEnabled(value);
+              }}
+              trackColor={{ true: palette.accent, false: palette.surfaceStrong }}
+              thumbColor={palette.text}
+            />
+          </View>
+          <AppText variant="caption" style={styles.blockHint}>
+            Adds a cycle-phase row to your daily check-in. It stays in your account, is never
+            shared, and is deleted the moment you clear a day&apos;s log.
+          </AppText>
         </GlassCard>
 
         <Row icon="scan-outline" title="New scan" onPress={() => router.push('/scan')} />

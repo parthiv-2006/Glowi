@@ -33,6 +33,7 @@ export const qk = {
     ['skin-forecast', date, location ?? 'default'] as const,
   shelf: ['shelf-items'] as const,
   reactions: ['reaction-logs'] as const,
+  lifestyleLogs: ['lifestyle-logs'] as const,
   conflictReport: ['conflict-report'] as const,
   comparison: (beforeId: string, afterId: string) =>
     ['scan-comparison', beforeId, afterId] as const,

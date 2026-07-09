@@ -6,6 +6,7 @@ import { useSettings } from '@/stores/settings';
 import { getAIProvider } from './ai';
 import * as api from './api';
 import { qk } from './query';
+import type { LifestyleLog } from './types';
 
 export function useConcerns() {
   return useQuery({ queryKey: qk.concerns, queryFn: api.getConcerns });
@@ -192,6 +193,60 @@ export function useDeleteReactionLog() {
   return useMutation({
     mutationFn: api.deleteReactionLog,
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.reactions }),
+  });
+}
+
+// ─────────────── Lifestyle Diary ───────────────
+
+/** Merge a check-in patch into the cached list — updates the matching day's row or inserts it. */
+function mergeLifestyleLog(list: LifestyleLog[], patch: api.LifestyleLogInput): LifestyleLog[] {
+  const now = new Date().toISOString();
+  const base: LifestyleLog = list.find((l) => l.log_date === patch.log_date) ?? {
+    id: `optimistic-${patch.log_date}`,
+    log_date: patch.log_date,
+    sleep_quality: null,
+    stress_level: null,
+    water_level: null,
+    diet_dairy: false,
+    diet_sugar: false,
+    diet_alcohol: false,
+    cycle_phase: null,
+    created_at: now,
+    updated_at: now,
+  };
+  const merged: LifestyleLog = { ...base, ...patch, updated_at: now };
+  return [merged, ...list.filter((l) => l.log_date !== patch.log_date)].sort((a, b) =>
+    a.log_date < b.log_date ? 1 : -1,
+  );
+}
+
+/** Lifestyle check-ins from the last `days` days — 30 covers the streak window and the card. */
+export function useLifestyleLogs(days = 30) {
+  return useQuery({
+    queryKey: [...qk.lifestyleLogs, days],
+    queryFn: () =>
+      api.getLifestyleLogs(new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10)),
+  });
+}
+
+/** Upsert a day's check-in with an optimistic merge across every mounted window. */
+export function useUpsertLifestyleLog() {
+  const qc = useQueryClient();
+  const userId = useAuth((s) => s.session?.user.id);
+  return useMutation({
+    mutationFn: (log: api.LifestyleLogInput) => api.upsertLifestyleLog(userId!, log),
+    onMutate: async (log) => {
+      await qc.cancelQueries({ queryKey: qk.lifestyleLogs });
+      const snapshot = qc.getQueriesData<LifestyleLog[]>({ queryKey: qk.lifestyleLogs });
+      qc.setQueriesData<LifestyleLog[]>({ queryKey: qk.lifestyleLogs }, (prev) =>
+        prev ? mergeLifestyleLog(prev, log) : prev,
+      );
+      return { snapshot };
+    },
+    onError: (_err, _log, ctx) => {
+      ctx?.snapshot.forEach(([key, data]) => qc.setQueryData(key, data));
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.lifestyleLogs }),
   });
 }
 
