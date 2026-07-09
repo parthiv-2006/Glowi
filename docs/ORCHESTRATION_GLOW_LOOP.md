@@ -1,8 +1,8 @@
 # Orchestration Plan — The Glow Loop (Three Retention Features)
 
-**Status:** WS-A ⬜ · WS-B ✅ code-complete on branch `feat/ws-b-lifestyle-diary`
-(migration 0015 apply + `chat`/`skin-forecast` redeploy + live-coach check deferred to
-merge, per the user's decision) · WS-C ⬜
+**Status:** WS-A ⬜ · WS-B ✅ **SHIPPED** (merged to `main`; migration 0015 applied;
+`chat` v8 + `skin-forecast` v6 redeployed and byte-verified; live-coach citation of a
+lifestyle correlation confirmed E2E on a throwaway guest) · WS-C ⬜ (now unblocked)
 · **Written:** 2026-07-09 · **Owner:** orchestrator session
 
 This document is an execution contract, in the same mold as
@@ -315,7 +315,7 @@ rejected alternatives: AI-extracting lifestyle facts from chat, a separate diary
 `docs/MEMORY_SYSTEM.md` gains the LIFESTYLE context source; README feature bullet;
 CODE_INDEX; memory-store note (new table, engine signature change, cycle-opt-in flag).
 
-**Landed 2026-07-09 (branch `feat/ws-b-lifestyle-diary`, not merged):** migration
+**Shipped 2026-07-09 (merged to `main`):** migration
 `0015_lifestyle_logs.sql`; `LifestyleLevel`/`CyclePhase`/`LifestyleLog` types +
 `getLifestyleLogs`/`upsertLifestyleLog` + `qk.lifestyleLogs` + `useLifestyleLogs`/
 `useUpsertLifestyleLog` (optimistic across every window); `DailyCheckinCard` on Home +
@@ -324,9 +324,14 @@ CODE_INDEX; memory-store note (new table, engine signature change, cycle-opt-in 
 mirrors** with the parity fixture extended by 2 lifestyle cases and 8 new engine tests;
 `LIFESTYLE` block + lifestyle-fed correlations in `_shared/memory.ts`; Progress tab wired.
 Quality gate green (tsc + eslint + 119 jest tests). ADR-0013 written; README/MEMORY_SYSTEM/
-CODE_INDEX updated. **Deferred to merge (user decision):** apply 0015 to
-`rfuuznnbctfyqttslrbv`; redeploy `chat` + `skin-forecast` (rule 11 byte-diff); live-coach
-lifestyle-citation check via throwaway guest (rule 9) — the table must exist first.
+CODE_INDEX updated. **Post-merge production steps done (user approved the merge):**
+migration 0015 applied to `rfuuznnbctfyqttslrbv` (`lifestyle_logs`, RLS on, no new advisor
+finding); `chat` redeployed to **v8** and `skin-forecast` to **v6** via the Supabase CLI
+(reads `_shared/*` from disk — no MCP flattening), both re-fetched and byte-verified with
+`verify_jwt` intact; live-coach check on a throwaway guest (seeded a 4-day low-sleep streak
+between two scans) — the deployed coach cited "Breakouts rose 15 points after your 4-day
+low-sleep stretch… sleep mostly poor… correlation, not cause-and-effect", then the guest
+was deleted (cascade). WS-C is now unblocked.
 
 ---
 
