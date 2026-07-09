@@ -22,6 +22,7 @@ import { ShelfItemCard } from '@/components/ShelfItemCard';
 import { useReactionLogs, useShelfItems } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
 import { riskyShelfItems } from '@/lib/reactions';
+import { replenishmentTriggers } from '@/lib/replenishment';
 import { expiryStatus, stockStatus, summarizeShelf } from '@/lib/shelf';
 import type { ShelfItem } from '@/lib/types';
 import { palette, radii, spacing } from '@/theme';
@@ -47,6 +48,7 @@ export default function ShelfScreen() {
   );
   const summary = useMemo(() => (items ? summarizeShelf(items) : null), [items]);
   const risks = useMemo(() => riskyShelfItems(reactions, items ?? []), [reactions, items]);
+  const triggers = useMemo(() => (items ? replenishmentTriggers(items) : []), [items]);
 
   const nudge = summary
     ? [
@@ -130,6 +132,21 @@ export default function ShelfScreen() {
               stocked.
             </AppText>
           )}
+
+          {triggers.length ? (
+            <PressableScale
+              onPress={() => {
+                haptics.tap();
+                router.push('/shelf/replenish');
+              }}
+              style={styles.replenishLink}
+              haptic={false}
+            >
+              <AppText variant="subheading" color={palette.accentBright}>
+                See what to get next →
+              </AppText>
+            </PressableScale>
+          ) : null}
 
           <View style={styles.list}>
             <Stagger delay={80} interval={60}>
@@ -229,5 +246,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
   },
   nudgeText: { flex: 1 },
+  replenishLink: { marginBottom: spacing(5) },
   list: { marginBottom: spacing(4) },
 });

@@ -13,8 +13,8 @@ behind a provider seam that also supports a fully on-device mock.
 │  expo-router screens                                       │
 │    (auth) · onboarding · (tabs) · scan · results ·         │
 │     concern · chat · routine · article · memory ·          │
-│     forecast · shelf (+budget/conflicts) · reactions ·     │
-│     compare                                                │
+│     forecast · shelf (+budget/conflicts/replenish) ·       │
+│     reactions · compare                                    │
 │        │                                                   │
 │        ▼                                                   │
 │  data hooks (TanStack Query)  ── lib/api.ts ──┐            │
@@ -89,6 +89,16 @@ Two families of tables (full DDL in `supabase/migrations/0001_core_tables.sql`):
   `ai_memories` row so every AI surface inherits the constraint — see
   [ADR-0009](adr/0009-reaction-log.md)).
 
+**Replenishment** (`lib/replenishment.ts`) is a pure-client engine, the same class as
+Shelf Budget — zero AI calls, no new table. `replenishmentTriggers` flags shelf items
+that are expiring, expired, low, or out, reusing `shelf.ts`'s PAO/stock logic.
+`suggestReplacements` ranks same-category catalog products (`getCatalogProducts`)
+against the latest scan's concerns (via `ingredientConcerns.ts`), the user's skin type,
+and price, hard-excluding anything already owned and anything sharing an ingredient
+with a logged reaction (`reactions.ts` — a reacted ingredient is a "never again", per
+[ADR-0009](adr/0009-reaction-log.md)). Surfaced from the Shelf via a "See what to get
+next" link into `/shelf/replenish` whenever a trigger exists.
+
 ### Security boundary — RLS
 
 Every user table has `enable row level security` with a policy scoping all access to
@@ -156,7 +166,8 @@ clients, and HTTP/CORS helpers. All AI functions require a valid JWT.
 
 - TypeScript strict; ESLint (expo flat config); Jest unit tests for the pure logic
   (streak math, routine generation and sequencing, Skin Weather forecast derivation,
-  Shelf expiry/stock, budget/cost-per-use, reaction–shelf ingredient matching,
+  Shelf expiry/stock, budget/cost-per-use, replenishment triggers/ranking,
+  reaction–shelf ingredient matching,
   scan-to-trend correlation, guided-capture lighting assessment).
 - The React Compiler `immutability`/`purity` lint rules are scoped off because they
   don't model Reanimated's `sharedValue.value` API; `rules-of-hooks`, dependency checks,

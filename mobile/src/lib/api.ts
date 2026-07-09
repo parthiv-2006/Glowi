@@ -58,6 +58,11 @@ export async function getProductsBySlug(slugs: string[]): Promise<Product[]> {
   return unwrap(await supabase.from('products').select('*').in('slug', slugs));
 }
 
+/** The full catalog — a small curated seed set, so no pagination is needed. */
+export async function getCatalogProducts(): Promise<Product[]> {
+  return unwrap(await supabase.from('products').select('*').order('brand').order('name'));
+}
+
 export async function getNutritionGuide(slug: string): Promise<NutritionGuide | null> {
   return unwrap(
     await supabase.from('nutrition_guides').select('*').eq('concern_slug', slug).maybeSingle(),

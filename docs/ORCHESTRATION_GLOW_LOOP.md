@@ -1,8 +1,9 @@
 # Orchestration Plan — The Glow Loop (Three Retention Features)
 
-**Status:** WS-A ⬜ · WS-B ✅ **SHIPPED** (merged to `main`; migration 0015 applied;
-`chat` v8 + `skin-forecast` v6 redeployed and byte-verified; live-coach citation of a
-lifestyle correlation confirmed E2E on a throwaway guest) · WS-C ⬜ (now unblocked)
+**Status:** WS-A ✅ **SHIPPED** (merged to `main`) · WS-B ✅ **SHIPPED** (merged to
+`main`; migration 0015 applied; `chat` v8 + `skin-forecast` v6 redeployed and
+byte-verified; live-coach citation of a lifestyle correlation confirmed E2E on a
+throwaway guest) · WS-C ⬜ (now unblocked)
 · **Written:** 2026-07-09 · **Owner:** orchestrator session
 
 This document is an execution contract, in the same mold as
@@ -205,6 +206,20 @@ max-3 cap. Match the table-driven style of `budget.test.ts`.
 budget/shelf sections (no ADR needed — pure client feature, same class as Shelf
 Budget); CODE_INDEX.md (new lib module, test, route, api/hook entries); memory-store
 note only if a non-obvious gotcha surfaced.
+
+**WS-A shipped (2026-07-09):** `replenishment.ts` (18 unit tests) + `getCatalogProducts`/
+`useCatalogProducts` + `/shelf/replenish` screen + nudge entry on `/shelf`, on branch
+`feature/ws-a-smart-replenishment`. Quality gate green; verified end-to-end in the web
+preview against real Supabase data (throwaway guest, seeded via the app's own Add-to-
+Shelf UI — a direct SQL insert into the shared project was correctly blocked by the
+sandbox as an unauthorized write to shared data, so the seeding used real app flows
+instead). ARCHITECTURE.md + CODE_INDEX.md updated in this PR. **Merged to main
+2026-07-09** (user approved). **Gotcha for whoever runs WS-C next:** this repo has no
+per-workstream worktree convention yet; if two sessions run in the same checked-out
+working directory at once, a `git checkout -b` from either side drags the other's
+uncommitted changes across branches. Use `git worktree add` (or the `EnterWorktree`
+tool) per workstream to keep concurrent sessions isolated — see
+`replenishment-ws-a-concurrency-incident` in persistent memory for the full story.
 
 ---
 
