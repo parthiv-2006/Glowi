@@ -74,6 +74,7 @@
         }
       ],
       "reactions": [],
+      "lifestyleLogs": [],
       "expected": [
         {
           "headline": "Dark spots dropped 12 points across the next scan.",
@@ -149,6 +150,7 @@
           "updated_at": "2026-06-10"
         }
       ],
+      "lifestyleLogs": [],
       "expected": [
         {
           "headline": "Redness rose 15 points across the next scan.",
@@ -157,6 +159,203 @@
           "matchedIngredient": null
         }
       ]
+    },
+    {
+      "name": "low-sleep stretch precedes a breakout (streak hit -> worsened, no ingredient)",
+      "scans": [
+        {
+          "id": "b3",
+          "user_id": "u1",
+          "image_path": null,
+          "status": "complete",
+          "skin_score": 70,
+          "skin_type_estimate": null,
+          "summary": null,
+          "area": null,
+          "notes": null,
+          "created_at": "2026-06-01T12:00:00Z",
+          "concerns": [
+            {
+              "concern_slug": "acne",
+              "display_name": "Breakouts",
+              "severity": 40,
+              "confidence": 0.9,
+              "areas": [],
+              "observations": "",
+              "caution": null
+            }
+          ]
+        },
+        {
+          "id": "a3",
+          "user_id": "u1",
+          "image_path": null,
+          "status": "complete",
+          "skin_score": 62,
+          "skin_type_estimate": null,
+          "summary": null,
+          "area": null,
+          "notes": null,
+          "created_at": "2026-06-20T12:00:00Z",
+          "concerns": [
+            {
+              "concern_slug": "acne",
+              "display_name": "Breakouts",
+              "severity": 52,
+              "confidence": 0.9,
+              "areas": [],
+              "observations": "",
+              "caution": null
+            }
+          ]
+        }
+      ],
+      "shelfItems": [],
+      "reactions": [],
+      "lifestyleLogs": [
+        {
+          "id": "l1",
+          "log_date": "2026-06-05",
+          "sleep_quality": 0,
+          "stress_level": 1,
+          "water_level": 1,
+          "diet_dairy": false,
+          "diet_sugar": false,
+          "diet_alcohol": false,
+          "cycle_phase": null,
+          "created_at": "2026-06-05",
+          "updated_at": "2026-06-05"
+        },
+        {
+          "id": "l2",
+          "log_date": "2026-06-06",
+          "sleep_quality": 0,
+          "stress_level": 1,
+          "water_level": 1,
+          "diet_dairy": false,
+          "diet_sugar": false,
+          "diet_alcohol": false,
+          "cycle_phase": null,
+          "created_at": "2026-06-06",
+          "updated_at": "2026-06-06"
+        },
+        {
+          "id": "l3",
+          "log_date": "2026-06-07",
+          "sleep_quality": 0,
+          "stress_level": 1,
+          "water_level": 1,
+          "diet_dairy": false,
+          "diet_sugar": false,
+          "diet_alcohol": false,
+          "cycle_phase": null,
+          "created_at": "2026-06-07",
+          "updated_at": "2026-06-07"
+        },
+        {
+          "id": "l4",
+          "log_date": "2026-06-08",
+          "sleep_quality": 0,
+          "stress_level": 1,
+          "water_level": 1,
+          "diet_dairy": false,
+          "diet_sugar": false,
+          "diet_alcohol": false,
+          "cycle_phase": null,
+          "created_at": "2026-06-08",
+          "updated_at": "2026-06-08"
+        }
+      ],
+      "expected": [
+        {
+          "headline": "Breakouts rose 12 points across the next scan.",
+          "direction": "worsened",
+          "topConcernSlug": "acne",
+          "matchedIngredient": null
+        }
+      ]
+    },
+    {
+      "name": "two low-sleep days is not a streak (too short -> no event)",
+      "scans": [
+        {
+          "id": "b4",
+          "user_id": "u1",
+          "image_path": null,
+          "status": "complete",
+          "skin_score": 70,
+          "skin_type_estimate": null,
+          "summary": null,
+          "area": null,
+          "notes": null,
+          "created_at": "2026-06-01T12:00:00Z",
+          "concerns": [
+            {
+              "concern_slug": "acne",
+              "display_name": "Breakouts",
+              "severity": 40,
+              "confidence": 0.9,
+              "areas": [],
+              "observations": "",
+              "caution": null
+            }
+          ]
+        },
+        {
+          "id": "a4",
+          "user_id": "u1",
+          "image_path": null,
+          "status": "complete",
+          "skin_score": 62,
+          "skin_type_estimate": null,
+          "summary": null,
+          "area": null,
+          "notes": null,
+          "created_at": "2026-06-20T12:00:00Z",
+          "concerns": [
+            {
+              "concern_slug": "acne",
+              "display_name": "Breakouts",
+              "severity": 52,
+              "confidence": 0.9,
+              "areas": [],
+              "observations": "",
+              "caution": null
+            }
+          ]
+        }
+      ],
+      "shelfItems": [],
+      "reactions": [],
+      "lifestyleLogs": [
+        {
+          "id": "m1",
+          "log_date": "2026-06-05",
+          "sleep_quality": 0,
+          "stress_level": 1,
+          "water_level": 1,
+          "diet_dairy": false,
+          "diet_sugar": false,
+          "diet_alcohol": false,
+          "cycle_phase": null,
+          "created_at": "2026-06-05",
+          "updated_at": "2026-06-05"
+        },
+        {
+          "id": "m2",
+          "log_date": "2026-06-06",
+          "sleep_quality": 0,
+          "stress_level": 1,
+          "water_level": 1,
+          "diet_dairy": false,
+          "diet_sugar": false,
+          "diet_alcohol": false,
+          "cycle_phase": null,
+          "created_at": "2026-06-06",
+          "updated_at": "2026-06-06"
+        }
+      ],
+      "expected": []
     }
   ]
 }

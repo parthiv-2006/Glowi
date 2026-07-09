@@ -21,6 +21,7 @@ import { ConcernTrendSparkline } from '@/components/ConcernTrendSparkline';
 import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { ScoreTrend } from '@/components/ScoreTrend';
 import {
+  useLifestyleLogs,
   useReactionLogs,
   useRecentCheckins,
   useScans,
@@ -119,6 +120,7 @@ export default function ProgressScreen() {
   const { data: checkins = [] } = useRecentCheckins();
   const { data: shelfItems = [] } = useShelfItems();
   const { data: reactions = [] } = useReactionLogs();
+  const { data: lifestyleLogs = [] } = useLifestyleLogs();
 
   const dates = useMemo(() => [...new Set(checkins.map((c) => c.checkin_date))], [checkins]);
   const streak = computeStreak(dates);
@@ -193,8 +195,8 @@ export default function ProgressScreen() {
 
   // Routine changes (shelf adds, reactions) correlated against scan movement.
   const correlations = useMemo(
-    () => correlateScanTrends(completedScans, shelfItems, reactions),
-    [completedScans, shelfItems, reactions],
+    () => correlateScanTrends(completedScans, shelfItems, reactions, lifestyleLogs),
+    [completedScans, shelfItems, reactions, lifestyleLogs],
   );
 
   // Weekly nudge: shown when the most recent scan is more than 6 days old.
@@ -378,7 +380,9 @@ export default function ProgressScreen() {
                       name={
                         insight.event.kind === 'shelf_add'
                           ? 'add-circle-outline'
-                          : 'alert-circle-outline'
+                          : insight.event.kind === 'lifestyle'
+                            ? 'pulse-outline'
+                            : 'alert-circle-outline'
                       }
                       size={18}
                       color={palette.accentBright}

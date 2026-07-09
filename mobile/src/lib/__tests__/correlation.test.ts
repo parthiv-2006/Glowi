@@ -1,7 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { buildEvents, correlateScanTrends, MAX_INSIGHTS, MIN_EFFECT_DAYS } from '../correlation';
-import type { ReactionLog, Scan, ScanConcern, ShelfItem } from '../types';
+import {
+  buildEvents,
+  correlateScanTrends,
+  lifestyleEvents,
+  MAX_INSIGHTS,
+  MIN_EFFECT_DAYS,
+  MIN_STREAK_DAYS,
+} from '../correlation';
+import type { LifestyleLog, ReactionLog, Scan, ScanConcern, ShelfItem } from '../types';
 
 function concern(partial: Partial<ScanConcern>): ScanConcern {
   return {
@@ -73,6 +80,32 @@ function reaction(partial: Partial<ReactionLog>): ReactionLog {
     updated_at: '2026-06-10',
     ...partial,
   };
+}
+
+function life(partial: Partial<LifestyleLog>): LifestyleLog {
+  return {
+    id: 'l',
+    log_date: '2026-06-05',
+    sleep_quality: null,
+    stress_level: null,
+    water_level: null,
+    diet_dairy: false,
+    diet_sugar: false,
+    diet_alcohol: false,
+    cycle_phase: null,
+    created_at: '2026-06-05',
+    updated_at: '2026-06-05',
+    ...partial,
+  };
+}
+
+/** Consecutive daily logs from `start`, each patched by `overrides`. */
+function streak(start: string, days: number, overrides: Partial<LifestyleLog>): LifestyleLog[] {
+  const base = Date.parse(start);
+  return Array.from({ length: days }, (_, i) => {
+    const date = new Date(base + i * 86_400_000).toISOString().slice(0, 10);
+    return life({ id: `l${date}`, log_date: date, ...overrides });
+  });
 }
 
 describe('buildEvents', () => {
@@ -186,5 +219,101 @@ describe('correlateScanTrends', () => {
     expect(insights).toHaveLength(MAX_INSIGHTS);
     expect(insights[0].event.label).toBe('Added Product 4');
     expect(insights[3].event.label).toBe('Added Product 1');
+  });
+});
+
+describe('lifestyleEvents', () => {
+  it('emits an event for a streak at the MIN_STREAK_DAYS boundary, anchored at the start', () => {
+    const events = lifestyleEvents(streak('2026-06-05', MIN_STREAK_DAYS, { sleep_quality: 0 }));
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      kind: 'lifestyle',
+      date: '2026-06-05',
+      label: `Low-sleep stretch (${MIN_STREAK_DAYS} days)`,
+      key_ingredients: [],
+    });
+  });
+
+  it('ignores a run one day short of the threshold', () => {
+    expect(
+      lifestyleEvents(streak('2026-06-05', MIN_STREAK_DAYS - 1, { sleep_quality: 0 })),
+    ).toEqual([]);
+  });
+
+  it('breaks a streak across a non-consecutive gap and only counts the qualifying run', () => {
+    const events = lifestyleEvents([
+      ...streak('2026-06-05', 2, { sleep_quality: 0 }), // 5th–6th: too short
+      ...streak('2026-06-08', 3, { sleep_quality: 0 }), // 8th–10th: qualifies
+    ]);
+    expect(events).toHaveLength(1);
+    expect(events[0].label).toBe('Low-sleep stretch (3 days)');
+    expect(events[0].date).toBe('2026-06-08');
+  });
+
+  it('does not treat unanswered (null) sleep as poor, and a null mid-run breaks it', () => {
+    expect(lifestyleEvents(streak('2026-06-05', 4, { sleep_quality: null }))).toEqual([]);
+    const broken = [
+      life({ log_date: '2026-06-05', sleep_quality: 0 }),
+      life({ log_date: '2026-06-06', sleep_quality: null }),
+      life({ log_date: '2026-06-07', sleep_quality: 0 }),
+      life({ log_date: '2026-06-08', sleep_quality: 0 }),
+    ];
+    expect(lifestyleEvents(broken)).toEqual([]);
+  });
+
+  it('detects high-stress and diet-flag stretches with their own labels', () => {
+    expect(lifestyleEvents(streak('2026-06-05', 3, { stress_level: 2 }))[0].label).toBe(
+      'High-stress stretch (3 days)',
+    );
+    expect(lifestyleEvents(streak('2026-06-05', 3, { diet_sugar: true }))[0].label).toBe(
+      'Sugar-heavy stretch (3 days)',
+    );
+    // Moderate stress (1) is not "high" — no event.
+    expect(lifestyleEvents(streak('2026-06-05', 3, { stress_level: 1 }))).toEqual([]);
+  });
+});
+
+describe('correlateScanTrends with lifestyle logs', () => {
+  const before = scan({
+    id: 'before',
+    created_at: '2026-06-01T12:00:00Z',
+    skin_score: 70,
+    concerns: [concern({ concern_slug: 'acne', display_name: 'Breakouts', severity: 40 })],
+  });
+  const worse = scan({
+    id: 'after',
+    created_at: '2026-06-20T12:00:00Z',
+    skin_score: 62,
+    concerns: [concern({ concern_slug: 'acne', display_name: 'Breakouts', severity: 52 })],
+  });
+
+  it('defaults the lifestyle param so existing three-argument calls are unaffected', () => {
+    expect(correlateScanTrends([before, worse], [], [])).toEqual([]);
+  });
+
+  it('flags a worsening that follows a poor-sleep stretch', () => {
+    const insights = correlateScanTrends(
+      [before, worse],
+      [],
+      [],
+      streak('2026-06-05', 4, { sleep_quality: 0 }),
+    );
+    expect(insights).toHaveLength(1);
+    expect(insights[0].event).toMatchObject({
+      kind: 'lifestyle',
+      label: 'Low-sleep stretch (4 days)',
+    });
+    expect(insights[0].direction).toBe('worsened');
+    expect(insights[0].headline).toBe('Breakouts rose 12 points across the next scan.');
+  });
+
+  it('drops a lifestyle streak that is too short to be an event', () => {
+    const insights = correlateScanTrends(
+      [before, worse],
+      [],
+      [],
+      streak('2026-06-05', 2, { sleep_quality: 0 }),
+    );
+    expect(insights).toEqual([]);
   });
 });

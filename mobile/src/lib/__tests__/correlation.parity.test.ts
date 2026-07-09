@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { correlateScanTrends } from '../correlation';
 import { concernsTargetedBy } from '../ingredientConcerns';
-import type { ReactionLog, Scan, ShelfItem } from '../types';
+import type { LifestyleLog, ReactionLog, Scan, ShelfItem } from '../types';
 import fixture from './fixtures/correlation-parity.json';
 
 /**
@@ -18,6 +18,7 @@ describe('correlation × ingredientConcerns parity fixture', () => {
         testCase.scans as unknown as Scan[],
         testCase.shelfItems as unknown as ShelfItem[],
         testCase.reactions as unknown as ReactionLog[],
+        testCase.lifestyleLogs as unknown as LifestyleLog[],
       );
 
       expect(insights).toHaveLength(testCase.expected.length);

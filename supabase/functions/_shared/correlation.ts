@@ -37,6 +37,16 @@ export interface CorrelationReactionLog {
   reacted_on: string;
 }
 
+/** Minimal shape of a lifestyle log, as read from the `lifestyle_logs` table. */
+export interface CorrelationLifestyleLog {
+  log_date: string;
+  sleep_quality: number | null;
+  stress_level: number | null;
+  diet_dairy: boolean;
+  diet_sugar: boolean;
+  diet_alcohol: boolean;
+}
+
 /** A scan this soon after an event can't plausibly reflect it yet. */
 export const MIN_EFFECT_DAYS = 3;
 /** Concern severity must move at least this much to count (0–100 scale). */
@@ -45,11 +55,13 @@ export const MIN_CONCERN_DELTA = 5;
 export const MIN_SCORE_DELTA = 3;
 /** Most insights shown at once — recency wins. */
 export const MAX_INSIGHTS = 4;
+/** A poor-lifestyle stretch must run this many consecutive logged days to count as an event. */
+export const MIN_STREAK_DAYS = 3;
 
 export const CORRELATION_CAVEAT =
   'Correlations, not proof — skin responds to many things at once. Keep scanning to sharpen these.';
 
-export type CorrelationEventKind = 'shelf_add' | 'reaction';
+export type CorrelationEventKind = 'shelf_add' | 'reaction' | 'lifestyle';
 
 /** A routine change worth checking the scan history against. */
 export interface CorrelationEvent {
@@ -118,6 +130,64 @@ export function buildEvents(
   return events;
 }
 
+/**
+ * Sustained poor-lifestyle stretches (≥ MIN_STREAK_DAYS consecutive logged days
+ * of poor sleep, high stress, or a diet flag) as correlation events, anchored to
+ * the first day of each run so the scan history is measured from before the
+ * stretch. A single day never counts — only a habit does. Cycle phase is not an
+ * event in v1; it flows into coach context only.
+ */
+export function lifestyleEvents(logs: CorrelationLifestyleLog[]): CorrelationEvent[] {
+  const sorted = logs
+    .filter((l) => !Number.isNaN(Date.parse(l.log_date)))
+    .slice()
+    .sort((a, b) => Date.parse(a.log_date) - Date.parse(b.log_date));
+
+  const signals: { active: (l: CorrelationLifestyleLog) => boolean; label: string }[] = [
+    { active: (l) => l.sleep_quality === 0, label: 'Low-sleep stretch' },
+    { active: (l) => l.stress_level === 2, label: 'High-stress stretch' },
+    { active: (l) => l.diet_dairy, label: 'Dairy-heavy stretch' },
+    { active: (l) => l.diet_sugar, label: 'Sugar-heavy stretch' },
+    { active: (l) => l.diet_alcohol, label: 'Alcohol stretch' },
+  ];
+
+  const events: CorrelationEvent[] = [];
+  for (const signal of signals) {
+    let runStart: string | null = null;
+    let runDays = 0;
+    let prevTime = 0;
+    const flush = () => {
+      if (runStart && runDays >= MIN_STREAK_DAYS) {
+        events.push({
+          kind: 'lifestyle',
+          date: runStart,
+          label: `${signal.label} (${runDays} days)`,
+          key_ingredients: [],
+        });
+      }
+      runStart = null;
+      runDays = 0;
+    };
+    for (const log of sorted) {
+      const t = Date.parse(log.log_date);
+      if (!signal.active(log)) {
+        flush();
+        continue;
+      }
+      if (runDays > 0 && t - prevTime === DAY_MS) {
+        runDays += 1;
+      } else {
+        flush();
+        runStart = log.log_date;
+        runDays = 1;
+      }
+      prevTime = t;
+    }
+    flush();
+  }
+  return events;
+}
+
 function concernDeltas(before: CorrelationScan, after: CorrelationScan): ConcernDelta[] {
   const deltas: ConcernDelta[] = [];
   for (const b of before.concerns) {
@@ -167,12 +237,14 @@ export function correlateScanTrends(
   scans: CorrelationScan[],
   shelfItems: CorrelationShelfItem[],
   reactions: CorrelationReactionLog[],
+  lifestyleLogs: CorrelationLifestyleLog[] = [],
 ): CorrelationInsight[] {
   const completed = completedAscending(scans);
   if (completed.length < 2) return [];
 
+  const events = [...buildEvents(shelfItems, reactions), ...lifestyleEvents(lifestyleLogs)];
   const insights: CorrelationInsight[] = [];
-  for (const event of buildEvents(shelfItems, reactions)) {
+  for (const event of events) {
     const eventTime = Date.parse(event.date);
     if (Number.isNaN(eventTime)) continue;
 
