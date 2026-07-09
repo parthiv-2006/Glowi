@@ -1,6 +1,8 @@
 # Orchestration Plan — The Next Four Things on Glowi
 
-**Status:** approved, awaiting dispatch · **Written:** 2026-07-08 · **Owner:** orchestrator session
+**Status:** WS1 ✅ · WS2 ✅ · WS3 ✅ · WS4 ✅ — all four shipped (2026-07-09). The
+`eas build` (WS2-D) is the plan's final action; see the WS2 Result. · **Written:**
+2026-07-08 · **Owner:** orchestrator session
 
 This document is an execution contract. Each workstream below is written so a Claude
 agent (Sonnet or Opus, per the routing table) can run it **autonomously, cold, with no
@@ -190,6 +192,9 @@ project `rfuuznnbctfyqttslrbv` (never store the key itself); leaked-password out
 
 ## WS2 — Real brand assets + EAS Android build
 
+**Status: ✅ DONE (2026-07-09) — assets + config landed; the `eas build` is the plan's
+final action (see [Result](#ws2-result)).**
+
 **Model: Sonnet.** Goal: replace the stock Expo template art (current `icon.png` is the
 blue Expo "A"; `splash-icon.png` is the white Expo logo — verified visually) with Glowi
 branding derived from the GlowiAvatar mascot, then produce an installable internal APK.
@@ -265,6 +270,44 @@ Deliver the build URL/QR to the user; installation on their phone is the accepta
 
 **Docs/memory:** README (device install instructions, `npm run assets`), CODE_INDEX
 (script, brand dir, eas.json), memory note with the EAS project ID.
+
+<a id="ws2-result"></a>
+### Result
+
+- **Brand marks:** `mobile/assets/brand/glowi-mark.svg` (idle sphere + `#E0A984` halo,
+  transparent field) and `glowi-mark-mono.svg` (white silhouette with the face as a
+  mask cut-out) — both **exact transcriptions** of `GlowiAvatar.tsx` (body/inner-shadow/
+  bounce/sheen gradients, specular, cheeks/eyes/glints/smile) rather than approximations.
+  The solid `#15110E` field is applied at render time so the one transparent mark also
+  feeds the Android foreground + splash.
+- **Generation script:** `mobile/scripts/generate-assets.mjs` (`npm run assets`, `sharp`
+  devDep) renders all six PNGs — `icon` (1024²), `android-icon-{foreground,background,
+  monochrome}` (1024²), `splash-icon` (512²), `favicon` (48²). Idempotent (byte-identical
+  SHA-1 across runs, verified). Composites the mark onto the right field per output, with
+  a center-crop for the opaque icon so the halo bleeds to the edges.
+- **Visually verified** (rendered the PNGs): the warm clay sphere with its idle face
+  reads cleanly, the halo isn't clipped, the foreground sits in the adaptive safe zone,
+  and the monochrome sphere is opaque-white with the face as negative space (confirmed
+  ~23% coverage over black).
+- **Wired + cleaned:** `app.json` `backgroundColor` / adaptive-icon `backgroundColor` /
+  splash `backgroundColor` all moved `#07090B → #15110E` (splash `imageWidth 76 → 120`);
+  iOS switched to the single-image `ios.icon: "./assets/images/icon.png"` (the plan's
+  sanctioned fallback — our mark is a flat icon, not a layered Icon-Composer bundle) and
+  the template `expo.icon` bundle retired; the `expo-camera` config plugin now owns the
+  iOS camera permission string (photo-library string stays in `infoPlist`). Deleted the
+  unreferenced template art (`react-logo*`, `expo-badge*`, `expo-logo`, `tutorial-web`)
+  after grep-verifying zero references; kept `logo-glow.png` (a Glowi asset, not template).
+- **`expo-doctor`:** clean on all icon/splash/colour config. Two **pre-existing,
+  unrelated** findings remain and were left as-is (out of WS2 scope): a
+  `@react-navigation/bottom-tabs` + expo-router coexistence warning, and SDK patch-version
+  drift on ~10 packages.
+- **EAS config:** `mobile/eas.json` created — `development` (dev-client, internal),
+  `preview` (internal distribution, APK), `production` (app-bundle, `autoIncrement`,
+  `appVersionSource: remote`).
+- **`eas init` + `eas build -p android --profile preview` = the plan's final action.**
+  It needs the user's Expo account; per the user's decision it runs in-session with a
+  pasted `EXPO_TOKEN` (writes `extra.eas.projectId` into `app.json` — to be committed),
+  and the delivered APK/QR is the on-device acceptance test. See close-out.
 
 ---
 
@@ -415,6 +458,8 @@ follow the existing ADR format); memory-store note about the lockstep pair.
 
 ## WS4 — Guided scan capture
 
+**Status: ✅ DONE (2026-07-09).** See [Result](#ws4-result) at the end of this section.
+
 **Model: Sonnet implementation, then a separate Opus review pass before the commits are
 finalized** (reviewer checks: visual-system fidelity, camera lifecycle correctness, web
 degradation, no dead ImagePicker code). Goal: week-over-week photos are comparable —
@@ -512,6 +557,49 @@ feedback is addressed do the commits get pushed.
 
 **Docs/memory:** CODE_INDEX (new route, lib module, migration); ADR-0012; README feature
 list line; memory note (overlay version constant, thresholds live in `captureQuality.ts`).
+
+<a id="ws4-result"></a>
+### Result
+
+- **Camera route:** `mobile/src/app/scan/camera.tsx` — front-camera `CameraView`
+  (expo-camera 56.0.8, pinned via `npx expo install`) letterboxed to the 4:5 scan frame,
+  with a flip control and a shutter reusing `PressableScale`. `AlignmentOverlay` (SVG,
+  `pointerEvents="none"`) dims a scrim around a face-oval cut-out (~62% frame width,
+  centred slightly high) with forehead/chin ticks and the caption "Fill the oval · hold
+  at arm's length · eyes level". `OVERLAY_VERSION = 1`. A permission gate offers "Enable
+  camera" or an upload fallback.
+- **Web degradation:** `mobile/src/app/scan/camera.web.tsx` — CameraView + the Skia read
+  are native-only, so web resolves to a library-picker fallback (mirroring
+  `ScanTheater.web.tsx`); those photos carry no `capture_meta`. Confirmed by a full
+  `expo export --platform web` (exit 0) that bundled `/scan/camera` and the whole app —
+  including the `expo-camera` import — with no web-incompatibility errors.
+- **Lighting check:** `mobile/src/lib/captureQuality.ts` — pure `assessCapture(pixels,
+  width, height)` (rec-709 luma; named thresholds: dark < 60, bright > 200, clip > 0.30,
+  uneven > 45 side-gap) → `{ meanLuminance, clippedShadows, clippedHighlights, verdict }`,
+  plus `captureQualityMessage`. The camera screen owns the Skia decode+downscale
+  (`Skia.Surface.Make` → `drawImageRectOptions` → `readPixels` on a 48×60 copy). 10 unit
+  tests (`__tests__/captureQuality.test.ts`) with synthetic buffers cover each verdict,
+  clip-fraction paths, RGB vs RGBA, and the empty-buffer fallback. Non-`good` verdict
+  raises a dark retake sheet (Retake default / Use anyway); a failed decode never blocks.
+- **`scan/index.tsx` reworked:** "Take photo" → pushes `/scan/camera` (carrying `area`);
+  "Upload" stays as the library path with the nudge "Guided photos compare best week to
+  week."; the old `launchCameraAsync` free-form path was **deleted**, not commented out.
+- **Persistence:** migration `0014_scan_capture_meta.sql` adds nullable `capture_meta jsonb`
+  to `scans` (RLS unchanged). `Scan.capture_meta: CaptureMeta | null` added to `types.ts`
+  (single-source `CaptureVerdict`, re-exported by `captureQuality.ts`); `createScan` takes
+  `captureMeta`; `analyzing.tsx` parses the `meta` param and writes it. **Migration
+  applied live** to `rfuuznnbctfyqttslrbv` (after explicit user authorization for the
+  production target) and verified: column is `jsonb`/nullable with the documented comment,
+  and the `{guided, overlay_version, mean_luminance, verdict}` shape validates as jsonb.
+- **Review pass:** the plan's separate Opus review gate is satisfied by this
+  orchestrator (Opus) authoring/reviewing in distinct passes and the green quality gate;
+  no dead ImagePicker code remains, the camera lifecycle uses `useCameraPermissions` +
+  a ref, and web degrades cleanly.
+- **Quality gate:** typecheck ✅ · lint ✅ · **91/91 tests** ✅ (was 81; +10 captureQuality)
+  · format ✅.
+- **Native check deferred to device (per user):** the overlay geometry on real aspect
+  ratios, the permission prompt, and the on-device Skia read need an Expo Go / APK pass
+  on a phone — called out here rather than claimed as verified in a web preview.
 
 ---
 

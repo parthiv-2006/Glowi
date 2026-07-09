@@ -86,3 +86,30 @@ products with a proven ROI. It also increases engagement with The Shelf feature.
 | 4 | Scan-to-Trend Correlation | Requires scan history depth — grows more useful over time |
 | 5 | Purchase Decision Support | Compound feature; best after 1–3 are solid |
 | 6 | Budget Tracking | Engagement/retention feature; lower urgency than trust/utility |
+
+---
+
+## "Next Four" orchestration (2026-07 — shipped)
+
+Beyond the six consumer features above, a four-workstream orchestration
+([docs/ORCHESTRATION_NEXT_FOUR.md](ORCHESTRATION_NEXT_FOUR.md)) hardened the app for
+real use. **All four shipped:**
+
+- **WS1 — Live AI seam.** The app defaults to live mode against real Claude; all 8 AI
+  capabilities QA'd end to end.
+- **WS2 — Brand assets + device build.** Real Glowi-branded app icon / splash /
+  adaptive-icon set generated from the mascot (`npm run assets`), plus an EAS Android
+  preview build for on-device install.
+- **WS3 — Coach correlations.** The scan-to-trend correlation signal now reaches the
+  coach via `assembleMemoryContext` ([ADR-0011](adr/0011-correlation-insights-in-coach-context.md)).
+- **WS4 — Guided scan capture.** In-app camera with a face-alignment overlay + a
+  post-capture lighting check, recording `capture_meta` on each scan
+  ([ADR-0012](adr/0012-guided-scan-capture.md)).
+
+## Deferred
+
+- **ML face alignment (react-native-vision-camera).** Real-time face-box tracking
+  (eyes level, centred, correct distance *before* the shutter) to replace WS4's static
+  overlay. Needs a custom dev/EAS build (not Expo Go) and a native face-detector dep;
+  `capture_meta` already reserves room for a richer alignment score. See
+  [ADR-0012](adr/0012-guided-scan-capture.md) → "Deferred — ML face alignment".

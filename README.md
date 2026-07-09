@@ -17,10 +17,12 @@ skincare coach that remembers you across every conversation.
 
 ## What it does
 
-- **Scan** — Capture or upload a photo. A Skia-rendered scanning theater (sweeping
-  beam, measurement grid, particles, haptics) plays while Claude vision analyzes the
-  image into a structured, validated result: an overall skin score and ranked concerns
-  with severity, confidence, and affected areas.
+- **Scan** — A guided in-app camera frames your face against a fixed alignment overlay
+  and runs a post-capture lighting check (retake if it's too dark, blown out, or
+  side-lit) so week-over-week photos stay comparable — or upload one from your library.
+  A Skia-rendered scanning theater (sweeping beam, measurement grid, particles, haptics)
+  then plays while Claude vision analyzes the image into a structured, validated result:
+  an overall skin score and ranked concerns with severity, confidence, and affected areas.
 - **Understand & fix** — Each concern opens to three evidence-led tabs: **Products**
   (curated, ranked, with retailer links and an AI rationale), **Nutrition**
   (foods, nutrients, and what to limit — each with PubMed-linked citations), and
@@ -88,6 +90,11 @@ skincare coach that remembers you across every conversation.
 - **Purchase decisions in one vision call.** In-Store Compare reads two labels and
   judges them in a single Claude request whose prompt embeds the scan, shelf, and
   reaction context server-side ([ADR-0010](docs/adr/0010-in-store-compare.md)).
+- **Honest trends start at capture.** Guided scan capture pairs a versioned alignment
+  overlay with a pure, unit-tested lighting check (`captureQuality.ts`; Skia decodes a
+  ≤64px copy on-device) and records the result in a nullable `capture_meta` on each scan,
+  so every trend feature — before/after, sparklines, the coach's correlations — compares
+  like-for-like photos ([ADR-0012](docs/adr/0012-guided-scan-capture.md)).
 - **Security at the data layer.** Row Level Security on every user table; a private,
   per-user image bucket; the Anthropic key lives only in edge-function secrets and never
   ships in the app bundle.
@@ -131,6 +138,18 @@ supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 # Unset → '*', which is fine for native clients. See ADR-0007.
 supabase secrets set GLOWI_ALLOWED_ORIGINS=https://app.glowi.example
 ```
+
+```bash
+# 3. Brand assets + a device build (optional)
+cd mobile
+npm run assets              # regenerate app icon / splash / adaptive-icon PNGs from
+                           # assets/brand/*.svg (the Glowi mascot) — idempotent
+npx eas login              # one-time; needs an Expo account
+npx eas build -p android --profile preview   # internal APK; install on your phone
+```
+
+The guided camera uses `expo-camera`, which runs in Expo Go — but the installable
+APK is how you test it (and the branding) on a real device end to end.
 
 ## Repository layout
 

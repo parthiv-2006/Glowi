@@ -134,22 +134,30 @@ clients, and HTTP/CORS helpers. All AI functions require a valid JWT.
 
 ## Request flow: a scan
 
-1. Capture screen creates a `scans` row (`pending`) and uploads the photo to
-   `scan-images/{user}/{scan}.jpg`.
-2. The analyzing screen calls `AIProvider.analyzeScan(scanId)` while the Skia theater
-   plays for a minimum duration.
+0. **Guided capture** (`scan/camera.tsx`, native): a front-camera `CameraView` is framed
+   against a fixed, versioned alignment overlay (face oval + chin/forehead ticks). On
+   shutter, Skia decodes a ≤64px copy of the photo and the pure `captureQuality.ts`
+   returns an exposure verdict; a non-`good` verdict offers a retake (never a hard block).
+   The chosen photo's context — `{ guided, overlay_version, mean_luminance, verdict }` —
+   rides to the analyzing screen as a param. Library uploads (and web, which degrades to
+   the picker via `scan/camera.web.tsx`) skip this and carry no capture metadata.
+1. The analyzing screen creates a `scans` row (`pending`, with `capture_meta` set from the
+   param or `null`) and uploads the photo to `scan-images/{user}/{scan}.jpg`.
+2. It calls `AIProvider.analyzeScan(scanId)` while the Skia theater plays for a minimum
+   duration.
 3. Live mode: `analyze-skin` reads the image, calls Claude vision, validates and
    persists concerns + score, and inserts a scan memory. Mock mode does the equivalent
    on-device.
 4. The screen routes to results, which read the persisted row — a single source of truth
-   regardless of provider.
+   regardless of provider. `capture_meta` persists alongside for future
+   consistency-weighted trends ([ADR-0012](adr/0012-guided-scan-capture.md)).
 
 ## Quality & tooling
 
 - TypeScript strict; ESLint (expo flat config); Jest unit tests for the pure logic
   (streak math, routine generation and sequencing, Skin Weather forecast derivation,
   Shelf expiry/stock, budget/cost-per-use, reaction–shelf ingredient matching,
-  scan-to-trend correlation).
+  scan-to-trend correlation, guided-capture lighting assessment).
 - The React Compiler `immutability`/`purity` lint rules are scoped off because they
   don't model Reanimated's `sharedValue.value` API; `rules-of-hooks`, dependency checks,
   and type safety remain enforced.
