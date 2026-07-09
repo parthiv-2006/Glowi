@@ -270,6 +270,8 @@ Deliver the build URL/QR to the user; installation on their phone is the accepta
 
 ## WS3 — Correlation insights → the coach
 
+**Status: ✅ DONE (2026-07-08).** See [Result](#ws3-result) at the end of this section.
+
 **Model: Opus.** Goal: the coach can say "niacinamide is working for you — dark spots
 dropped 12 points since you added it" — the correlation card becomes conversational
 intelligence.
@@ -354,6 +356,60 @@ Check `get_logs` for the chat function: no query errors, context assembly < ~1s.
 **Docs/memory:** `docs/MEMORY_SYSTEM.md` gains the ROUTINE CORRELATIONS source with the
 lockstep note; ADR-0011 (`docs/adr/0011-correlation-insights-in-coach-context.md`,
 follow the existing ADR format); memory-store note about the lockstep pair.
+
+<a id="ws3-result"></a>
+### Result
+
+- **Decision executed as planned:** server-side port inside `assembleMemoryContext`,
+  recorded in [ADR-0011](adr/0011-correlation-insights-in-coach-context.md).
+- **Ingredient → concern map:** `mobile/src/lib/ingredientConcerns.ts` (new), covering
+  niacinamide, retinoids, salicylic/glycolic/lactic/mandelic acids, azelaic acid,
+  vitamin C, hyaluronic acid, ceramides, zinc variants, benzoyl peroxide, SPF filters,
+  caffeine, tranexamic acid, arbutin, and a dozen more — all slugs verified against
+  `supabase/seed/0001_concerns_and_tips.sql`. 6 unit tests
+  (`lib/__tests__/ingredientConcerns.test.ts`): mapping hits, synonym normalization
+  (vitamin c/ascorbic acid, bha/salicylic acid), a substring false-positive guard
+  (alpha arbutin vs. the pha/aha family), and unknown-ingredient → `[]`.
+- **`ConcernDelta` gained a `slug` field** in `mobile/src/lib/correlation.ts` (additive,
+  existing tests unaffected) so the Progress tab and coach can match a moved concern
+  against the ingredient map.
+- **Progress-tab "why" line:** `mobile/src/app/(tabs)/progress.tsx` renders
+  "{Ingredient} targets {concern} — this lines up." under an insight's headline when
+  the event's ingredients target the top-moved concern; renders nothing otherwise.
+- **Deno port:** `supabase/functions/_shared/correlation.ts` +
+  `_shared/ingredientConcerns.ts`, self-contained types, `⚠ Lockstep` header comments
+  pointing at the mobile originals in both directions.
+- **Parity fixture:** `mobile/src/lib/__tests__/fixtures/correlation-parity.json`
+  (byte-identical copy at `supabase/functions/_shared/__fixtures__/`), asserted by
+  `correlation.parity.test.ts` — 2 cases (improving shelf-add with an ingredient
+  match, worsening reaction without one). No `deno` binary was available in this
+  environment to also run a `Deno.test`; parity leans on the fixture plus the live
+  verification below (see ADR-0011's Consequences for the follow-up note).
+- **`assembleMemoryContext` wired:** `supabase/functions/_shared/memory.ts` now runs
+  3 additional queries (completed scans ascending, active shelf items, all reaction
+  logs) and emits a `ROUTINE CORRELATIONS` block with the caveat line, only when
+  insights exist.
+- **Deployed:** `chat` (v7) and `skin-forecast` (v5) redeployed with the updated
+  `_shared/*`. First deploy attempt truncated `ingredientConcerns.ts` mid-transfer
+  (a self-inflicted copy error, not a tool bug) and shipped a broken function for a
+  few minutes; caught immediately via `get_edge_function` byte-comparison against
+  local source and corrected before any further testing — flagging the lesson that
+  large hand-assembled deploy payloads need a post-deploy content diff, not just a
+  green deploy-tool response.
+- **Live verification:** seeded a throwaway guest account (created via the real
+  guest sign-up flow, not a shared demo row) with two completed scans (dark spots
+  50 → 35) and a niacinamide shelf item added between them; asked the deployed `chat`
+  function "What's actually working for me lately?" and the live Claude reply
+  correctly named the product, the 15-point drop, the mechanism, and the correlation
+  caveat — proof the deployed Deno code (not just the mobile mirror) behaves as
+  designed. All test rows were deleted afterward; the shared demo account
+  (`ae2bc5b2…`) was restored to its documented 3-shelf-item state.
+- **Mock mode:** unaffected by construction — `mobile/src/lib/ai/mock.ts` has no
+  dependency on `assembleMemoryContext` or either new module (verified by grep).
+- **Quality gate:** typecheck ✅ · lint ✅ · 81/81 tests ✅ (was 73; +8 from
+  `ingredientConcerns.test.ts` + `correlation.parity.test.ts`) · format clean.
+- **Docs:** ADR-0011, `docs/MEMORY_SYSTEM.md` (§8 + updated example block),
+  `docs/CODE_INDEX.md` (new lib module, `_shared/` entries) all updated in this pass.
 
 ---
 

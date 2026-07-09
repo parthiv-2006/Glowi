@@ -56,6 +56,16 @@ injected into the system prompt for both `chat` and (future) scan interpretation
 7. **The Shelf** — the products the user owns (with low-stock flags), so the coach
    recommends what's already in their cabinet rather than sending them shopping (see
    [ADR-0006](adr/0006-the-shelf-inventory.md)).
+8. **Routine correlations** — a Deno port of the Progress tab's `correlateScanTrends`
+   engine (`supabase/functions/_shared/correlation.ts`, ⚠ lockstep mirror of
+   `mobile/src/lib/correlation.ts`) runs against the user's completed scans, active
+   shelf items, and reaction logs. When a routine change (shelf add or logged
+   reaction) is flanked by scans that show a measurable concern or score movement, a
+   line is appended — plus a "why" clause from the ingredient → concern map
+   (`_shared/ingredientConcerns.ts`, mirror of `mobile/src/lib/ingredientConcerns.ts`)
+   when the event's ingredients plausibly target the concern that moved. Emitted only
+   when at least one insight exists, capped at 4, always paired with the correlation
+   caveat (see [ADR-0011](adr/0011-correlation-insights-in-coach-context.md)).
 
 The assembled block is prepended to the system prompt as a "what you know about this
 user" section, framed as ground truth. Retrieved memory ids are then **touched**
@@ -73,6 +83,9 @@ LATEST SKIN SCAN (Tue Jun 09 2026) — score 74/100 … Concerns: Congestion (52
 LAST CONVERSATION SUMMARY: Discussed starting a BHA; agreed to 2 nights/week …
 TODAY'S SKIN WEATHER (San Francisco, CA) — High UV and low humidity. Skin like yours …
 PRODUCTS ON THEIR SHELF (recommend what they own): EltaMD UV Clear SPF 46 (spf, running low); …
+ROUTINE CORRELATIONS (measured from their scan history — correlations, not proof):
+  • Added Niacinamide 10% + Zinc 1% (2026-06-23): Dark spots dropped 15 points across the next scan. Niacinamide targets dark spots.
+  ↳ Use these to explain what seems to be working or not; always keep the correlation caveat.
 ```
 
 ## Write path — extraction

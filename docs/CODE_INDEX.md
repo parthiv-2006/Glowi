@@ -60,7 +60,7 @@ worse than no entries.
 | `haptics.ts` / `responsive.ts` | Haptic + layout helpers |
 
 **Pure domain logic (unit-tested in `lib/__tests__/`):**
-`streak.ts` (check-in streaks) · `shelf.ts` (PAO expiry, stock) · `reactions.ts` (ingredient risk cross-referencing) · `routineSequence.ts` (wait times, order warnings) · `routineGenerator.ts` (scan → routine steps) · `budget.ts` (cost-per-use, quarter spend) · `correlation.ts` (scan-to-trend correlation insights)
+`streak.ts` (check-in streaks) · `shelf.ts` (PAO expiry, stock) · `reactions.ts` (ingredient risk cross-referencing) · `routineSequence.ts` (wait times, order warnings) · `routineGenerator.ts` (scan → routine steps) · `budget.ts` (cost-per-use, quarter spend) · `correlation.ts` (scan-to-trend correlation insights; ⚠ lockstep mirror of `supabase/functions/_shared/correlation.ts`) · `ingredientConcerns.ts` (ingredient → concern targeting map for the correlation "why" line; ⚠ lockstep mirror of `supabase/functions/_shared/ingredientConcerns.ts`)
 
 **AI seam (`lib/ai/`, ADR-0003 — sacred):** `types.ts` = `AIProvider` interface; `live.ts` invokes edge functions; `mock.ts` = deterministic offline twin (keep in lockstep); `forecast.ts` = pure mock-weather synthesis; `index.ts` = `getAIProvider()` (mode from `EXPO_PUBLIC_AI_MODE`).
 
@@ -87,7 +87,7 @@ worse than no entries.
 | `compare-scans` | Two scan images → honest `AIDelta` (cached in `scan_comparisons`) |
 | `compare-products` | Two label photos + user context → in-store verdict (stateless) |
 | `auth-signup` | Pre-confirmed guest/user creation, IP rate-limited |
-| `_shared/` | `http.ts` (CORS/serve), `anthropic.ts`, `images.ts` (magic-byte sniffing), db helpers |
+| `_shared/` | `http.ts` (CORS/serve), `anthropic.ts`, `images.ts` (magic-byte sniffing), `memory.ts` (`assembleMemoryContext`), `correlation.ts` + `ingredientConcerns.ts` (⚠ lockstep mirrors of the mobile modules of the same name, ported into the memory context), db helpers |
 
 **Migrations (append-only source of truth):** 0001 core tables · 0002 RLS · 0003 storage+triggers · 0004 guest flag · 0005 skin_forecasts · 0006 shelf_items · 0007 rate limit · 0008 drop raw_model_output · 0009 lock trigger fns · 0010 conflicts + key_ingredients · 0011 scan_comparisons · 0012 reaction_logs · 0013 shelf price_usd.
 
