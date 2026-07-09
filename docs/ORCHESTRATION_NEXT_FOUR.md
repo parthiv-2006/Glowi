@@ -1,8 +1,8 @@
 # Orchestration Plan — The Next Four Things on Glowi
 
-**Status:** WS1 ✅ · WS2 ✅ · WS3 ✅ · WS4 ✅ — all four shipped (2026-07-09). The
-`eas build` (WS2-D) is the plan's final action; see the WS2 Result. · **Written:**
-2026-07-08 · **Owner:** orchestrator session
+**Status:** WS1 ✅ · WS2 ✅ · WS3 ✅ · WS4 ✅ — all four shipped (2026-07-09), including
+the plan's final action: the EAS Android `preview` build is queued (see the WS2 Result).
+· **Written:** 2026-07-08 · **Owner:** orchestrator session
 
 This document is an execution contract. Each workstream below is written so a Claude
 agent (Sonnet or Opus, per the routing table) can run it **autonomously, cold, with no
@@ -304,10 +304,17 @@ Deliver the build URL/QR to the user; installation on their phone is the accepta
 - **EAS config:** `mobile/eas.json` created — `development` (dev-client, internal),
   `preview` (internal distribution, APK), `production` (app-bundle, `autoIncrement`,
   `appVersionSource: remote`).
-- **`eas init` + `eas build -p android --profile preview` = the plan's final action.**
-  It needs the user's Expo account; per the user's decision it runs in-session with a
-  pasted `EXPO_TOKEN` (writes `extra.eas.projectId` into `app.json` — to be committed),
-  and the delivered APK/QR is the on-device acceptance test. See close-out.
+- **`eas init` + `eas build -p android --profile preview` = the plan's final action —
+  done (2026-07-09).** Ran in-session with the user's `EXPO_TOKEN`: `eas init --force`
+  linked the existing project (`extra.eas.projectId =
+  049c9cf2-9aa9-42c0-854a-ad20a5a80b55`, `owner = parthiv-2006s-team`, committed). It also
+  materialized `android.permissions`, which were **pinned to camera-only**
+  (`recordAudioAndroid: false`; no `RECORD_AUDIO`) — a photo app shouldn't request the
+  microphone. The `preview` APK build was queued (keystore auto-generated in the cloud,
+  versionCode 1):
+  https://expo.dev/accounts/parthiv-2006s-team/projects/glowi/builds/be8e976f-871e-4ce2-b702-191d9ab75e2b
+  Installing that APK on a phone is the acceptance test — and the only way to verify the
+  guided camera + branding on-device.
 
 ---
 
