@@ -36,6 +36,7 @@ worse than no entries.
 | `/profile` | `(tabs)/profile.tsx` | Profile, location (geocoding autocomplete), settings |
 | `/scan` → `/scan/camera` → `/scan/analyzing` | `scan/*.tsx` | Capture entry (guided camera or library) → analysis theater (schedules weekly reminder). `camera.tsx` = guided in-app camera (alignment overlay + lighting check); `camera.web.tsx` = web picker fallback |
 | `/results/[scanId]` | `results/[scanId].tsx` | Scan reveal; per-concern detail at `concern/[scanId]/[slug].tsx` |
+| `/report` | `report/index.tsx` | Glow Report history — past weekly reports (read over `glow_reports`, zero AI), newest first |
 | `/report/[weekStart]` | `report/[weekStart].tsx` | Weekly Glow Report — headline, score-delta ring, stats, wins/watch-outs, next-week focus, shareable card |
 | `/routine` | `routine/index.tsx` | AM/PM routine, wait-time chips, order warnings, daily check-in |
 | `/shelf` | `shelf/index.tsx` | Inventory + nudges; `add.tsx` (photo→AI→form), `[id].tsx` (detail), `budget.tsx` (cost-per-use), `conflicts.tsx` (AI conflict report), `replenish.tsx` (Smart Replenishment — what to get next) |
@@ -54,7 +55,7 @@ worse than no entries.
 | `supabase.ts` | Supabase client, `getSignedScanImageUrl` |
 | `api.ts` | Every DB read/write (PostgREST calls) — no UI imports it directly except via hooks |
 | `query.ts` | `qk` — the canonical React Query key registry |
-| `hooks.ts` | React Query hooks over api.ts + AI provider (`useScans`, `useShelfItems`, `useScanComparison`, `useCatalogProducts`, `useGlowReport`, …) |
+| `hooks.ts` | React Query hooks over api.ts + AI provider (`useScans`, `useShelfItems`, `useScanComparison`, `useCatalogProducts`, `useGlowReport`, `useGlowReports`, …) |
 | `constants.ts` | UI constants, color helpers (`expiryColor`, `FORECAST_ACTION`, `categoryIcon`) |
 | `env.ts` | Typed `EXPO_PUBLIC_*` access |
 | `notifications.ts` | Identifier-based scheduling (`glowi-routine-am/pm`, `glowi-weekly-scan`, `glowi-glow-report` weekly) — never `cancelAll`; report deep-link marker `/report` resolved in `_layout.tsx` |

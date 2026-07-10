@@ -297,6 +297,19 @@ export default function ProgressScreen() {
           </GlassCard>
         </PressableScale>
 
+        {/* Report history */}
+        <PressableScale
+          onPress={() => {
+            haptics.tap();
+            router.push('/report');
+          }}
+          style={styles.pastReportsLink}
+        >
+          <AppText variant="caption" color={palette.accentBright}>
+            Past reports →
+          </AppText>
+        </PressableScale>
+
         {/* Score chart */}
         {completedScans.length >= 2 && (
           <GlassCard style={styles.section}>
@@ -654,6 +667,7 @@ const styles = StyleSheet.create({
   },
   reviewBody: { flex: 1, gap: spacing(1) },
   reviewHeadline: { fontSize: 15, lineHeight: 20 },
+  pastReportsLink: { alignSelf: 'flex-end', marginTop: spacing(2), padding: spacing(1) },
 
   scanRowWrap: { marginBottom: spacing(3) },
   scanRow: {

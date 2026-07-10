@@ -39,4 +39,5 @@ export const qk = {
   comparison: (beforeId: string, afterId: string) =>
     ['scan-comparison', beforeId, afterId] as const,
   glowReport: (weekStart: string) => ['glow-report', weekStart] as const,
+  glowReports: ['glow-reports'] as const,
 };

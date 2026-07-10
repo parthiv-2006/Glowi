@@ -12,6 +12,7 @@ import type {
   ChatSession,
   Concern,
   AiMemory,
+  GlowReport,
   LifestyleLog,
   NutritionGuide,
   Product,
@@ -447,5 +448,22 @@ export async function upsertLifestyleLog(
       .upsert({ user_id: userId, ...log }, { onConflict: 'user_id,log_date' })
       .select(LIFESTYLE_COLS)
       .single(),
+  );
+}
+
+// ─────────────── Weekly Glow Reports ───────────────
+
+/**
+ * Past Glow Reports, newest week first. Reads the immutable `glow_reports`
+ * cache directly — generation stays with the AIProvider (`useGlowReport`);
+ * this only lists what already exists.
+ */
+export async function listGlowReports(limit = 12): Promise<GlowReport[]> {
+  return unwrap(
+    await supabase
+      .from('glow_reports')
+      .select('id, week_start, content, created_at')
+      .order('week_start', { ascending: false })
+      .limit(limit),
   );
 }

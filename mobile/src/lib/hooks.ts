@@ -272,6 +272,18 @@ export function useGlowReport(weekStart: string) {
   });
 }
 
+/**
+ * Past Glow Reports, newest first — a plain read over the immutable
+ * `glow_reports` cache (no generation, so it never costs a token). Default
+ * staleTime keeps it fresh after a new week's report is generated.
+ */
+export function useGlowReports(limit = 12) {
+  return useQuery({
+    queryKey: [...qk.glowReports, limit],
+    queryFn: () => api.listGlowReports(limit),
+  });
+}
+
 export function useScanComparison(scanIdBefore: string | null, scanIdAfter: string | null) {
   return useQuery({
     queryKey: qk.comparison(scanIdBefore ?? '', scanIdAfter ?? ''),
