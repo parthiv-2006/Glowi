@@ -348,6 +348,44 @@ export interface LifestyleLog {
   updated_at: string;
 }
 
+/** The counted facts on a Glow Report — computed server-side, never modeled. */
+export interface GlowReportStats {
+  /** Completed scans during the reported week. */
+  scans: number;
+  /** AM/PM routine slots logged that week. */
+  checkins: number;
+  /** The adherence denominator — AM + PM across 7 days (14). */
+  checkin_possible: number;
+  /** Consecutive check-in days ending on the last day of the week. */
+  streak_days: number;
+}
+
+/**
+ * A Weekly Glow Report's content — the model writes the prose, the app computes
+ * `stats`. Validated field-by-field server-side; mirrors the edge function's
+ * output shape (supabase/functions/glow-report).
+ */
+export interface GlowReportContent {
+  headline: string;
+  /** Skin-score movement grounded in the real delta, or honest about no scans. */
+  score_note: string;
+  /** 1–3 wins, each grounded in a real datum. */
+  wins: string[];
+  /** 0–2 gentle watch-outs. */
+  watchouts: string[];
+  next_week_focus: string;
+  stats: GlowReportStats;
+}
+
+/** One immutable weekly report — one row per user per completed week. */
+export interface GlowReport {
+  id: string;
+  /** Monday (ISO) of the week this report covers. */
+  week_start: string;
+  content: GlowReportContent;
+  created_at: string;
+}
+
 /** Which of two candidate products wins an in-store comparison. */
 export type ComparisonVerdict = 'a' | 'b' | 'either' | 'neither';
 

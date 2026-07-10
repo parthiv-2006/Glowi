@@ -3,6 +3,7 @@ import { supabase } from '../supabase';
 import type {
   AIDelta,
   ConflictReport,
+  GlowReport,
   ProductComparison,
   ProductIdentification,
   Scan,
@@ -16,6 +17,7 @@ import type {
   CompareProductsInput,
   CompareScanInput,
   ExtractResult,
+  GlowReportInput,
   IdentifyProductInput,
   SkinForecastInput,
 } from './types';
@@ -81,5 +83,10 @@ export const liveProvider: AIProvider = {
     imageBBase64,
   }: CompareProductsInput): Promise<ProductComparison> {
     return invoke<ProductComparison>('compare-products', { imageABase64, imageBBase64 });
+  },
+
+  async glowReport({ weekStart }: GlowReportInput): Promise<GlowReport> {
+    const result = await invoke<{ report: GlowReport }>('glow-report', { week_start: weekStart });
+    return result.report;
   },
 };

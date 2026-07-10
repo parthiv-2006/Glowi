@@ -13,11 +13,16 @@ import { supabase } from '../supabase';
 import type {
   AIDelta,
   ConflictReport,
+  GlowReport,
+  GlowReportContent,
+  LifestyleLog,
   ProductCategory,
   ProductComparison,
   ProductIdentification,
+  ReactionLog,
   Scan,
   ScanConcern,
+  ShelfItem,
   SkinForecast,
   SkinType,
 } from '../types';
@@ -29,10 +34,12 @@ import type {
   CompareProductsInput,
   CompareScanInput,
   ExtractResult,
+  GlowReportInput,
   IdentifyProductInput,
   SkinForecastInput,
 } from './types';
 import { DEFAULT_LOCATION, deriveForecast, synthesizeEnvironment } from './forecast';
+import { CORRELATION_CAVEAT, correlateScanTrends } from '../correlation';
 
 /** Plausible label reads for offline Shelf demos — rotate per add. */
 const MOCK_IDENTIFICATIONS: Omit<
@@ -74,6 +81,11 @@ const MOCK_IDENTIFICATIONS: Omit<
 ];
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const DAY_MS = 86_400_000;
+function addDaysIso(iso: string, days: number): string {
+  return new Date(Date.parse(`${iso}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
+}
 
 /** Scan scenarios rotate by scan count; scores drift upward on repeat scans. */
 const SCENARIOS: { summary: string; type: Scan['skin_type_estimate']; concerns: ScanConcern[] }[] =
@@ -569,6 +581,192 @@ export const mockProvider: AIProvider = {
         'Prices are close — pick on fit, not cost.',
       ],
     };
+  },
+
+  async glowReport({ weekStart }: GlowReportInput): Promise<GlowReport> {
+    const userId = await requireUserId();
+
+    // Cache parity with live: one immutable report per week; reload hits it.
+    const { data: cached } = await supabase
+      .from('glow_reports')
+      .select('*')
+      .eq('week_start', weekStart)
+      .maybeSingle();
+    if (cached) return cached as GlowReport;
+
+    await wait(900 + Math.random() * 700);
+
+    const weekEnd = addDaysIso(weekStart, 7); // exclusive
+    const lastDay = addDaysIso(weekStart, 6); // inclusive
+    const streakLookback = addDaysIso(weekStart, -30);
+    const lifestyleLookback = addDaysIso(weekStart, -60);
+
+    const [
+      scansInWindow,
+      lastBefore,
+      allScans,
+      checkinsWindow,
+      checkinsStreak,
+      shelfAdds,
+      reactions,
+      shelfActive,
+      allReactions,
+      lifestyle,
+    ] = await Promise.all([
+      supabase
+        .from('scans')
+        .select('skin_score, created_at')
+        .eq('status', 'complete')
+        .gte('created_at', weekStart)
+        .lt('created_at', weekEnd)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('scans')
+        .select('skin_score')
+        .eq('status', 'complete')
+        .lt('created_at', weekStart)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('scans')
+        .select('created_at, skin_score, concerns, status')
+        .eq('status', 'complete')
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('routine_checkins')
+        .select('checkin_date')
+        .gte('checkin_date', weekStart)
+        .lt('checkin_date', weekEnd),
+      supabase
+        .from('routine_checkins')
+        .select('checkin_date')
+        .gte('checkin_date', streakLookback)
+        .lte('checkin_date', lastDay),
+      supabase
+        .from('shelf_items')
+        .select('name, brand, created_at')
+        .gte('created_at', weekStart)
+        .lt('created_at', weekEnd),
+      supabase
+        .from('reaction_logs')
+        .select('product_name, reacted_on')
+        .gte('reacted_on', weekStart)
+        .lt('reacted_on', weekEnd),
+      supabase
+        .from('shelf_items')
+        .select('created_at, name, key_ingredients')
+        .eq('status', 'active'),
+      supabase.from('reaction_logs').select('reacted_on, product_name, key_ingredients'),
+      supabase
+        .from('lifestyle_logs')
+        .select('log_date, sleep_quality, stress_level, diet_dairy, diet_sugar, diet_alcohol')
+        .gte('log_date', lifestyleLookback)
+        .lte('log_date', lastDay),
+    ]);
+
+    const windowScans = scansInWindow.data ?? [];
+    const endScore = windowScans.length ? windowScans[windowScans.length - 1].skin_score : null;
+    const baseScore =
+      lastBefore.data?.skin_score ?? (windowScans.length >= 2 ? windowScans[0].skin_score : null);
+    const scoreDelta = endScore != null && baseScore != null ? endScore - baseScore : null;
+
+    const checkins = Math.min(checkinsWindow.data?.length ?? 0, 14);
+    const streakDates = new Set((checkinsStreak.data ?? []).map((c) => c.checkin_date as string));
+    let streakDays = 0;
+    let cursor = lastDay;
+    while (streakDates.has(cursor)) {
+      streakDays += 1;
+      cursor = addDaysIso(cursor, -1);
+    }
+
+    const insights = correlateScanTrends(
+      (allScans.data ?? []) as Scan[],
+      (shelfActive.data ?? []) as ShelfItem[],
+      (allReactions.data ?? []) as ReactionLog[],
+      (lifestyle.data ?? []) as LifestyleLog[],
+    );
+    const improved = insights.find((i) => i.direction === 'improved');
+    const worsened = insights.find((i) => i.direction === 'worsened');
+    const added = shelfAdds.data ?? [];
+    const reacted = reactions.data ?? [];
+
+    // Deterministic prose from the real facts — no network AI call.
+    let headline: string;
+    if (windowScans.length === 0) headline = 'A quiet week for scans — your habits kept going';
+    else if (scoreDelta != null && scoreDelta > 0)
+      headline = `Your skin climbed ${scoreDelta} points this week`;
+    else if (scoreDelta != null && scoreDelta < 0) headline = 'A small dip — here’s what to steady';
+    else headline = 'A steady week — your barrier thanks you';
+
+    let scoreNote: string;
+    if (windowScans.length === 0)
+      scoreNote =
+        'No scans this week, so there’s no movement to read yet. A weekly scan is what turns these reports into a real trend line.';
+    else if (scoreDelta != null)
+      scoreNote = `Your skin score went from ${baseScore} to ${endScore} — ${
+        scoreDelta > 0 ? 'up' : scoreDelta < 0 ? 'down' : 'flat'
+      } ${Math.abs(scoreDelta)} point${Math.abs(scoreDelta) === 1 ? '' : 's'} across ${
+        windowScans.length
+      } scan${windowScans.length === 1 ? '' : 's'} this week.`;
+    else
+      scoreNote =
+        'You logged a scan this week — one more next week and I can start showing you real movement.';
+
+    const wins: string[] = [];
+    if (checkins > 0) wins.push(`Logged ${checkins} of 14 routine slots — consistency compounds.`);
+    if (streakDays >= 2) wins.push(`You’re on a ${streakDays}-day check-in streak — keep it lit.`);
+    if (improved) wins.push(`${improved.headline} ${CORRELATION_CAVEAT}`);
+    if (added.length)
+      wins.push(
+        `Added ${added.map((a) => [a.brand, a.name].filter(Boolean).join(' ')).join(', ')} to your shelf — a fresh lever to track.`,
+      );
+    if (wins.length === 0) wins.push('You showed up this week — that’s the hardest part.');
+
+    const watchouts: string[] = [];
+    if (reacted.length)
+      watchouts.push(
+        `You logged a reaction to ${reacted
+          .map((r) => r.product_name)
+          .join(', ')} — I’ll keep those ingredients out of recommendations.`,
+      );
+    if (worsened) watchouts.push(`${worsened.headline} ${CORRELATION_CAVEAT}`);
+    if (checkins < 4 && watchouts.length < 2)
+      watchouts.push(
+        'Routine check-ins were light this week — even a two-tap log keeps the streak alive.',
+      );
+
+    let nextWeekFocus: string;
+    if (windowScans.length === 0)
+      nextWeekFocus = 'Run one scan this week so next week’s report can show real movement.';
+    else if (streakDays < 3)
+      nextWeekFocus =
+        'Aim for a daily check-in — small, repeatable, and it feeds every insight here.';
+    else if (scoreDelta != null && scoreDelta < 0)
+      nextWeekFocus = 'Hold your routine steady and re-scan in 7 days to confirm the trend.';
+    else nextWeekFocus = 'Keep the routine consistent and layer SPF every morning.';
+
+    const content: GlowReportContent = {
+      headline,
+      score_note: scoreNote,
+      wins: wins.slice(0, 3),
+      watchouts: watchouts.slice(0, 2),
+      next_week_focus: nextWeekFocus,
+      stats: {
+        scans: windowScans.length,
+        checkins,
+        checkin_possible: 14,
+        streak_days: streakDays,
+      },
+    };
+
+    const { data, error } = await supabase
+      .from('glow_reports')
+      .insert({ user_id: userId, week_start: weekStart, content })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data as GlowReport;
   },
 
   async extractMemories(sessionId: string): Promise<ExtractResult> {

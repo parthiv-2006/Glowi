@@ -6,6 +6,7 @@
 import type {
   AIDelta,
   ConflictReport,
+  GlowReport,
   ProductComparison,
   ProductIdentification,
   Scan,
@@ -30,6 +31,11 @@ export interface SkinForecastInput {
 export interface ChatInput {
   sessionId: string;
   message: string;
+}
+
+export interface GlowReportInput {
+  /** Monday (ISO, yyyy-mm-dd) of the completed week to report on. */
+  weekStart: string;
 }
 
 export interface ChatResult {
@@ -78,6 +84,12 @@ export interface AIProvider {
    * persists nothing.
    */
   compareProducts(input: CompareProductsInput): Promise<ProductComparison>;
+  /**
+   * Returns the Weekly Glow Report for a completed week, generating and caching
+   * it on first request. Idempotent per user per week — the second call for the
+   * same week hits the cache with no Claude call.
+   */
+  glowReport(input: GlowReportInput): Promise<GlowReport>;
 }
 
 export interface CompareProductsInput {

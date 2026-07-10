@@ -258,6 +258,20 @@ export function useUpsertLifestyleLog() {
   });
 }
 
+/**
+ * The Weekly Glow Report for a completed week. The active AIProvider
+ * generates-or-returns it and caches it forever server-side (reports are
+ * immutable), so this is held indefinitely once fetched.
+ */
+export function useGlowReport(weekStart: string) {
+  return useQuery({
+    queryKey: qk.glowReport(weekStart),
+    queryFn: () => getAIProvider().glowReport({ weekStart }),
+    enabled: !!weekStart,
+    staleTime: Infinity,
+  });
+}
+
 export function useScanComparison(scanIdBefore: string | null, scanIdAfter: string | null) {
   return useQuery({
     queryKey: qk.comparison(scanIdBefore ?? '', scanIdAfter ?? ''),
