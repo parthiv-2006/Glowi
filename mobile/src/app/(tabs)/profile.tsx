@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import {
@@ -15,7 +17,9 @@ import {
   Screen,
   Stagger,
 } from '@/components/ui';
+import * as api from '@/lib/api';
 import { DISCLAIMER } from '@/lib/constants';
+import { buildDermReportHtml } from '@/lib/dermReport';
 import { haptics } from '@/lib/haptics';
 import {
   cancelRoutineReminders,
@@ -51,6 +55,7 @@ export default function ProfileTab() {
   const setCycleTrackingEnabled = useSettings((s) => s.setCycleTrackingEnabled);
 
   const [remindersOn, setRemindersOn] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [locationInput, setLocationInput] = useState(locationLabel ?? '');
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
   const [detectingLocation, setDetectingLocation] = useState(false);
@@ -77,6 +82,33 @@ export default function ProfileTab() {
       .maybeSingle()
       .then(({ data }) => setRemindersOn(!!data?.enabled));
   }, [userId]);
+
+  /** Fetches the user's history on demand, prints it to a PDF, opens the share sheet. */
+  async function exportDermReport() {
+    if (exporting) return;
+    try {
+      setExporting(true);
+      haptics.tap();
+      const [scans, routines, reactions, shelfItems] = await Promise.all([
+        api.getScans(),
+        api.getRoutines(),
+        api.getReactionLogs(),
+        api.getShelfItems(),
+      ]);
+      const html = buildDermReportHtml({ profile, scans, routines, reactions, shelfItems });
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share your skin summary',
+        });
+      }
+    } catch {
+      // A cancelled share sheet or print hiccup is non-fatal — stay on screen.
+    } finally {
+      setExporting(false);
+    }
+  }
 
   // Debounced geocoding autocomplete — setState always inside the timer callback to satisfy lint.
   useEffect(() => {
@@ -359,6 +391,14 @@ export default function ProfileTab() {
 
         <Row icon="scan-outline" title="New scan" onPress={() => router.push('/scan')} />
         <Row icon="sunny-outline" title="My routine" onPress={() => router.push('/routine')} />
+        {Platform.OS !== 'web' && (
+          <Row
+            icon="document-text-outline"
+            title={exporting ? 'Preparing your summary…' : 'Export for your derm'}
+            subtitle="Scan history, routine & reactions as a PDF"
+            onPress={() => void exportDermReport()}
+          />
+        )}
 
         <PressableScale
           onPress={() => {
