@@ -39,7 +39,7 @@ worse than no entries.
 | `/report` | `report/index.tsx` | Glow Report history — past weekly reports (read over `glow_reports`, zero AI), newest first |
 | `/report/[weekStart]` | `report/[weekStart].tsx` | Weekly Glow Report — headline, score-delta ring, stats, wins/watch-outs, next-week focus, shareable card |
 | `/routine` | `routine/index.tsx` | AM/PM routine, wait-time chips, order warnings, daily check-in |
-| `/shelf` | `shelf/index.tsx` | Inventory + nudges; `add.tsx` (photo→AI→form), `[id].tsx` (detail), `budget.tsx` (cost-per-use), `conflicts.tsx` (AI conflict report), `replenish.tsx` (Smart Replenishment — what to get next) |
+| `/shelf` | `shelf/index.tsx` | Inventory + nudges; `add.tsx` (photo→AI→form), `[id].tsx` (detail), `budget.tsx` (cost-per-use), `conflicts.tsx` (AI conflict report), `replenish.tsx` (Smart Replenishment — what to get next; no-catalog-match falls back to a prefilled coach chat) |
 | `/reactions`, `/reactions/add` | `reactions/*.tsx` | Reaction log (writes a gotcha ai_memory) |
 | `/compare` | `compare.tsx` | In-store two-product photo comparison |
 | `/forecast` | `forecast.tsx` | Full Skin Weather view |

@@ -3,9 +3,10 @@
  * replacements under each shelf item that's expiring, expired, low, or out,
  * so the Shelf's expiry/stock signals turn into an actual next purchase.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -20,9 +21,11 @@ import {
   Stagger,
 } from '@/components/ui';
 import { ProductCard } from '@/components/ProductCard';
+import { createSession } from '@/lib/api';
 import { expiryColor, stockColor } from '@/lib/constants';
 import { haptics } from '@/lib/haptics';
 import { useCatalogProducts, useReactionLogs, useScans, useShelfItems } from '@/lib/hooks';
+import { qk } from '@/lib/query';
 import {
   replenishmentTriggers,
   suggestReplacements,
@@ -45,9 +48,20 @@ function reasonColor(reason: ReplenishmentTrigger['reason']): string {
   return stockColor('low');
 }
 
+/** The reason as prose for the coach prompt, e.g. "has expired". */
+const REASON_PHRASE: Record<ReplenishmentTrigger['reason'], string> = {
+  expired: 'has expired',
+  expiring: 'is about to expire',
+  out: 'is used up',
+  low_stock: 'is running low',
+};
+
 export default function ReplenishScreen() {
   const router = useRouter();
+  const qc = useQueryClient();
+  const userId = useAuth((s) => s.session?.user.id);
   const profile = useAuth((s) => s.profile);
+  const [askingItemId, setAskingItemId] = useState<string | null>(null);
   const { data: shelf, isLoading: shelfLoading } = useShelfItems();
   const { data: reactions = [] } = useReactionLogs();
   const { data: scans } = useScans();
@@ -72,6 +86,30 @@ export default function ReplenishScreen() {
   }, [triggers, catalog, latestScan, reactions, shelf, profile]);
 
   const isLoading = shelfLoading || catalogLoading;
+
+  /**
+   * Catalog fallback: when the curated catalog has no safe match, hand the
+   * question to the memory-aware coach (it already knows the shelf, reactions,
+   * and latest scan) instead of silently capping the recommendation.
+   */
+  async function askCoach(trigger: ReplenishmentTrigger) {
+    if (!userId || askingItemId) return;
+    setAskingItemId(trigger.item.id);
+    haptics.tap();
+    try {
+      const session = await createSession(userId);
+      qc.invalidateQueries({ queryKey: qk.sessions });
+      router.push({
+        pathname: '/chat/[sessionId]',
+        params: {
+          sessionId: session.id,
+          draft: `My ${trigger.item.name} ${REASON_PHRASE[trigger.reason]} and Glowi's catalog doesn't have a safe match for it. What should I replace it with?`,
+        },
+      });
+    } finally {
+      setAskingItemId(null);
+    }
+  }
 
   return (
     <Screen bottomInset={spacing(8)}>
@@ -128,11 +166,26 @@ export default function ReplenishScreen() {
                     ))}
                   </View>
                 ) : (
-                  <GlassCard style={styles.noMatch}>
-                    <AppText variant="caption" color={palette.textSecondary}>
-                      No safe match in the catalog yet for this category.
-                    </AppText>
-                  </GlassCard>
+                  <PressableScale onPress={() => void askCoach(trigger)}>
+                    <GlassCard style={styles.noMatch}>
+                      <AppText variant="caption" color={palette.textSecondary}>
+                        No safe match in the catalog yet for this category.
+                      </AppText>
+                      <View style={styles.askCoachRow}>
+                        <Ionicons
+                          name="chatbubble-ellipses-outline"
+                          size={16}
+                          color={palette.accentBright}
+                        />
+                        <AppText variant="subheading" color={palette.accentBright}>
+                          {askingItemId === trigger.item.id
+                            ? 'Opening your coach…'
+                            : 'Ask your coach what to get'}
+                        </AppText>
+                        <Ionicons name="chevron-forward" size={14} color={palette.textTertiary} />
+                      </View>
+                    </GlassCard>
+                  </PressableScale>
                 )}
               </View>
             ))}
@@ -172,5 +225,6 @@ const styles = StyleSheet.create({
   },
   groupTitle: { flex: 1 },
   cards: { gap: spacing(3) },
-  noMatch: { borderRadius: radii.md },
+  noMatch: { borderRadius: radii.md, gap: spacing(2) },
+  askCoachRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
 });
