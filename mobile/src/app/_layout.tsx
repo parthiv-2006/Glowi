@@ -24,8 +24,10 @@ import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/spac
 import { SplashView } from '@/components/SplashView';
 import { queryClient } from '@/lib/query';
 import { mostRecentCompletedWeekStart } from '@/lib/glowReport';
+import { cancelServerOwnedReminders, registerPushToken } from '@/lib/notifications';
 import { palette } from '@/theme';
 import { useAuth } from '@/stores/auth';
+import { useSettings } from '@/stores/settings';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -48,6 +50,25 @@ function useNotificationDeepLinks() {
     });
     return () => sub.remove();
   }, [router]);
+}
+
+/**
+ * Registers the device for server push once a session exists. On success the
+ * server owns the weekly nudges (scan + Glow Report), so their local twins are
+ * cancelled; on failure (web, Expo Go, denied permission) the local reminders
+ * stay in charge and nothing changes.
+ */
+function usePushRegistration() {
+  const session = useAuth((s) => s.session);
+  const setPushRegistered = useSettings((s) => s.setPushRegistered);
+  useEffect(() => {
+    const userId = session?.user.id;
+    if (!userId) return;
+    void registerPushToken(userId).then(async (registered) => {
+      setPushRegistered(registered);
+      if (registered) await cancelServerOwnedReminders();
+    });
+  }, [session?.user.id, setPushRegistered]);
 }
 
 function useAuthGate() {
@@ -77,6 +98,7 @@ function useAuthGate() {
 function RootNavigator() {
   useAuthGate();
   useNotificationDeepLinks();
+  usePushRegistration();
   return (
     <Stack
       screenOptions={{

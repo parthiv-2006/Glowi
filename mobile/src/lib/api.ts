@@ -451,6 +451,20 @@ export async function upsertLifestyleLog(
   );
 }
 
+// ─────────────── Push tokens ───────────────
+
+/** Registers or refreshes this device's Expo push token (unique on token). */
+export async function upsertPushToken(
+  userId: string,
+  token: string,
+  platform: 'ios' | 'android',
+): Promise<void> {
+  const { error } = await supabase
+    .from('push_tokens')
+    .upsert({ user_id: userId, token, platform }, { onConflict: 'token' });
+  if (error) throw new Error(error.message);
+}
+
 // ─────────────── Weekly Glow Reports ───────────────
 
 /**

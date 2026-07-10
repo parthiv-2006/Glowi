@@ -58,7 +58,7 @@ worse than no entries.
 | `hooks.ts` | React Query hooks over api.ts + AI provider (`useScans`, `useShelfItems`, `useScanComparison`, `useCatalogProducts`, `useGlowReport`, `useGlowReports`, …) |
 | `constants.ts` | UI constants, color helpers (`expiryColor`, `FORECAST_ACTION`, `categoryIcon`) |
 | `env.ts` | Typed `EXPO_PUBLIC_*` access |
-| `notifications.ts` | Identifier-based scheduling (`glowi-routine-am/pm`, `glowi-weekly-scan`, `glowi-glow-report` weekly) — never `cancelAll`; report deep-link marker `/report` resolved in `_layout.tsx` |
+| `notifications.ts` | Identifier-based scheduling (`glowi-routine-am/pm`, `glowi-weekly-scan`, `glowi-glow-report` weekly) — never `cancelAll`; report deep-link marker `/report` resolved in `_layout.tsx`; `registerPushToken` (Expo push, server owns weekly nudges once registered) |
 | `haptics.ts` / `responsive.ts` | Haptic + layout helpers |
 
 **Pure domain logic (unit-tested in `lib/__tests__/`):**
@@ -90,9 +90,10 @@ worse than no entries.
 | `compare-scans` | Two scan images → honest `AIDelta` (cached in `scan_comparisons`) |
 | `compare-products` | Two label photos + user context → in-store verdict (stateless) |
 | `auth-signup` | Pre-confirmed guest/user creation, IP rate-limited |
+| `push-dispatch` | Scheduled Expo push sends (glow-report ready / lapsed-scan nudge) — cron-called, shared-secret auth, not user JWT |
 | `_shared/` | `http.ts` (CORS/serve), `anthropic.ts`, `images.ts` (magic-byte sniffing), `memory.ts` (`assembleMemoryContext`), `correlation.ts` + `ingredientConcerns.ts` + `milestones.ts` (⚠ lockstep mirrors of the mobile modules of the same name), db helpers |
 
-**Migrations (append-only source of truth):** 0001 core tables · 0002 RLS · 0003 storage+triggers · 0004 guest flag · 0005 skin_forecasts · 0006 shelf_items · 0007 rate limit · 0008 drop raw_model_output · 0009 lock trigger fns · 0010 conflicts + key_ingredients · 0011 scan_comparisons · 0012 reaction_logs · 0013 shelf price_usd · 0014 scans.capture_meta (guided-capture context) · 0015 lifestyle_logs (daily check-in: sleep/stress/water 0–2, diet flags, opt-in cycle_phase) · 0016 glow_reports (one immutable Weekly Glow Report per user per completed week; `content` jsonb, unique `(user_id, week_start)`).
+**Migrations (append-only source of truth):** 0001 core tables · 0002 RLS · 0003 storage+triggers · 0004 guest flag · 0005 skin_forecasts · 0006 shelf_items · 0007 rate limit · 0008 drop raw_model_output · 0009 lock trigger fns · 0010 conflicts + key_ingredients · 0011 scan_comparisons · 0012 reaction_logs · 0013 shelf price_usd · 0014 scans.capture_meta (guided-capture context) · 0015 lifestyle_logs (daily check-in: sleep/stress/water 0–2, diet flags, opt-in cycle_phase) · 0016 glow_reports (one immutable Weekly Glow Report per user per completed week; `content` jsonb, unique `(user_id, week_start)`) · 0017 push_tokens (Expo push tokens, unique per token) · 0018 push cron (pg_cron + pg_net schedules calling `push-dispatch` with the Vault `push_dispatch_secret`) · 0019 pg_net schema lint fix.
 
 Every user table has RLS (`crud_own` convention); the scan-images bucket is private per-user.
 

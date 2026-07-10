@@ -27,6 +27,7 @@ import { scheduleGlowReportReminder, scheduleWeeklyScanReminder } from '@/lib/no
 import { supabase } from '@/lib/supabase';
 import type { CaptureMeta } from '@/lib/types';
 import { useAuth } from '@/stores/auth';
+import { useSettings } from '@/stores/settings';
 import { motion, palette, radii, spacing } from '@/theme';
 
 const STAGES = [
@@ -135,8 +136,12 @@ export default function Analyzing() {
       }
       setDone(true);
       haptics.success();
-      void scheduleWeeklyScanReminder();
-      void scheduleGlowReportReminder();
+      // Server push owns these weekly nudges once a token is registered; the
+      // local schedules are the fallback for devices push can't reach.
+      if (!useSettings.getState().pushRegistered) {
+        void scheduleWeeklyScanReminder();
+        void scheduleGlowReportReminder();
+      }
       await wait(650);
       router.replace(`/results/${scan.id}`);
     } catch (e) {

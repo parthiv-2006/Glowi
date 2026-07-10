@@ -1,6 +1,10 @@
-/** Local routine reminders via expo-notifications (no server push). */
+/** Local routine reminders + Expo push registration via expo-notifications. */
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+
+import { upsertPushToken } from './api';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -80,6 +84,39 @@ export async function scheduleWeeklyScanReminder(): Promise<void> {
       repeats: true,
     },
   });
+}
+
+/**
+ * Registers this device's Expo push token so the server (push-dispatch, fired
+ * by pg_cron) can reach it. Returns false — and callers keep the local weekly
+ * reminders — on web, simulators, denied permission, or Expo Go (remote push
+ * is unsupported there since SDK 53); the upsert refreshes an existing row.
+ */
+export async function registerPushToken(userId: string): Promise<boolean> {
+  if (Platform.OS === 'web' || !Device.isDevice) return false;
+  const granted = await requestNotificationPermission();
+  if (!granted) return false;
+  try {
+    const projectId: string | undefined = Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) return false;
+    const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+    await upsertPushToken(userId, token, Platform.OS === 'ios' ? 'ios' : 'android');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Cancels the local weekly reminders that server push now owns (the weekly
+ * scan nudge and the Glow Report ping) so a push-registered device never gets
+ * both. Routine AM/PM reminders stay local — they're time-of-day preferences,
+ * not server events.
+ */
+export async function cancelServerOwnedReminders(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  await Notifications.cancelScheduledNotificationAsync('glowi-weekly-scan').catch(() => {});
+  await Notifications.cancelScheduledNotificationAsync('glowi-glow-report').catch(() => {});
 }
 
 /**

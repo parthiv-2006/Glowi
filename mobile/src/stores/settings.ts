@@ -21,6 +21,9 @@ interface SettingsState {
   /** Opt-in (default off): show the menstrual-cycle phase row in the daily check-in. */
   cycleTrackingEnabled: boolean;
   setCycleTrackingEnabled: (enabled: boolean) => void;
+  /** True once this device registered an Expo push token — server push then owns the weekly nudges. */
+  pushRegistered: boolean;
+  setPushRegistered: (registered: boolean) => void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -34,6 +37,8 @@ export const useSettings = create<SettingsState>()(
       clearLocation: () => set({ locationLabel: null, locationCoords: null }),
       cycleTrackingEnabled: false,
       setCycleTrackingEnabled: (cycleTrackingEnabled) => set({ cycleTrackingEnabled }),
+      pushRegistered: false,
+      setPushRegistered: (pushRegistered) => set({ pushRegistered }),
     }),
     { name: 'glowi-settings', storage: createJSONStorage(() => AsyncStorage) },
   ),
