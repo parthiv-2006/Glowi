@@ -125,10 +125,35 @@ to `main`. Execution contract: [docs/ORCHESTRATION_GLOW_LOOP.md](ORCHESTRATION_G
 
 - **AI replenishment copy.** A short, personalized "why this over that" line per suggestion,
   generated once and cached — turning the pure-client ranking into coach-voiced advice.
-- **Cycle-phase correlation events.** Promote `cycle_phase` from coach context (v1) to a
-  first-class correlation signal once enough phase-tagged history exists (ADR-0013 defers this).
-- **Report history browser.** A list of past Glow Reports (the `glow_reports` rows already
-  persist) so users can scroll their week-over-week story, not just the latest.
+
+## The Retention Eight (shipped 2026-07-10)
+
+An eight-feature batch spanning both Glow Loop fast-follows and the two big deferred
+platform bets. All shipped to `main`, migrations 0017–0020 applied, functions deployed:
+
+1. **Report history browser** — `/report` lists past Glow Reports (pure read over
+   `glow_reports`), with a tap-to-unlock row for an ungenerated latest week.
+2. **Streak milestones** — `lib/milestones.ts` (3/7/14/30/60/100 days) + a lockstep Deno
+   mirror; badge on Progress, and the Glow Report celebrates a crossed milestone as a win.
+3. **Cycle-phase correlation events** — the ADR-0013 fast-follow: same-phase runs of ≥3
+   logged days are first-class correlation events in both `correlation.ts` mirrors.
+4. **Derm-visit PDF export** — Profile → one-tap PDF of scans, routine, reactions, shelf
+   via expo-print. No AI, no schema.
+5. **Catalog AI fallback** — a no-catalog-match replenishment group hands off to the
+   coach with a prefilled draft (reuses the chat seam; no new AI surface).
+6. **Server push notifications** — pg_cron + pg_net → `push-dispatch` (Vault shared
+   secret): Monday Glow Report doorbell + Wednesday lapsed-scan nudge
+   ([ADR-0015](adr/0015-server-push-notifications.md)).
+7. **Semantic memory retrieval** — pgvector + edge-runtime gte-small; chat context ranks
+   by relevance to the message, importance/recency as structural fallback
+   ([ADR-0016](adr/0016-semantic-memory-retrieval.md)).
+8. **Health sleep auto-fill** — HealthKit / Health Connect suggest-and-confirm for the
+   diary's sleep scale; opt-in, read-only, needs the next EAS dev build
+   ([ADR-0017](adr/0017-health-sleep-autofill.md)).
+
+**Flagged, not engineering:** catalog breadth. Replenishment and In-Store Compare are
+bounded by the curated seed catalog; #5 softens the ceiling, but widening the catalog
+itself is a content/data-operations effort.
 
 ## Deferred
 

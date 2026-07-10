@@ -33,9 +33,12 @@ behind a provider seam that also supports a fully on-device mock.
 │  Edge Functions (Deno):                                   │
 │    analyze-skin · chat · extract-memories ·               │
 │    skin-forecast · identify-product · auth-signup ·       │
-│    compare-scans · check-conflicts · compare-products     │
+│    compare-scans · check-conflicts · compare-products ·   │
+│    glow-report · push-dispatch                            │
 │        ├──────────► Anthropic Claude API (secret key)     │
-│        └──────────► Open-Meteo (keyless weather)          │
+│        ├──────────► Open-Meteo (keyless weather)          │
+│        └──────────► Expo push API (token = credential)    │
+│  pg_cron + pg_net: scheduled push dispatch                │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -87,7 +90,11 @@ Two families of tables (full DDL in `supabase/migrations/0001_core_tables.sql`):
   `reaction_logs` (the Reaction Log — products that reacted badly, with an ingredient
   snapshot taken at log time; inserting one also writes a top-ranked `gotcha`
   `ai_memories` row so every AI surface inherits the constraint — see
-  [ADR-0009](adr/0009-reaction-log.md)).
+  [ADR-0009](adr/0009-reaction-log.md)),
+  `push_tokens` (one row per device Expo push token, registered on sign-in, self-pruned
+  when Expo reports a dead device — see [ADR-0015](adr/0015-server-push-notifications.md)).
+  `ai_memories` additionally carries a nullable pgvector `embedding vector(384)` used by
+  semantic retrieval ([ADR-0016](adr/0016-semantic-memory-retrieval.md)).
 
 **Replenishment** (`lib/replenishment.ts`) is a pure-client engine, the same class as
 Shelf Budget — zero AI calls, no new table. `replenishmentTriggers` flags shelf items
@@ -148,11 +155,18 @@ The app depends only on the `AIProvider` interface (`lib/ai/types.ts`):
 | `check-conflicts` | Filters the user's active shelf items down to those with known `key_ingredients`; if a cached `conflict_reports` row is at least as new as the latest shelf change, returns it with no Claude call. Otherwise asks Claude (temperature 0) for strict-JSON ingredient interactions, parses via `extractJson`, caches, and returns the report ([ADR-0008](adr/0008-ingredient-conflict-checker.md)). |
 | `compare-products` | In-store decision support: reads two product photos in a single Claude vision call whose prompt embeds the user's latest scan concerns, shelf ingredients, and reaction log; **validates** the verdict/category enums server-side and persists nothing ([ADR-0010](adr/0010-in-store-compare.md)). |
 | `auth-signup` | Creates pre-confirmed email and guest users via the admin API ([ADR-0002](adr/0002-prefilled-auth-signup-function.md)). |
+| `push-dispatch` | Sends scheduled Expo push notifications (Monday "Glow Report ready", Wednesday lapsed-scan nudge). Called by pg_cron via pg_net, authenticated by a Vault-held shared secret instead of a user JWT; dead tokens self-prune ([ADR-0015](adr/0015-server-push-notifications.md)). |
 
 A `_shared` module holds the Anthropic client (with balanced-JSON extraction), the
 memory context assembler (which also surfaces today's Skin Weather forecast and the
 user's shelf, so the coach is weather- and cabinet-aware), RLS-scoped vs service
 clients, and HTTP/CORS helpers. All AI functions require a valid JWT.
+
+Memory retrieval is semantic when there's a message to match against: memories are
+embedded at write time with the edge runtime's built-in gte-small model (384-dim, no
+external provider), and `chat` ranks context by cosine similarity to the user's message
+via a `match_memories` RPC over an HNSW index — falling back to importance/recency
+ranking whenever embeddings are unavailable ([ADR-0016](adr/0016-semantic-memory-retrieval.md)).
 
 ## Request flow: a scan
 
@@ -186,8 +200,17 @@ clients, and HTTP/CORS helpers. All AI functions require a valid JWT.
   and type safety remain enforced.
 - CI (`.github/workflows/ci.yml`) runs typecheck + lint + tests on every push and PR.
 
+## Scheduled jobs
+
+The project's only server-side schedules are two pg_cron jobs (migration 0018) that call
+`push-dispatch` through pg_net with a Vault-held secret: Monday's Glow Report doorbell
+and Wednesday's lapsed-scan nudge. Report generation stays lazy — the push is only the
+doorbell, so lapsed users still cost zero Claude tokens until they return. Devices that
+can't register for push (web, Expo Go, denied permission) keep the local weekly
+reminders instead; the client hands those two schedules to the server only after a
+successful token registration.
+
 ## Deferred (v1 scope)
 
-Server-sent push notifications (local reminders only), payments, semantic
-(pgvector) memory retrieval — the importance/recency ranking is sufficient for now and
-the seam is ready — and store-submission assets.
+Payments and store-submission assets. (Server push and semantic memory retrieval, both
+deferred at v1, shipped 2026-07-10 — ADR-0015 / ADR-0016.)

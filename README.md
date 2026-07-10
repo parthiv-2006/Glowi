@@ -47,16 +47,22 @@ skincare coach that remembers you across every conversation.
   already burned you.
 - **Lifestyle Diary** — A 10-second daily check-in on the Home screen (sleep, stress,
   water, diet flags, and an optional opt-in cycle phase). Glowi turns sustained rough
-  stretches into correlation evidence ("your breakouts track your low-sleep weeks") and
-  feeds a two-week recap into the coach's context — no extra AI call ([ADR-0013](docs/adr/0013-lifestyle-diary.md)).
+  stretches — and, for opted-in users, multi-day cycle-phase runs — into correlation
+  evidence ("your breakouts track your low-sleep weeks") and feeds a two-week recap into
+  the coach's context — no extra AI call ([ADR-0013](docs/adr/0013-lifestyle-diary.md)).
+  Opt in and last night's sleep is suggested straight from HealthKit / Health Connect —
+  you confirm with one tap, nothing is logged for you ([ADR-0017](docs/adr/0017-health-sleep-autofill.md)).
 - **Smart Replenishment** — When a shelf product is expiring or running low, Glowi doesn't
   just nudge — it ranks catalog replacements against your latest scan's concerns, drops
   anything your reaction log flags, and prices them against what you already pay. Pure
-  client-side, zero tokens.
+  client-side, zero tokens. When the curated catalog has no safe match, one tap hands the
+  question to the coach with the context pre-written.
 - **Weekly Glow Report** — Once a week Glowi writes you an honest recap: what your skin
   score did, how consistent your routine was, what's working, and one focus for next week —
-  delivered by a notification and exportable as a branded, share-safe card. One cached
-  Claude call per week; every number is computed, never invented ([ADR-0014](docs/adr/0014-weekly-glow-report.md)).
+  delivered by a Monday push notification and exportable as a branded, share-safe card. One
+  cached Claude call per week; every number is computed, never invented
+  ([ADR-0014](docs/adr/0014-weekly-glow-report.md)). Past weeks live in a scrollable
+  report history, so the story compounds.
 - **In-Store Compare** — Standing in an aisle holding two products? Photograph both
   labels and get a one-shot verdict judged against your latest scan, what's already
   in your cabinet, and your reaction log.
@@ -72,7 +78,11 @@ skincare coach that remembers you across every conversation.
   spend, and a cost-per-use "value leaderboard" showing which products actually earn
   their price.
 - **Progress** — Scan history, a skin-score trend, before/after comparison, daily
-  routine streaks with reminders.
+  routine streaks with reminders and milestone badges (3/7/14/30/60/100 days — the Glow
+  Report celebrates the week you cross one).
+- **Derm-visit export** — One tap on Profile condenses your scan history, routine,
+  reaction log, and shelf into a clean PDF you can hand to a dermatologist. No AI, no
+  upload — it's your data, formatted.
 - **Learn** — A library of evidence-based articles with a clean reader.
 
 ## The headline engineering
@@ -80,8 +90,14 @@ skincare coach that remembers you across every conversation.
 - **Cross-session AI memory.** Every new chat starts with durable context — profile
   facts, ranked memories, safety-critical "gotchas" (allergies, bad reactions), the
   latest scan, and the last session summary. Memories are written back by an extraction
-  pass after each conversation. Fully documented in
+  pass after each conversation, embedded with pgvector, and retrieved semantically — the
+  context ranks what's relevant to your message, not just what's globally important
+  ([ADR-0016](docs/adr/0016-semantic-memory-retrieval.md)). Fully documented in
   [docs/MEMORY_SYSTEM.md](docs/MEMORY_SYSTEM.md).
+- **Server push without server infra.** pg_cron + pg_net inside Postgres schedule the
+  Monday "your Glow Report is ready" push and a lapsed-scan nudge through a
+  shared-secret edge function — reaching users whose app is closed while report
+  generation stays lazy ([ADR-0015](docs/adr/0015-server-push-notifications.md)).
 - **A swappable AI seam.** One `AIProvider` interface; a live provider backed by Claude
   edge functions and an on-device mock provider that makes the *entire* app — including
   the memory system and Skin Weather — work offline at zero token cost ([ADR-0003](docs/adr/0003-ai-provider-seam.md)).

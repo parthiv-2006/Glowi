@@ -44,8 +44,15 @@ injected into the system prompt for both `chat` and (future) scan interpretation
 2. **Safety notes** — *all* `active` `gotcha` memories, unconditionally. A user who said
    "niacinamide breaks me out" must never be recommended niacinamide, even if that fact
    is old.
-3. **Ranked memories** — the remaining active memories ordered by
-   `importance DESC, last_accessed_at DESC`, capped at the top 12.
+3. **Ranked memories** — the remaining active memories, capped at the top 12. When the
+   caller supplies a `queryText` (the `chat` function passes the user's message), the
+   list is ranked **semantically**: the query is embedded with the edge runtime's
+   built-in gte-small model and matched against pgvector embeddings on `ai_memories`
+   via the `match_memories` RPC (cosine, HNSW index), so context tracks what the user is
+   actually asking about. Rows that predate the embedding column are self-healed on
+   first use. With no query text — or whenever the semantic path is unavailable — the
+   ranking falls back to `importance DESC, last_accessed_at DESC`
+   (see [ADR-0016](adr/0016-semantic-memory-retrieval.md)).
 4. **Latest scan** — score, estimated type, summary, and concern list from the most
    recent completed scan.
 5. **Last session summary** — the one-paragraph recap written when the previous
@@ -76,8 +83,8 @@ injected into the system prompt for both `chat` and (future) scan interpretation
 
 The assembled block is prepended to the system prompt as a "what you know about this
 user" section, framed as ground truth. Retrieved memory ids are then **touched**
-(`last_accessed_at = now()`) so recently useful memories surface again next time — a
-cheap recency signal without embeddings.
+(`last_accessed_at = now()`) so recently useful memories surface again next time — the
+recency signal that also powers the non-semantic fallback ranking.
 
 > **The Weekly Glow Report does *not* use `assembleMemoryContext`.** The `glow-report`
 > edge function ([ADR-0014](adr/0014-weekly-glow-report.md)) reads the reported week's data
@@ -135,19 +142,22 @@ back structured operations:
 The prompt instructs the model to keep gotchas at importance 5, to prefer `update` over
 duplicate `add`, and to return an empty list when nothing is worth remembering. Every op
 is validated server-side (type whitelist, importance clamp, length limits, id ownership)
-before it touches the database. Extraction failures are non-fatal — chat works without
-them and the next session retries the un-mined turns.
+before it touches the database, and each written memory is embedded (gte-small, on the
+edge runtime — a failed embed stores NULL and self-heals at read time). Extraction
+failures are non-fatal — chat works without them and the next session retries the
+un-mined turns.
 
 The same call refreshes `chat_sessions.summary`, which becomes the "last session
 summary" in the next read.
 
-## Why ranking instead of embeddings (for now)
+## Semantic retrieval (shipped 2026-07-10)
 
-Semantic retrieval (pgvector) is the obvious future step, and the seam is ready for it.
-For v1, importance × recency with an always-on gotcha channel is simple, debuggable, and
-more than sufficient at realistic per-user memory counts. Moving to embedding-based
-recall is a localized change to `assembleMemoryContext` — noted as a future ADR rather
-than premature complexity.
+v1 deliberately shipped importance × recency ranking with the note that embedding-based
+recall would be a localized change to `assembleMemoryContext`. That change landed as
+[ADR-0016](adr/0016-semantic-memory-retrieval.md): pgvector + the edge runtime's
+gte-small model, a `match_memories` RPC, write-time embedding in `extract-memories`, and
+read-time self-healing — with the v1 ranking retained verbatim as the structural
+fallback and the always-on gotcha channel unchanged.
 
 ## Mock mode
 
