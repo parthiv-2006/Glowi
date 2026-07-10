@@ -21,6 +21,7 @@ import { ConcernTrendSparkline } from '@/components/ConcernTrendSparkline';
 import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { ScoreTrend } from '@/components/ScoreTrend';
 import {
+  useGlowReport,
   useLifestyleLogs,
   useReactionLogs,
   useRecentCheckins,
@@ -28,6 +29,7 @@ import {
   useScanComparison,
   useShelfItems,
 } from '@/lib/hooks';
+import { mostRecentCompletedWeekStart } from '@/lib/glowReport';
 import { haptics } from '@/lib/haptics';
 import { CORRELATION_CAVEAT, correlateScanTrends } from '@/lib/correlation';
 import type { CorrelationInsight } from '@/lib/correlation';
@@ -121,6 +123,11 @@ export default function ProgressScreen() {
   const { data: shelfItems = [] } = useShelfItems();
   const { data: reactions = [] } = useReactionLogs();
   const { data: lifestyleLogs = [] } = useLifestyleLogs();
+
+  // Weekly Glow Report for the most recent completed week — generated lazily on
+  // first view (cached one row per week), previewed here as an entry point.
+  const reportWeekStart = useMemo(() => mostRecentCompletedWeekStart(), []);
+  const { data: glowReport, isLoading: reportLoading } = useGlowReport(reportWeekStart);
 
   const dates = useMemo(() => [...new Set(checkins.map((c) => c.checkin_date))], [checkins]);
   const streak = computeStreak(dates);
@@ -264,6 +271,32 @@ export default function ProgressScreen() {
       </Animated.View>
 
       <Stagger delay={0}>
+        {/* Weekly Glow Report entry */}
+        <PressableScale
+          onPress={() => {
+            haptics.tap();
+            router.push(`/report/${reportWeekStart}`);
+          }}
+          style={styles.section}
+        >
+          <GlassCard style={styles.reviewCard}>
+            <GlowiAvatar state="celebrating" size={40} />
+            <View style={styles.reviewBody}>
+              <AppText variant="overline" color={palette.accent}>
+                Your week in review
+              </AppText>
+              {reportLoading && !glowReport ? (
+                <Skeleton width="90%" height={18} />
+              ) : (
+                <AppText variant="subheading" numberOfLines={2} style={styles.reviewHeadline}>
+                  {glowReport?.content.headline ?? 'See what moved this week →'}
+                </AppText>
+              )}
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={palette.textTertiary} />
+          </GlassCard>
+        </PressableScale>
+
         {/* Score chart */}
         {completedScans.length >= 2 && (
           <GlassCard style={styles.section}>
@@ -609,6 +642,18 @@ const styles = StyleSheet.create({
   },
   nudgeScanBtn: { flex: 1 },
   nudgeDismiss: { paddingVertical: spacing(2) },
+
+  // Weekly Glow Report entry
+  reviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    paddingVertical: spacing(3),
+    borderWidth: 1,
+    borderColor: palette.accentDim,
+  },
+  reviewBody: { flex: 1, gap: spacing(1) },
+  reviewHeadline: { fontSize: 15, lineHeight: 20 },
 
   scanRowWrap: { marginBottom: spacing(3) },
   scanRow: {
