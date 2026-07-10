@@ -24,6 +24,9 @@ interface SettingsState {
   /** True once this device registered an Expo push token — server push then owns the weekly nudges. */
   pushRegistered: boolean;
   setPushRegistered: (registered: boolean) => void;
+  /** Opt-in (default off): suggest sleep_quality from HealthKit / Health Connect in the daily check-in. */
+  healthAutoFillEnabled: boolean;
+  setHealthAutoFillEnabled: (enabled: boolean) => void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -39,6 +42,8 @@ export const useSettings = create<SettingsState>()(
       setCycleTrackingEnabled: (cycleTrackingEnabled) => set({ cycleTrackingEnabled }),
       pushRegistered: false,
       setPushRegistered: (pushRegistered) => set({ pushRegistered }),
+      healthAutoFillEnabled: false,
+      setHealthAutoFillEnabled: (healthAutoFillEnabled) => set({ healthAutoFillEnabled }),
     }),
     { name: 'glowi-settings', storage: createJSONStorage(() => AsyncStorage) },
   ),

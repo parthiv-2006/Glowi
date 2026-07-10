@@ -26,7 +26,8 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.health.READ_SLEEP"
       ]
     },
     "web": {
@@ -59,7 +60,23 @@
           "color": "#2DD4BF"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Glowi reads last night's sleep from Health to pre-fill your daily check-in. You confirm every value before it's saved.",
+          "NSHealthUpdateUsageDescription": false
+        }
+      ],
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -21,6 +21,7 @@ import * as api from '@/lib/api';
 import { DISCLAIMER } from '@/lib/constants';
 import { buildDermReportHtml } from '@/lib/dermReport';
 import { haptics } from '@/lib/haptics';
+import { getLastNightSleepHours } from '@/lib/health';
 import {
   cancelRoutineReminders,
   requestNotificationPermission,
@@ -53,6 +54,8 @@ export default function ProfileTab() {
   const clearLocation = useSettings((s) => s.clearLocation);
   const cycleTrackingEnabled = useSettings((s) => s.cycleTrackingEnabled);
   const setCycleTrackingEnabled = useSettings((s) => s.setCycleTrackingEnabled);
+  const healthAutoFillEnabled = useSettings((s) => s.healthAutoFillEnabled);
+  const setHealthAutoFillEnabled = useSettings((s) => s.setHealthAutoFillEnabled);
 
   const [remindersOn, setRemindersOn] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -388,6 +391,33 @@ export default function ProfileTab() {
             shared, and is deleted the moment you clear a day&apos;s log.
           </AppText>
         </GlassCard>
+
+        {Platform.OS !== 'web' && (
+          <GlassCard style={styles.block}>
+            <View style={styles.reminderRow}>
+              <View style={styles.blockHead}>
+                <Ionicons name="heart-outline" size={18} color={palette.accentBright} />
+                <AppText variant="heading">Auto-fill sleep from Health</AppText>
+              </View>
+              <Switch
+                value={healthAutoFillEnabled}
+                onValueChange={(value) => {
+                  haptics.tap();
+                  setHealthAutoFillEnabled(value);
+                  // Trigger the OS permission sheet right away so the first
+                  // suggestion doesn't appear to come from nowhere.
+                  if (value) void getLastNightSleepHours();
+                }}
+                trackColor={{ true: palette.accent, false: palette.surfaceStrong }}
+                thumbColor={palette.text}
+              />
+            </View>
+            <AppText variant="caption" style={styles.blockHint}>
+              Suggests last night&apos;s sleep in your daily check-in from HealthKit / Health
+              Connect. Read-only, and nothing is logged until you tap to confirm it.
+            </AppText>
+          </GlassCard>
+        )}
 
         <Row icon="scan-outline" title="New scan" onPress={() => router.push('/scan')} />
         <Row icon="sunny-outline" title="My routine" onPress={() => router.push('/routine')} />

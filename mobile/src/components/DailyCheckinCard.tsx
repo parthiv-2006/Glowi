@@ -4,7 +4,7 @@
  * there is no save button. Collapses to a one-line summary once the day is logged.
  * The cycle-phase row appears only when the user opts in (Profile → Track cycle phase).
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -13,6 +13,8 @@ import { AppText, GlassCard, PressableScale } from '@/components/ui';
 import { useLifestyleLogs, useUpsertLifestyleLog } from '@/lib/hooks';
 import type { LifestyleLogInput } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { getLastNightSleepHours } from '@/lib/health';
+import { formatSleepHours, sleepQualityFromHours } from '@/lib/sleepMapping';
 import { useSettings } from '@/stores/settings';
 import { palette, radii, spacing } from '@/theme';
 import type { CyclePhase, LifestyleLevel, LifestyleLog } from '@/lib/types';
@@ -87,10 +89,31 @@ export function DailyCheckinCard() {
   const { data: logs } = useLifestyleLogs();
   const upsert = useUpsertLifestyleLog();
   const cycleEnabled = useSettings((s) => s.cycleTrackingEnabled);
+  const healthAutoFillEnabled = useSettings((s) => s.healthAutoFillEnabled);
   const [editing, setEditing] = useState(false);
+  const [sleepSuggestion, setSleepSuggestion] = useState<{
+    hours: number;
+    level: LifestyleLevel;
+  } | null>(null);
 
   const date = today();
   const log = useMemo(() => logs?.find((l) => l.log_date === date), [logs, date]);
+  const sleepUnanswered = log?.sleep_quality == null;
+
+  // Suggest-and-confirm (ADR-0017): fetch last night's sleep once per mount
+  // while the scale is unanswered; the user still taps to log it.
+  useEffect(() => {
+    if (!healthAutoFillEnabled || !sleepUnanswered) return;
+    let cancelled = false;
+    void getLastNightSleepHours().then((hours) => {
+      if (cancelled || hours == null) return;
+      const level = sleepQualityFromHours(hours);
+      if (level != null) setSleepSuggestion({ hours, level });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [healthAutoFillEnabled, sleepUnanswered]);
 
   const apply = (patch: CheckinPatch) => {
     haptics.tap();
@@ -168,6 +191,23 @@ export function DailyCheckinCard() {
           </View>
         );
       })}
+
+      {sleepSuggestion != null && sleepUnanswered ? (
+        <PressableScale
+          onPress={() => {
+            apply({ sleep_quality: sleepSuggestion.level });
+            setSleepSuggestion(null);
+          }}
+          style={styles.healthSuggestRow}
+          haptic={false}
+        >
+          <Ionicons name="heart-outline" size={14} color={palette.clay} />
+          <AppText variant="caption" color={palette.inkSoft} style={styles.healthSuggestText}>
+            Health saw {formatSleepHours(sleepSuggestion.hours)} of sleep —{' '}
+            {SCALES[0].options[sleepSuggestion.level].toLowerCase()}. Tap to log it.
+          </AppText>
+        </PressableScale>
+      ) : null}
 
       <View style={styles.dietRow}>
         {DIET.map((d) => {
@@ -252,6 +292,18 @@ const styles = StyleSheet.create({
   },
   segmentActive: { backgroundColor: palette.clay },
   dietRow: { flexDirection: 'row', gap: spacing(2) },
+  healthSuggestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(2),
+    paddingHorizontal: spacing(3),
+    paddingVertical: spacing(2),
+    borderRadius: radii.md,
+    backgroundColor: palette.well,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.line,
+  },
+  healthSuggestText: { flex: 1, lineHeight: 16 },
   chip: {
     paddingHorizontal: spacing(3.5),
     paddingVertical: spacing(2),
