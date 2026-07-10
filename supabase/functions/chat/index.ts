@@ -47,7 +47,7 @@ serve(async (req) => {
   });
 
   const [memory, historyRes, catalogRes] = await Promise.all([
-    assembleMemoryContext(svc, user.id, { excludeSessionId: sessionId }),
+    assembleMemoryContext(svc, user.id, { excludeSessionId: sessionId, queryText: message }),
     svc
       .from('chat_messages')
       .select('role, content')

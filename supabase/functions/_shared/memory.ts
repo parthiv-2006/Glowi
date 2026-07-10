@@ -14,8 +14,63 @@ import {
   type CorrelationShelfItem,
 } from './correlation.ts';
 import { concernsTargetedBy, normalizeIngredient } from './ingredientConcerns.ts';
+import { embed } from './embeddings.ts';
 
 const MAX_RANKED_MEMORIES = 12;
+
+/** A ranked memory row — importance/recency and semantic paths share this shape. */
+interface RankedMemory {
+  id: string;
+  type: string;
+  content: string;
+  importance: number;
+}
+
+/**
+ * Cosine-nearest active memories for a query (the user's chat message), via
+ * the match_memories RPC (ADR-0016). Self-heals rows that predate the
+ * embedding column before ranking. Returns null whenever anything is missing
+ * (no embedder, RPC absent, nothing embedded) so the caller falls back to
+ * importance/recency ranking — semantic retrieval is an upgrade, never a
+ * dependency.
+ */
+async function semanticMemories(
+  svc: SupabaseClient,
+  userId: string,
+  queryText: string,
+): Promise<RankedMemory[] | null> {
+  const queryVec = await embed(queryText);
+  if (!queryVec) return null;
+
+  const { data: missing } = await svc
+    .from('ai_memories')
+    .select('id, content')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .neq('type', 'gotcha')
+    .is('embedding', null)
+    .limit(40);
+  for (const row of missing ?? []) {
+    const vec = await embed(row.content);
+    if (vec) {
+      await svc
+        .from('ai_memories')
+        .update({ embedding: JSON.stringify(vec) })
+        .eq('id', row.id);
+    }
+  }
+
+  const { data, error } = await svc.rpc('match_memories', {
+    p_user_id: userId,
+    p_query: JSON.stringify(queryVec),
+    p_limit: MAX_RANKED_MEMORIES,
+  });
+  if (error) {
+    console.error('match_memories failed:', error.message);
+    return null;
+  }
+  return data?.length ? (data as RankedMemory[]) : null;
+}
 
 function capitalize(s: string): string {
   return s.length ? s.charAt(0).toUpperCase() + s.slice(1) : s;
@@ -70,7 +125,7 @@ export interface MemoryContext {
 export async function assembleMemoryContext(
   svc: SupabaseClient,
   userId: string,
-  opts: { excludeSessionId?: string } = {},
+  opts: { excludeSessionId?: string; queryText?: string } = {},
 ): Promise<MemoryContext> {
   const today = new Date().toISOString().slice(0, 10);
   const twoWeeksAgo = new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10);
@@ -181,9 +236,21 @@ export async function assembleMemoryContext(
     }
   }
 
-  if (rankedRes.data?.length) {
-    lines.push('WHAT YOU REMEMBER ABOUT THIS USER (most important first):');
-    for (const m of rankedRes.data) {
+  // Semantic retrieval when there's a query to match against (chat); the
+  // importance/recency list stays the ranking everywhere else and the
+  // fallback whenever embeddings are unavailable.
+  let ranked = (rankedRes.data ?? []) as RankedMemory[];
+  let rankedLabel = 'most important first';
+  if (opts.queryText) {
+    const semantic = await semanticMemories(svc, userId, opts.queryText);
+    if (semantic) {
+      ranked = semantic;
+      rankedLabel = 'most relevant to their message first';
+    }
+  }
+  if (ranked.length) {
+    lines.push(`WHAT YOU REMEMBER ABOUT THIS USER (${rankedLabel}):`);
+    for (const m of ranked) {
       lines.push(`  • [${m.type}] ${m.content}`);
       usedMemoryIds.push(m.id);
     }

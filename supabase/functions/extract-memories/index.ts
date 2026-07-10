@@ -11,6 +11,7 @@
 import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, extractJson, MODELS } from '../_shared/anthropic.ts';
+import { embed } from '../_shared/embeddings.ts';
 
 interface ExtractBody {
   sessionId?: string;
@@ -118,6 +119,10 @@ Rules: gotchas get importance 5. Use "update" to refine an existing memory, "sup
     }
     const content = op.content.trim().slice(0, 400);
     const importance = Math.min(5, Math.max(1, Math.round(Number(op.importance) || 3)));
+    // Embed at write time so semantic retrieval (ADR-0016) sees the memory
+    // immediately; a null embedding is legal and self-heals on the read path.
+    const vector = await embed(content);
+    const embedding = vector ? JSON.stringify(vector) : null;
 
     if (op.op === 'add') {
       const { error } = await svc.from('ai_memories').insert({
@@ -127,13 +132,14 @@ Rules: gotchas get importance 5. Use "update" to refine an existing memory, "sup
         importance,
         source: 'chat',
         source_ref: sessionId,
+        embedding,
       });
       if (!error) applied++;
     } else if ((op.op === 'update' || op.op === 'supersede') && op.id && existingIds.has(op.id)) {
       if (op.op === 'update') {
         const { error } = await svc
           .from('ai_memories')
-          .update({ content, importance, type: op.type })
+          .update({ content, importance, type: op.type, embedding })
           .eq('id', op.id)
           .eq('user_id', user.id);
         if (!error) applied++;
@@ -151,6 +157,7 @@ Rules: gotchas get importance 5. Use "update" to refine an existing memory, "sup
             importance,
             source: 'chat',
             source_ref: sessionId,
+            embedding,
           }),
         ]);
         if (!archiveErr && !insertErr) applied++;
