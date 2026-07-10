@@ -81,3 +81,31 @@ export async function scheduleWeeklyScanReminder(): Promise<void> {
     },
   });
 }
+
+/**
+ * Weekly Monday-morning nudge to open the fresh Glow Report. The deep link is
+ * the parameterless marker `/report` — the response listener resolves it to the
+ * most recent completed week at tap time, so a repeating schedule never links to
+ * a stale week. Idempotent via its identifier; safe to call alongside the other
+ * weekly reminders so permission is only requested once.
+ */
+export async function scheduleGlowReportReminder(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  const granted = await requestNotificationPermission();
+  if (!granted) return;
+  await Notifications.cancelScheduledNotificationAsync('glowi-glow-report').catch(() => {});
+  await Notifications.scheduleNotificationAsync({
+    identifier: 'glowi-glow-report',
+    content: {
+      title: 'Your Glow Report is ready ✨',
+      body: 'See what moved this week — and your focus for the next.',
+      data: { url: '/report' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+      weekday: 2, // Monday (1 = Sunday), just after the AM-routine slot.
+      hour: 9,
+      minute: 0,
+    },
+  });
+}

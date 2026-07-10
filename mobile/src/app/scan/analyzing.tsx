@@ -23,7 +23,7 @@ import { AppText, GlowButton } from '@/components/ui';
 import { getAIProvider } from '@/lib/ai';
 import { attachScanImage, createScan } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
-import { scheduleWeeklyScanReminder } from '@/lib/notifications';
+import { scheduleGlowReportReminder, scheduleWeeklyScanReminder } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 import type { CaptureMeta } from '@/lib/types';
 import { useAuth } from '@/stores/auth';
@@ -136,6 +136,7 @@ export default function Analyzing() {
       setDone(true);
       haptics.success();
       void scheduleWeeklyScanReminder();
+      void scheduleGlowReportReminder();
       await wait(650);
       router.replace(`/results/${scan.id}`);
     } catch (e) {

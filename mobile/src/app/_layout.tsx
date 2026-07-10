@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -22,10 +23,32 @@ import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/spac
 
 import { SplashView } from '@/components/SplashView';
 import { queryClient } from '@/lib/query';
+import { mostRecentCompletedWeekStart } from '@/lib/glowReport';
 import { palette } from '@/theme';
 import { useAuth } from '@/stores/auth';
 
 void SplashScreen.preventAutoHideAsync();
+
+/**
+ * Routes a notification tap to its deep link. `/report` is a parameterless
+ * marker resolved to the current completed week at tap time, so the repeating
+ * weekly reminder always lands on a fresh report.
+ */
+function useNotificationDeepLinks() {
+  const router = useRouter();
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const url = response.notification.request.content.data?.url;
+      if (typeof url !== 'string') return;
+      if (url === '/report') {
+        router.push(`/report/${mostRecentCompletedWeekStart()}`);
+      } else {
+        router.push(url as Href);
+      }
+    });
+    return () => sub.remove();
+  }, [router]);
+}
 
 function useAuthGate() {
   const initializing = useAuth((s) => s.initializing);
@@ -53,6 +76,7 @@ function useAuthGate() {
 
 function RootNavigator() {
   useAuthGate();
+  useNotificationDeepLinks();
   return (
     <Stack
       screenOptions={{
@@ -74,6 +98,7 @@ function RootNavigator() {
       <Stack.Screen name="compare" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="scan" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="results/[scanId]" />
+      <Stack.Screen name="report/[weekStart]" />
       <Stack.Screen name="concern/[scanId]/[slug]" />
       <Stack.Screen name="chat/[sessionId]" />
       <Stack.Screen name="routine/index" />
