@@ -79,6 +79,13 @@ user" section, framed as ground truth. Retrieved memory ids are then **touched**
 (`last_accessed_at = now()`) so recently useful memories surface again next time — a
 cheap recency signal without embeddings.
 
+> **The Weekly Glow Report does *not* use `assembleMemoryContext`.** The `glow-report`
+> edge function ([ADR-0014](adr/0014-weekly-glow-report.md)) reads the reported week's data
+> directly with the service client (windowed scans, check-ins, shelf adds, reactions,
+> forecasts) and reuses only the shared `_shared/correlation.ts` engine for its insights.
+> It deliberately bypasses the memory read path: a report is grounded in a bounded week
+> window and computed statistics, not the ranked long-term memory the coach needs.
+
 ```
 PROFILE — name: Sam; skin type: combination; goals: clear breakouts, even tone
 SAFETY NOTES (always respect these):

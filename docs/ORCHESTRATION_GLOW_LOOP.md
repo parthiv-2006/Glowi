@@ -3,7 +3,9 @@
 **Status:** WS-A ✅ **SHIPPED** (merged to `main`) · WS-B ✅ **SHIPPED** (merged to
 `main`; migration 0015 applied; `chat` v8 + `skin-forecast` v6 redeployed and
 byte-verified; live-coach citation of a lifestyle correlation confirmed E2E on a
-throwaway guest) · WS-C ⬜ (now unblocked)
+throwaway guest) · WS-C ✅ **SHIPPED** (merged to `main`; migration 0016 applied;
+`glow-report` deployed + byte-verified; live cache-hit proven on a throwaway guest) —
+**all three shipped.**
 · **Written:** 2026-07-09 · **Owner:** orchestrator session
 
 This document is an execution contract, in the same mold as
@@ -472,6 +474,36 @@ stance, notification design); README "What it does" bullet; MEMORY_SYSTEM if the
 consumes `assembleMemoryContext` pieces (it queries directly — document either way);
 CODE_INDEX (route, component, lib, edge fn, migration); memory-store note (new edge fn,
 share deps, notification identifier).
+
+**Shipped 2026-07-10 (merged to `main`):** migration `0016_glow_reports.sql` (one immutable
+row per user per completed week, `crud_own` RLS, unique `(user_id, week_start)`); the
+`glow-report` edge function (validate → cache → gather week data → one Claude call at
+`temp 0.4` → field-by-field validation, reject-don't-patch → insert; **all stats computed
+server-side**, the model writes prose only); AI seam extended to a 9th method `glowReport`
+in **live and mock** (mock synthesizes deterministically and persists for cache parity),
+plus `GlowReport`/`GlowReportContent`/`GlowReportStats` domain types, `useGlowReport`
+(`staleTime: Infinity`), and `qk.glowReport`; pure `glowReport.ts` week math
+(`mostRecentCompletedWeekStart`/`weekEndOf`) with 5 unit tests; the `/report/[weekStart]`
+screen (headline, score-delta ring derived from the user's own scans, stats row, wins/
+watch-outs, next-week focus, caveat) + a "Your week in review" Progress-tab entry;
+`GlowReportShareCard` (4:5 `bgDarkDeep`, static ring, no photos/concern details) shared via
+react-native-view-shot + expo-sharing (native-only, `isAvailableAsync`-gated); the weekly
+`glowi-glow-report` notification (SDK-56 `WEEKLY`, Monday 09:00) with the `/report` deep-link
+marker resolved fresh in `_layout.tsx`. Quality gate green (tsc + eslint + **124 jest tests**);
+typed routes regenerated for the new path. **Post-merge production steps done (user approved
+full prod scope):** migration 0016 applied to `rfuuznnbctfyqttslrbv` (no new advisor finding);
+`glow-report` deployed **v1** with `verify_jwt: true`, re-fetched and **byte-verified** (all 4
+`_shared/*` deps intact, imports resolve); live E2E on a throwaway guest — seeded a completed
+week (baseline + in-week scan for a +8 delta, a 3-day check-in streak), first call generated a
+grounded report (score climbed 8 points, stats `{scans:1, checkins:3, streak_days:3}`), the
+**second call hit the cache** (identical `created_at`, zero second Claude call), a Wednesday
+`week_start` was rejected `400`, then the guest was deleted (cascade verified). The
+**shareable card and the notification firing are deferred device checks** (WS4 precedent) —
+not claimed. **Review pass:** the mandated separate Opus reviewer subagent was dispatched but
+terminated early on an API session limit (environment constraint); an independent orchestrator
+self-review lane covered the same checklist (prompt/validation vs `skin-forecast`, seam
+lockstep, share-card capture safety, notification hygiene, week math) and found no blocking
+defects.
 
 ---
 

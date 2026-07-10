@@ -36,6 +36,7 @@ worse than no entries.
 | `/profile` | `(tabs)/profile.tsx` | Profile, location (geocoding autocomplete), settings |
 | `/scan` → `/scan/camera` → `/scan/analyzing` | `scan/*.tsx` | Capture entry (guided camera or library) → analysis theater (schedules weekly reminder). `camera.tsx` = guided in-app camera (alignment overlay + lighting check); `camera.web.tsx` = web picker fallback |
 | `/results/[scanId]` | `results/[scanId].tsx` | Scan reveal; per-concern detail at `concern/[scanId]/[slug].tsx` |
+| `/report/[weekStart]` | `report/[weekStart].tsx` | Weekly Glow Report — headline, score-delta ring, stats, wins/watch-outs, next-week focus, shareable card |
 | `/routine` | `routine/index.tsx` | AM/PM routine, wait-time chips, order warnings, daily check-in |
 | `/shelf` | `shelf/index.tsx` | Inventory + nudges; `add.tsx` (photo→AI→form), `[id].tsx` (detail), `budget.tsx` (cost-per-use), `conflicts.tsx` (AI conflict report), `replenish.tsx` (Smart Replenishment — what to get next) |
 | `/reactions`, `/reactions/add` | `reactions/*.tsx` | Reaction log (writes a gotcha ai_memory) |
@@ -53,16 +54,16 @@ worse than no entries.
 | `supabase.ts` | Supabase client, `getSignedScanImageUrl` |
 | `api.ts` | Every DB read/write (PostgREST calls) — no UI imports it directly except via hooks |
 | `query.ts` | `qk` — the canonical React Query key registry |
-| `hooks.ts` | React Query hooks over api.ts + AI provider (`useScans`, `useShelfItems`, `useScanComparison`, `useCatalogProducts`, …) |
+| `hooks.ts` | React Query hooks over api.ts + AI provider (`useScans`, `useShelfItems`, `useScanComparison`, `useCatalogProducts`, `useGlowReport`, …) |
 | `constants.ts` | UI constants, color helpers (`expiryColor`, `FORECAST_ACTION`, `categoryIcon`) |
 | `env.ts` | Typed `EXPO_PUBLIC_*` access |
-| `notifications.ts` | Identifier-based scheduling (`glowi-routine-am/pm`, `glowi-weekly-scan`) — never `cancelAll` |
+| `notifications.ts` | Identifier-based scheduling (`glowi-routine-am/pm`, `glowi-weekly-scan`, `glowi-glow-report` weekly) — never `cancelAll`; report deep-link marker `/report` resolved in `_layout.tsx` |
 | `haptics.ts` / `responsive.ts` | Haptic + layout helpers |
 
 **Pure domain logic (unit-tested in `lib/__tests__/`):**
-`streak.ts` (check-in streaks) · `shelf.ts` (PAO expiry, stock) · `reactions.ts` (ingredient risk cross-referencing) · `routineSequence.ts` (wait times, order warnings) · `routineGenerator.ts` (scan → routine steps) · `budget.ts` (cost-per-use, quarter spend) · `replenishment.ts` (`replenishmentTriggers` — expiring/expired/low/out; `suggestReplacements` — ranked same-category catalog replacements, scored on scan-concern match + skin type + price, reaction-hard-excluded) · `correlation.ts` (scan-to-trend correlation insights, incl. lifestyle sustained-streak events; ⚠ lockstep mirror of `supabase/functions/_shared/correlation.ts`) · `ingredientConcerns.ts` (ingredient → concern targeting map for the correlation "why" line; ⚠ lockstep mirror of `supabase/functions/_shared/ingredientConcerns.ts`) · `captureQuality.ts` (`assessCapture` — pure rec-709 luma exposure verdict for guided-scan photos; Skia decode lives in `scan/camera.tsx`)
+`streak.ts` (check-in streaks) · `shelf.ts` (PAO expiry, stock) · `reactions.ts` (ingredient risk cross-referencing) · `routineSequence.ts` (wait times, order warnings) · `routineGenerator.ts` (scan → routine steps) · `budget.ts` (cost-per-use, quarter spend) · `replenishment.ts` (`replenishmentTriggers` — expiring/expired/low/out; `suggestReplacements` — ranked same-category catalog replacements, scored on scan-concern match + skin type + price, reaction-hard-excluded) · `correlation.ts` (scan-to-trend correlation insights, incl. lifestyle sustained-streak events; ⚠ lockstep mirror of `supabase/functions/_shared/correlation.ts`) · `ingredientConcerns.ts` (ingredient → concern targeting map for the correlation "why" line; ⚠ lockstep mirror of `supabase/functions/_shared/ingredientConcerns.ts`) · `captureQuality.ts` (`assessCapture` — pure rec-709 luma exposure verdict for guided-scan photos; Skia decode lives in `scan/camera.tsx`) · `glowReport.ts` (`mostRecentCompletedWeekStart`/`weekEndOf` — pure Monday-anchored week math for the Weekly Glow Report)
 
-**AI seam (`lib/ai/`, ADR-0003 — sacred):** `types.ts` = `AIProvider` interface; `live.ts` invokes edge functions; `mock.ts` = deterministic offline twin (keep in lockstep); `forecast.ts` = pure mock-weather synthesis; `index.ts` = `getAIProvider()` (mode from `EXPO_PUBLIC_AI_MODE`).
+**AI seam (`lib/ai/`, ADR-0003 — sacred):** `types.ts` = `AIProvider` interface (9 methods incl. `glowReport`); `live.ts` invokes edge functions; `mock.ts` = deterministic offline twin (keep in lockstep; the Glow Report is synthesized locally and cached in `glow_reports` for live/mock parity); `forecast.ts` = pure mock-weather synthesis; `index.ts` = `getAIProvider()` (mode from `EXPO_PUBLIC_AI_MODE`).
 
 **Stores (`mobile/src/stores/`):** `auth.ts` (session), `settings.ts` (AI mode, location, reminders, cycle-tracking opt-in — persisted).
 
@@ -70,7 +71,7 @@ worse than no entries.
 
 **Primitives (`components/ui/` — always reuse first):** `AppText`, `Badge`, `EmptyState`, `GlassCard` (tier="sunken|raised|glow"), `GlowButton`, `PressableScale`, `ProgressRing`, `Screen`, `SectionHeader`, `Skeleton`, `Stagger`, `TextField`, `effects.tsx` (InnerHighlight, glowShadow, GradientText — never fake these as flat fills).
 
-**Feature (`components/`):** `AuroraBackground` (+`.web`), `BeforeAfterSlider`, `ConcernTrendSparkline`, `DailyCheckinCard` (Home lifestyle check-in — tap-to-upsert scales/chips, opt-in cycle row), `GlowiAvatar` (the mascot — never draw a one-off), `Markdown`, `ProductCard`, `ScoreTrend`, `ShelfItemCard`, `SkinWeatherCard`, `SplashView`, `TabBar`, `chat/` (MessageBubble, TypingDots), `scan/` (ScanTheater +`.web`).
+**Feature (`components/`):** `AuroraBackground` (+`.web`), `BeforeAfterSlider`, `ConcernTrendSparkline`, `DailyCheckinCard` (Home lifestyle check-in — tap-to-upsert scales/chips, opt-in cycle row), `GlowiAvatar` (the mascot — never draw a one-off), `Markdown`, `ProductCard`, `ScoreTrend`, `ShelfItemCard`, `SkinWeatherCard`, `SplashView`, `TabBar`, `GlowReportShareCard` (4:5 share-safe branded card — static ring, no photos, captured via react-native-view-shot), `chat/` (MessageBubble, TypingDots), `scan/` (ScanTheater +`.web`).
 
 ## Backend (`supabase/`)
 
@@ -82,6 +83,7 @@ worse than no entries.
 | `chat` | Memory-aware coach turn (assembles memories, shelf, forecast, reactions) |
 | `extract-memories` | Session → long-term `ai_memories` |
 | `skin-forecast` | Open-Meteo weather + Claude guidance → daily forecast row |
+| `glow-report` | Week's data → one Claude call → validated Weekly Glow Report row (cached per user per completed week; stats computed server-side) |
 | `identify-product` | Label photo → structured product for Shelf add |
 | `check-conflicts` | Active shelf → cached ingredient conflict report |
 | `compare-scans` | Two scan images → honest `AIDelta` (cached in `scan_comparisons`) |
@@ -89,7 +91,7 @@ worse than no entries.
 | `auth-signup` | Pre-confirmed guest/user creation, IP rate-limited |
 | `_shared/` | `http.ts` (CORS/serve), `anthropic.ts`, `images.ts` (magic-byte sniffing), `memory.ts` (`assembleMemoryContext`), `correlation.ts` + `ingredientConcerns.ts` (⚠ lockstep mirrors of the mobile modules of the same name, ported into the memory context), db helpers |
 
-**Migrations (append-only source of truth):** 0001 core tables · 0002 RLS · 0003 storage+triggers · 0004 guest flag · 0005 skin_forecasts · 0006 shelf_items · 0007 rate limit · 0008 drop raw_model_output · 0009 lock trigger fns · 0010 conflicts + key_ingredients · 0011 scan_comparisons · 0012 reaction_logs · 0013 shelf price_usd · 0014 scans.capture_meta (guided-capture context) · 0015 lifestyle_logs (daily check-in: sleep/stress/water 0–2, diet flags, opt-in cycle_phase).
+**Migrations (append-only source of truth):** 0001 core tables · 0002 RLS · 0003 storage+triggers · 0004 guest flag · 0005 skin_forecasts · 0006 shelf_items · 0007 rate limit · 0008 drop raw_model_output · 0009 lock trigger fns · 0010 conflicts + key_ingredients · 0011 scan_comparisons · 0012 reaction_logs · 0013 shelf price_usd · 0014 scans.capture_meta (guided-capture context) · 0015 lifestyle_logs (daily check-in: sleep/stress/water 0–2, diet flags, opt-in cycle_phase) · 0016 glow_reports (one immutable Weekly Glow Report per user per completed week; `content` jsonb, unique `(user_id, week_start)`).
 
 Every user table has RLS (`crud_own` convention); the scan-images bucket is private per-user.
 

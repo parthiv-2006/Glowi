@@ -49,6 +49,14 @@ skincare coach that remembers you across every conversation.
   water, diet flags, and an optional opt-in cycle phase). Glowi turns sustained rough
   stretches into correlation evidence ("your breakouts track your low-sleep weeks") and
   feeds a two-week recap into the coach's context — no extra AI call ([ADR-0013](docs/adr/0013-lifestyle-diary.md)).
+- **Smart Replenishment** — When a shelf product is expiring or running low, Glowi doesn't
+  just nudge — it ranks catalog replacements against your latest scan's concerns, drops
+  anything your reaction log flags, and prices them against what you already pay. Pure
+  client-side, zero tokens.
+- **Weekly Glow Report** — Once a week Glowi writes you an honest recap: what your skin
+  score did, how consistent your routine was, what's working, and one focus for next week —
+  delivered by a notification and exportable as a branded, share-safe card. One cached
+  Claude call per week; every number is computed, never invented ([ADR-0014](docs/adr/0014-weekly-glow-report.md)).
 - **In-Store Compare** — Standing in an aisle holding two products? Photograph both
   labels and get a one-shot verdict judged against your latest scan, what's already
   in your cabinet, and your reaction log.

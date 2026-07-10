@@ -99,6 +99,18 @@ with a logged reaction (`reactions.ts` — a reacted ingredient is a "never agai
 [ADR-0009](adr/0009-reaction-log.md)). Surfaced from the Shelf via a "See what to get
 next" link into `/shelf/replenish` whenever a trigger exists.
 
+**Weekly Glow Report** (`glow_reports`, migration 0016) reuses the `skin_forecasts`
+idempotent-cache pattern at weekly grain: one immutable row per user per completed week,
+unique `(user_id, week_start)`. There is no server cron on this project — generation is
+**lazy and client-triggered** on app open (the Progress tab and the report screen call
+`useGlowReport`), and the `glow-report` edge function returns the cached row or generates
+it with exactly one Claude call. Every statistic (scans, adherence, streak) is computed
+server-side and attached as `content.stats`; the model writes only the prose, and the
+output is validated field-by-field and rejected (never patched) on violation, the
+`analyze-skin` discipline. The report is delivered by a weekly local notification and
+exported as a share-safe branded card (no photos/concern details) captured with
+react-native-view-shot ([ADR-0014](adr/0014-weekly-glow-report.md)).
+
 ### Security boundary — RLS
 
 Every user table has `enable row level security` with a policy scoping all access to
@@ -117,7 +129,7 @@ flag); `set_updated_at` triggers maintain timestamps.
 
 The app depends only on the `AIProvider` interface (`lib/ai/types.ts`):
 `analyzeScan`, `chat`, `extractMemories`, `skinForecast`, `identifyProduct`,
-`checkConflicts`, `compareScans`, `compareProducts`. Two implementations
+`checkConflicts`, `compareScans`, `compareProducts`, `glowReport`. Two implementations
 ([ADR-0003](adr/0003-ai-provider-seam.md)):
 
 - **Live** (`lib/ai/live.ts`) invokes edge functions.
