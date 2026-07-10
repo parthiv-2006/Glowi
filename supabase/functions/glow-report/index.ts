@@ -204,7 +204,9 @@ serve(async (req) => {
       .eq('user_id', user.id),
     svc
       .from('lifestyle_logs')
-      .select('log_date, sleep_quality, stress_level, diet_dairy, diet_sugar, diet_alcohol')
+      .select(
+        'log_date, sleep_quality, stress_level, diet_dairy, diet_sugar, diet_alcohol, cycle_phase',
+      )
       .eq('user_id', user.id)
       .gte('log_date', lifestyleLookback)
       .lte('log_date', lastDay),

@@ -12,7 +12,14 @@
  * ⚠ Lockstep: mirror of supabase/functions/_shared/correlation.ts —
  * change both or neither.
  */
-import type { ChangeDirection, LifestyleLog, ReactionLog, Scan, ShelfItem } from './types';
+import type {
+  ChangeDirection,
+  CyclePhase,
+  LifestyleLog,
+  ReactionLog,
+  Scan,
+  ShelfItem,
+} from './types';
 
 /** A scan this soon after an event can't plausibly reflect it yet. */
 export const MIN_EFFECT_DAYS = 3;
@@ -28,7 +35,7 @@ export const MIN_STREAK_DAYS = 3;
 export const CORRELATION_CAVEAT =
   'Correlations, not proof — skin responds to many things at once. Keep scanning to sharpen these.';
 
-export type CorrelationEventKind = 'shelf_add' | 'reaction' | 'lifestyle';
+export type CorrelationEventKind = 'shelf_add' | 'reaction' | 'lifestyle' | 'cycle';
 
 /** A routine change worth checking the scan history against. */
 export interface CorrelationEvent {
@@ -98,8 +105,7 @@ export function buildEvents(shelfItems: ShelfItem[], reactions: ReactionLog[]): 
  * Sustained poor-lifestyle stretches (≥ MIN_STREAK_DAYS consecutive logged days
  * of poor sleep, high stress, or a diet flag) as correlation events, anchored to
  * the first day of each run so the scan history is measured from before the
- * stretch. A single day never counts — only a habit does. Cycle phase is not an
- * event in v1; it flows into coach context only.
+ * stretch. A single day never counts — only a habit does.
  */
 export function lifestyleEvents(logs: LifestyleLog[]): CorrelationEvent[] {
   const sorted = logs
@@ -149,6 +155,56 @@ export function lifestyleEvents(logs: LifestyleLog[]): CorrelationEvent[] {
     }
     flush();
   }
+  return events;
+}
+
+/**
+ * Sustained same-phase cycle runs (≥ MIN_STREAK_DAYS consecutive logged days in
+ * one phase) as correlation events, anchored to the run's first day — the same
+ * streak semantics as lifestyleEvents, because a single tagged day carries no
+ * signal. Only opted-in users produce phase-tagged logs, so this is silent for
+ * everyone else. Phase→skin effects are individual; the caveat still applies.
+ */
+export function cycleEvents(logs: LifestyleLog[]): CorrelationEvent[] {
+  const sorted = logs
+    .filter(
+      (l): l is LifestyleLog & { cycle_phase: CyclePhase } =>
+        l.cycle_phase != null && !Number.isNaN(Date.parse(l.log_date)),
+    )
+    .sort((a, b) => Date.parse(a.log_date) - Date.parse(b.log_date));
+
+  const events: CorrelationEvent[] = [];
+  let runStart: string | null = null;
+  let runPhase: string | null = null;
+  let runDays = 0;
+  let prevTime = 0;
+  const flush = () => {
+    if (runStart && runPhase && runDays >= MIN_STREAK_DAYS) {
+      const label = runPhase.charAt(0).toUpperCase() + runPhase.slice(1);
+      events.push({
+        kind: 'cycle',
+        date: runStart,
+        label: `${label} phase (${runDays} days)`,
+        key_ingredients: [],
+      });
+    }
+    runStart = null;
+    runPhase = null;
+    runDays = 0;
+  };
+  for (const log of sorted) {
+    const t = Date.parse(log.log_date);
+    if (runDays > 0 && log.cycle_phase === runPhase && t - prevTime === DAY_MS) {
+      runDays += 1;
+    } else {
+      flush();
+      runStart = log.log_date;
+      runPhase = log.cycle_phase;
+      runDays = 1;
+    }
+    prevTime = t;
+  }
+  flush();
   return events;
 }
 
@@ -206,7 +262,11 @@ export function correlateScanTrends(
   const completed = completedAscending(scans);
   if (completed.length < 2) return [];
 
-  const events = [...buildEvents(shelfItems, reactions), ...lifestyleEvents(lifestyleLogs)];
+  const events = [
+    ...buildEvents(shelfItems, reactions),
+    ...lifestyleEvents(lifestyleLogs),
+    ...cycleEvents(lifestyleLogs),
+  ];
   const insights: CorrelationInsight[] = [];
   for (const event of events) {
     const eventTime = Date.parse(event.date);

@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   buildEvents,
   correlateScanTrends,
+  cycleEvents,
   lifestyleEvents,
   MAX_INSIGHTS,
   MIN_EFFECT_DAYS,
@@ -270,6 +271,57 @@ describe('lifestyleEvents', () => {
     );
     // Moderate stress (1) is not "high" — no event.
     expect(lifestyleEvents(streak('2026-06-05', 3, { stress_level: 1 }))).toEqual([]);
+  });
+});
+
+describe('cycleEvents', () => {
+  it('emits an event for a same-phase run at the threshold, anchored at the start', () => {
+    const events = cycleEvents(streak('2026-06-05', MIN_STREAK_DAYS, { cycle_phase: 'luteal' }));
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      kind: 'cycle',
+      date: '2026-06-05',
+      label: `Luteal phase (${MIN_STREAK_DAYS} days)`,
+      key_ingredients: [],
+    });
+  });
+
+  it('ignores a run one day short of the threshold', () => {
+    expect(
+      cycleEvents(streak('2026-06-05', MIN_STREAK_DAYS - 1, { cycle_phase: 'luteal' })),
+    ).toEqual([]);
+  });
+
+  it('a phase change resets the run — two short runs emit nothing', () => {
+    const logs = [
+      ...streak('2026-06-05', 2, { cycle_phase: 'menstrual' }),
+      ...streak('2026-06-07', 2, { cycle_phase: 'follicular' }),
+    ];
+    expect(cycleEvents(logs)).toEqual([]);
+  });
+
+  it('back-to-back qualifying phases each get their own event', () => {
+    const logs = [
+      ...streak('2026-06-05', 3, { cycle_phase: 'menstrual' }),
+      ...streak('2026-06-08', 3, { cycle_phase: 'follicular' }),
+    ];
+    const events = cycleEvents(logs);
+    expect(events).toHaveLength(2);
+    expect(events[0].label).toBe('Menstrual phase (3 days)');
+    expect(events[1]).toMatchObject({ label: 'Follicular phase (3 days)', date: '2026-06-08' });
+  });
+
+  it('a calendar gap breaks a same-phase run', () => {
+    const logs = [
+      ...streak('2026-06-05', 2, { cycle_phase: 'luteal' }),
+      ...streak('2026-06-09', 2, { cycle_phase: 'luteal' }), // gap on the 7th–8th
+    ];
+    expect(cycleEvents(logs)).toEqual([]);
+  });
+
+  it('is silent when cycle tracking is off (all phases null)', () => {
+    expect(cycleEvents(streak('2026-06-05', 5, { cycle_phase: null }))).toEqual([]);
+    expect(cycleEvents(streak('2026-06-05', 5, { sleep_quality: 0 }))).toEqual([]);
   });
 });
 

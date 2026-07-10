@@ -1,5 +1,5 @@
 {
-  "_comment": "Lockstep fixture: mirror of mobile/src/lib/__tests__/fixtures/correlation-parity.json — change both or neither. Exercised by mobile correlation.parity.test.ts to lock in the exact output the Deno port must reproduce.",
+  "_comment": "Lockstep fixture: mirror of supabase/functions/_shared/__fixtures__/correlation-parity.json — change both or neither. Exercised by mobile correlation.parity.test.ts to lock in the exact output the Deno port must reproduce.",
   "cases": [
     {
       "name": "shelf addition improves a targeted concern (niacinamide -> hyperpigmentation)",
@@ -351,6 +351,190 @@
           "diet_sugar": false,
           "diet_alcohol": false,
           "cycle_phase": null,
+          "created_at": "2026-06-06",
+          "updated_at": "2026-06-06"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "name": "luteal-phase run precedes a breakout (cycle event -> worsened, no ingredient)",
+      "scans": [
+        {
+          "id": "b5",
+          "user_id": "u1",
+          "image_path": null,
+          "status": "complete",
+          "skin_score": 70,
+          "skin_type_estimate": null,
+          "summary": null,
+          "area": null,
+          "notes": null,
+          "created_at": "2026-06-01T12:00:00Z",
+          "concerns": [
+            {
+              "concern_slug": "acne",
+              "display_name": "Breakouts",
+              "severity": 40,
+              "confidence": 0.9,
+              "areas": [],
+              "observations": "",
+              "caution": null
+            }
+          ]
+        },
+        {
+          "id": "a5",
+          "user_id": "u1",
+          "image_path": null,
+          "status": "complete",
+          "skin_score": 62,
+          "skin_type_estimate": null,
+          "summary": null,
+          "area": null,
+          "notes": null,
+          "created_at": "2026-06-20T12:00:00Z",
+          "concerns": [
+            {
+              "concern_slug": "acne",
+              "display_name": "Breakouts",
+              "severity": 52,
+              "confidence": 0.9,
+              "areas": [],
+              "observations": "",
+              "caution": null
+            }
+          ]
+        }
+      ],
+      "shelfItems": [],
+      "reactions": [],
+      "lifestyleLogs": [
+        {
+          "id": "c1",
+          "log_date": "2026-06-05",
+          "sleep_quality": 1,
+          "stress_level": 1,
+          "water_level": 1,
+          "diet_dairy": false,
+          "diet_sugar": false,
+          "diet_alcohol": false,
+          "cycle_phase": "luteal",
+          "created_at": "2026-06-05",
+          "updated_at": "2026-06-05"
+        },
+        {
+          "id": "c2",
+          "log_date": "2026-06-06",
+          "sleep_quality": 1,
+          "stress_level": 1,
+          "water_level": 1,
+          "diet_dairy": false,
+          "diet_sugar": false,
+          "diet_alcohol": false,
+          "cycle_phase": "luteal",
+          "created_at": "2026-06-06",
+          "updated_at": "2026-06-06"
+        },
+        {
+          "id": "c3",
+          "log_date": "2026-06-07",
+          "sleep_quality": 1,
+          "stress_level": 1,
+          "water_level": 1,
+          "diet_dairy": false,
+          "diet_sugar": false,
+          "diet_alcohol": false,
+          "cycle_phase": "luteal",
+          "created_at": "2026-06-07",
+          "updated_at": "2026-06-07"
+        }
+      ],
+      "expected": [
+        {
+          "headline": "Breakouts rose 12 points across the next scan.",
+          "direction": "worsened",
+          "topConcernSlug": "acne",
+          "matchedIngredient": null
+        }
+      ]
+    },
+    {
+      "name": "two luteal days is not a run (too short -> no cycle event)",
+      "scans": [
+        {
+          "id": "b6",
+          "user_id": "u1",
+          "image_path": null,
+          "status": "complete",
+          "skin_score": 70,
+          "skin_type_estimate": null,
+          "summary": null,
+          "area": null,
+          "notes": null,
+          "created_at": "2026-06-01T12:00:00Z",
+          "concerns": [
+            {
+              "concern_slug": "acne",
+              "display_name": "Breakouts",
+              "severity": 40,
+              "confidence": 0.9,
+              "areas": [],
+              "observations": "",
+              "caution": null
+            }
+          ]
+        },
+        {
+          "id": "a6",
+          "user_id": "u1",
+          "image_path": null,
+          "status": "complete",
+          "skin_score": 62,
+          "skin_type_estimate": null,
+          "summary": null,
+          "area": null,
+          "notes": null,
+          "created_at": "2026-06-20T12:00:00Z",
+          "concerns": [
+            {
+              "concern_slug": "acne",
+              "display_name": "Breakouts",
+              "severity": 52,
+              "confidence": 0.9,
+              "areas": [],
+              "observations": "",
+              "caution": null
+            }
+          ]
+        }
+      ],
+      "shelfItems": [],
+      "reactions": [],
+      "lifestyleLogs": [
+        {
+          "id": "d1",
+          "log_date": "2026-06-05",
+          "sleep_quality": 1,
+          "stress_level": 1,
+          "water_level": 1,
+          "diet_dairy": false,
+          "diet_sugar": false,
+          "diet_alcohol": false,
+          "cycle_phase": "luteal",
+          "created_at": "2026-06-05",
+          "updated_at": "2026-06-05"
+        },
+        {
+          "id": "d2",
+          "log_date": "2026-06-06",
+          "sleep_quality": 1,
+          "stress_level": 1,
+          "water_level": 1,
+          "diet_dairy": false,
+          "diet_sugar": false,
+          "diet_alcohol": false,
+          "cycle_phase": "luteal",
           "created_at": "2026-06-06",
           "updated_at": "2026-06-06"
         }

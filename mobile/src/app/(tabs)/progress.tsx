@@ -431,7 +431,9 @@ export default function ProgressScreen() {
                           ? 'add-circle-outline'
                           : insight.event.kind === 'lifestyle'
                             ? 'pulse-outline'
-                            : 'alert-circle-outline'
+                            : insight.event.kind === 'cycle'
+                              ? 'moon-outline'
+                              : 'alert-circle-outline'
                       }
                       size={18}
                       color={palette.accentBright}
