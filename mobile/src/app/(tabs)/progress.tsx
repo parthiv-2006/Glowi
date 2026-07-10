@@ -34,6 +34,7 @@ import { haptics } from '@/lib/haptics';
 import { CORRELATION_CAVEAT, correlateScanTrends } from '@/lib/correlation';
 import type { CorrelationInsight } from '@/lib/correlation';
 import { concernsTargetedBy, normalizeIngredient } from '@/lib/ingredientConcerns';
+import { achievedMilestone, nextMilestone } from '@/lib/milestones';
 import { computeStreak } from '@/lib/streak';
 import { getSignedScanImageUrl } from '@/lib/supabase';
 import { palette, scoreColor, spacing } from '@/theme';
@@ -131,6 +132,8 @@ export default function ProgressScreen() {
 
   const dates = useMemo(() => [...new Set(checkins.map((c) => c.checkin_date))], [checkins]);
   const streak = computeStreak(dates);
+  const milestone = achievedMilestone(streak);
+  const milestoneAhead = nextMilestone(streak);
 
   const completedScans = useMemo(
     () =>
@@ -482,6 +485,14 @@ export default function ProgressScreen() {
             <AppText variant="caption" color={palette.textSecondary}>
               day streak 🔥
             </AppText>
+            {milestone != null && (
+              <Badge label={`${milestone}-day milestone 🏅`} color={palette.accent} />
+            )}
+            {milestoneAhead != null && (
+              <AppText variant="caption" color={palette.textTertiary}>
+                next: {milestoneAhead} days
+              </AppText>
+            )}
           </GlassCard>
           <GlassCard style={styles.statBox}>
             <AppText variant="display" style={styles.statNum}>

@@ -25,6 +25,7 @@ import {
   type CorrelationScan,
   type CorrelationShelfItem,
 } from '../_shared/correlation.ts';
+import { milestoneCrossedInWeek } from '../_shared/milestones.ts';
 
 interface ReportBody {
   week_start?: string;
@@ -260,6 +261,12 @@ serve(async (req) => {
   }
   facts.push(`Routine adherence: ${stats.checkins} of ${CHECKIN_POSSIBLE} AM/PM slots logged.`);
   facts.push(`Current check-in streak: ${streakDays} day${streakDays === 1 ? '' : 's'}.`);
+  const milestone = milestoneCrossedInWeek(streakDays);
+  if (milestone) {
+    facts.push(
+      `Streak milestone crossed this week: ${milestone} days — celebrate it as a win.`,
+    );
+  }
   if (shelfAdds.length) {
     facts.push(
       `Products added to their shelf this week: ${shelfAdds

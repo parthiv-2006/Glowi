@@ -40,6 +40,7 @@ import type {
 } from './types';
 import { DEFAULT_LOCATION, deriveForecast, synthesizeEnvironment } from './forecast';
 import { CORRELATION_CAVEAT, correlateScanTrends } from '../correlation';
+import { milestoneCrossedInWeek } from '../milestones';
 
 /** Plausible label reads for offline Shelf demos — rotate per add. */
 const MOCK_IDENTIFICATIONS: Omit<
@@ -715,7 +716,11 @@ export const mockProvider: AIProvider = {
 
     const wins: string[] = [];
     if (checkins > 0) wins.push(`Logged ${checkins} of 14 routine slots — consistency compounds.`);
-    if (streakDays >= 2) wins.push(`You’re on a ${streakDays}-day check-in streak — keep it lit.`);
+    const milestone = milestoneCrossedInWeek(streakDays);
+    if (milestone)
+      wins.push(`Milestone unlocked: a ${milestone}-day check-in streak. That’s a habit now. 🏅`);
+    else if (streakDays >= 2)
+      wins.push(`You’re on a ${streakDays}-day check-in streak — keep it lit.`);
     if (improved) wins.push(`${improved.headline} ${CORRELATION_CAVEAT}`);
     if (added.length)
       wins.push(
