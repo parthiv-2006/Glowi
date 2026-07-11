@@ -13,6 +13,9 @@ import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, extractJson, MODELS } from '../_shared/anthropic.ts';
 import { assembleMemoryContext, touchMemories } from '../_shared/memory.ts';
+import { enforceRateLimit } from '../_shared/ratelimit.ts';
+
+const RATE_LIMIT = { max: 8, windowSeconds: 86_400 };
 
 interface ForecastBody {
   latitude?: number;
@@ -146,6 +149,10 @@ serve(async (req) => {
       .maybeSingle();
     if (existing) return json(existing);
   }
+
+  // After the cache check: today's cached forecast stays free, only real
+  // generation (refresh or first request of the day) consumes budget.
+  await enforceRateLimit(svc, `skin-forecast:${user.id}`, RATE_LIMIT.max, RATE_LIMIT.windowSeconds);
 
   // Validate coordinates before they reach the upstream URL — accept only
   // finite values in the real lat/lon ranges, else fall back to the default.

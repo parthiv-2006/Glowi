@@ -12,6 +12,9 @@ import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, extractJson, MODELS } from '../_shared/anthropic.ts';
 import { embed } from '../_shared/embeddings.ts';
+import { enforceRateLimit } from '../_shared/ratelimit.ts';
+
+const RATE_LIMIT = { max: 30, windowSeconds: 86_400 };
 
 interface ExtractBody {
   sessionId?: string;
@@ -57,6 +60,9 @@ serve(async (req) => {
   if (fresh.length < 2) {
     return json({ extracted: 0, summaryUpdated: false });
   }
+
+  // After the nothing-new early return, so idempotent re-calls stay free.
+  await enforceRateLimit(svc, `extract-memories:${user.id}`, RATE_LIMIT.max, RATE_LIMIT.windowSeconds);
 
   const { data: existing } = await svc
     .from('ai_memories')

@@ -22,21 +22,38 @@ import type {
   SkinForecastInput,
 } from './types';
 
+/**
+ * Error from an AI edge function. `status` carries the HTTP status so callers
+ * can branch (429 = rate limited) without string-matching; `message` is the
+ * function's user-friendly text, which screens already render as-is.
+ */
+export class AIHttpError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+  ) {
+    super(message);
+    this.name = 'AIHttpError';
+  }
+}
+
 async function invoke<T>(name: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(name, { body });
   if (error) {
     // Supabase wraps non-2xx responses; surface the function's message if present.
     let message = error.message;
+    let status: number | undefined;
     try {
       const ctx = (error as { context?: Response }).context;
       if (ctx) {
+        status = ctx.status;
         const payload = await ctx.json();
         if (payload?.error) message = payload.error;
       }
     } catch {
       // keep the generic message
     }
-    throw new Error(message);
+    throw new AIHttpError(message, status);
   }
   return data as T;
 }

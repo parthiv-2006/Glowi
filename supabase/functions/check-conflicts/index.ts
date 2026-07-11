@@ -10,6 +10,9 @@
 import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, extractJson, MODELS } from '../_shared/anthropic.ts';
+import { enforceRateLimit } from '../_shared/ratelimit.ts';
+
+const RATE_LIMIT = { max: 10, windowSeconds: 86_400 };
 
 const SYSTEM_PROMPT = `You are a dermatology-trained ingredient safety analyst.
 
@@ -62,6 +65,9 @@ serve(async (req) => {
   if (cached && cached.created_at >= latestShelfChange) {
     return json(cached.report);
   }
+
+  // After the cache check: cache hits stay free, only real Claude calls meter.
+  await enforceRateLimit(svc, `check-conflicts:${user.id}`, RATE_LIMIT.max, RATE_LIMIT.windowSeconds);
 
   // 3. Build the shelf context block for Claude.
   const shelfBlock = items

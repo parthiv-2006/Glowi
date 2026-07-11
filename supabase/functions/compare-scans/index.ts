@@ -11,6 +11,9 @@ import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, extractJson, MODELS } from '../_shared/anthropic.ts';
 import { sniffImageMediaType } from '../_shared/images.ts';
+import { enforceRateLimit } from '../_shared/ratelimit.ts';
+
+const RATE_LIMIT = { max: 10, windowSeconds: 86_400 };
 
 interface CompareBody {
   scanIdBefore?: string;
@@ -75,6 +78,9 @@ serve(async (req) => {
     .eq('scan_id_after', scanIdAfter)
     .maybeSingle();
   if (cached) return json({ delta: cached.ai_delta });
+
+  // After the cache check: revisiting a stored comparison stays free.
+  await enforceRateLimit(svc, `compare-scans:${user.id}`, RATE_LIMIT.max, RATE_LIMIT.windowSeconds);
 
   // Verify both scans belong to this user and are complete with images.
   const { data: scans, error: scansErr } = await svc

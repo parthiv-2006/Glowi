@@ -11,6 +11,9 @@ import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, extractJson, MODELS } from '../_shared/anthropic.ts';
 import { sniffImageMediaType } from '../_shared/images.ts';
+import { enforceRateLimit } from '../_shared/ratelimit.ts';
+
+const RATE_LIMIT = { max: 10, windowSeconds: 86_400 };
 
 interface AnalyzeBody {
   scanId?: string;
@@ -44,6 +47,8 @@ serve(async (req) => {
   if (!scanId) throw new HttpError(400, 'scanId is required');
 
   const svc = serviceClient();
+  // Before any scan-row mutation, so a rate-limited attempt leaves the row untouched.
+  await enforceRateLimit(svc, `analyze-skin:${user.id}`, RATE_LIMIT.max, RATE_LIMIT.windowSeconds);
 
   const { data: scan, error: scanErr } = await svc
     .from('scans')
