@@ -202,13 +202,40 @@ ranking whenever embeddings are unavailable ([ADR-0016](adr/0016-semantic-memory
 
 ## Scheduled jobs
 
-The project's only server-side schedules are two pg_cron jobs (migration 0018) that call
-`push-dispatch` through pg_net with a Vault-held secret: Monday's Glow Report doorbell
-and Wednesday's lapsed-scan nudge. Report generation stays lazy — the push is only the
-doorbell, so lapsed users still cost zero Claude tokens until they return. Devices that
-can't register for push (web, Expo Go, denied permission) keep the local weekly
-reminders instead; the client hands those two schedules to the server only after a
-successful token registration.
+Three pg_cron jobs call edge functions through pg_net with the Vault-held
+`push_dispatch_secret`: Monday's Glow Report doorbell and Wednesday's lapsed-scan nudge
+(migration 0018 → `push-dispatch`), and a monthly abandoned-guest sweep (migration 0023
+→ `cleanup-guests`, ADR-0018 — guests inactive 90+ days lose storage, rows, and auth
+user, capped per run). Report generation stays lazy — the push is only the doorbell, so
+lapsed users still cost zero Claude tokens until they return. Devices that can't
+register for push (web, Expo Go, denied permission) keep the local weekly reminders
+instead; the client hands those two schedules to the server only after a successful
+token registration. `cron.job_run_details` is the audit trail for all three.
+
+## Auth operations
+
+Settings live in the Supabase dashboard, not the repo — this section is the record.
+
+- **Account lifecycle.** Signup (email + guest) runs through the `auth-signup` function
+  (ADR-0002, pre-confirmed via admin API — independent of email delivery). Guest →
+  account conversion is `auth-signup` mode `upgrade` (JWT-verified, in-place, same user
+  id; duplicate emails 409 via the `email_taken` helper, migration 0024). Erasure is the
+  `delete-account` function (ADR-0019). Abandoned guests are reclaimed monthly
+  (ADR-0018).
+- **Password reset.** `(auth)/forgot-password` → `resetPasswordForEmail` with a
+  `glowi://reset-password` redirect; the deep-link handler in `_layout.tsx` establishes
+  the recovery session and opens `/reset-password`. **Operational prerequisite:**
+  `glowi://reset-password` must be listed under Auth → URL Configuration → Redirect
+  URLs, or the recovery link falls back to the Site URL.
+- **Email delivery.** The project currently uses Supabase's built-in sender: fine for
+  development, rate-limited to a handful of emails per hour, and unsuitable for real
+  traffic. The production path (pending a custom domain) is Resend via Auth → SMTP:
+  host `smtp.resend.com`, port 465, username `resend`, password = the Resend API key,
+  sender on the verified domain — then re-test signup (both modes) and a reset email,
+  since ADR-0002's assumptions must survive any auth-settings change.
+- **Leaked-password protection (HIBP)** is currently **off** (security-advisor WARN,
+  owner-deferred 2026-07-11). Enable under Auth → Sign In / Providers → password
+  settings before launch; it is a G1 launch-checklist blocker.
 
 ## Deferred (v1 scope)
 
