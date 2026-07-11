@@ -15,7 +15,7 @@
  * Sends via Expo's push API in batches; any DeviceNotRegistered token is
  * deleted so push_tokens self-prunes.
  */
-import { serve, json, HttpError } from '../_shared/http.ts';
+import { serve, json, HttpError, timingSafeEqual } from '../_shared/http.ts';
 import { serviceClient } from '../_shared/supabase.ts';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
@@ -41,7 +41,8 @@ interface ExpoTicket {
 
 serve(async (req) => {
   const secret = Deno.env.get('PUSH_DISPATCH_SECRET');
-  if (!secret || req.headers.get('x-push-secret') !== secret) {
+  const provided = req.headers.get('x-push-secret') ?? '';
+  if (!secret || !(await timingSafeEqual(provided, secret))) {
     throw new HttpError(401, 'Unauthorized');
   }
 
