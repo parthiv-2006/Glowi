@@ -238,39 +238,41 @@ export default function ProfileTab() {
           onPress={() => router.push('/memory')}
         />
 
-        <GlassCard style={styles.block}>
-          <View style={styles.blockHead}>
-            <Ionicons name="sparkles-outline" size={18} color={palette.accentBright} />
-            <AppText variant="heading">AI engine</AppText>
-          </View>
-          <AppText variant="caption" style={styles.blockHint}>
-            Mock runs realistic results on-device with no API calls. Live uses the Claude-powered
-            cloud analysis.
-          </AppText>
-          <View style={styles.segment}>
-            {(['mock', 'live'] as const).map((mode) => {
-              const active = aiMode === mode;
-              return (
-                <PressableScale
-                  key={mode}
-                  onPress={() => {
-                    haptics.tap();
-                    setAiMode(mode);
-                  }}
-                  style={[styles.segmentBtn, active && styles.segmentActive]}
-                  haptic={false}
-                >
-                  <AppText
-                    variant="subheading"
-                    color={active ? palette.textOnAccent : palette.textSecondary}
+        {__DEV__ ? (
+          <GlassCard style={styles.block}>
+            <View style={styles.blockHead}>
+              <Ionicons name="sparkles-outline" size={18} color={palette.accentBright} />
+              <AppText variant="heading">AI engine</AppText>
+            </View>
+            <AppText variant="caption" style={styles.blockHint}>
+              Mock runs realistic results on-device with no API calls. Live uses the Claude-powered
+              cloud analysis. Dev builds only.
+            </AppText>
+            <View style={styles.segment}>
+              {(['mock', 'live'] as const).map((mode) => {
+                const active = aiMode === mode;
+                return (
+                  <PressableScale
+                    key={mode}
+                    onPress={() => {
+                      haptics.tap();
+                      setAiMode(mode);
+                    }}
+                    style={[styles.segmentBtn, active && styles.segmentActive]}
+                    haptic={false}
                   >
-                    {mode === 'mock' ? 'Demo' : 'Live AI'}
-                  </AppText>
-                </PressableScale>
-              );
-            })}
-          </View>
-        </GlassCard>
+                    <AppText
+                      variant="subheading"
+                      color={active ? palette.textOnAccent : palette.textSecondary}
+                    >
+                      {mode === 'mock' ? 'Demo' : 'Live AI'}
+                    </AppText>
+                  </PressableScale>
+                );
+              })}
+            </View>
+          </GlassCard>
+        ) : null}
 
         <GlassCard style={styles.block}>
           <View style={styles.blockHead}>

@@ -10,7 +10,7 @@ export interface LocationCoords {
 }
 
 interface SettingsState {
-  /** Which AIProvider backs the app right now (Profile → Developer). */
+  /** Which AIProvider backs the app right now (dev-only toggle in Profile → AI engine). */
   aiMode: 'live' | 'mock';
   setAiMode: (mode: 'live' | 'mock') => void;
   /** User-chosen location for the Skin Weather forecast. */
@@ -32,7 +32,7 @@ interface SettingsState {
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
-      aiMode: env.defaultAiMode,
+      aiMode: __DEV__ ? env.defaultAiMode : 'live',
       setAiMode: (aiMode) => set({ aiMode }),
       locationLabel: null,
       locationCoords: null,
@@ -45,6 +45,14 @@ export const useSettings = create<SettingsState>()(
       healthAutoFillEnabled: false,
       setHealthAutoFillEnabled: (healthAutoFillEnabled) => set({ healthAutoFillEnabled }),
     }),
-    { name: 'glowi-settings', storage: createJSONStorage(() => AsyncStorage) },
+    {
+      name: 'glowi-settings',
+      storage: createJSONStorage(() => AsyncStorage),
+      // Production builds always run live AI — a 'mock' persisted by a past
+      // dev/beta session must self-heal, since the toggle is hidden there.
+      onRehydrateStorage: () => (state) => {
+        if (!__DEV__ && state?.aiMode === 'mock') state.setAiMode('live');
+      },
+    },
   ),
 );
