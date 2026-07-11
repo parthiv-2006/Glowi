@@ -69,6 +69,15 @@ export default function SignIn() {
             disabled={!email || !password}
             style={styles.submit}
           />
+          <PressableScale
+            onPress={() => router.push('/(auth)/forgot-password')}
+            hitSlop={8}
+            style={styles.forgot}
+          >
+            <AppText variant="subheading" color={palette.accentBright}>
+              Forgot password?
+            </AppText>
+          </PressableScale>
         </View>
       </Screen>
     </KeyboardAvoidingView>
@@ -81,4 +90,5 @@ const styles = StyleSheet.create({
   header: { gap: spacing(2), marginBottom: spacing(8) },
   form: { gap: spacing(4) },
   submit: { marginTop: spacing(2) },
+  forgot: { alignSelf: 'center', paddingVertical: spacing(3) },
 });
