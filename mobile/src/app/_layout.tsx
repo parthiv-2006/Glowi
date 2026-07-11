@@ -160,6 +160,8 @@ function RootNavigator() {
       <Stack.Screen name="memory" options={{ presentation: 'modal' }} />
       <Stack.Screen name="upgrade" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="reset-password" />
+      <Stack.Screen name="legal/privacy" />
+      <Stack.Screen name="legal/terms" />
     </Stack>
   );
 }

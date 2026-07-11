@@ -74,6 +74,25 @@ export default function Welcome() {
               </AppText>
             </AppText>
           </PressableScale>
+          <AppText variant="caption" style={styles.legal}>
+            By continuing you agree to our{' '}
+            <AppText
+              variant="caption"
+              color={palette.clay}
+              onPress={() => router.push('/legal/terms')}
+            >
+              Terms
+            </AppText>{' '}
+            and{' '}
+            <AppText
+              variant="caption"
+              color={palette.clay}
+              onPress={() => router.push('/legal/privacy')}
+            >
+              Privacy Policy
+            </AppText>
+            .
+          </AppText>
         </Animated.View>
       </View>
     </View>
@@ -89,4 +108,5 @@ const styles = StyleSheet.create({
   sub: { fontSize: 16, lineHeight: 24, maxWidth: 340 },
   actions: { gap: spacing(3) },
   signin: { alignSelf: 'center', paddingVertical: spacing(2) },
+  legal: { textAlign: 'center', paddingHorizontal: spacing(4) },
 });
