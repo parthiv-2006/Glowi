@@ -27,6 +27,9 @@ interface SettingsState {
   /** Opt-in (default off): suggest sleep_quality from HealthKit / Health Connect in the daily check-in. */
   healthAutoFillEnabled: boolean;
   setHealthAutoFillEnabled: (enabled: boolean) => void;
+  /** True once the one-time "not medical advice" notice on first scan results was dismissed. */
+  medicalNoticeSeen: boolean;
+  setMedicalNoticeSeen: () => void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -44,6 +47,8 @@ export const useSettings = create<SettingsState>()(
       setPushRegistered: (pushRegistered) => set({ pushRegistered }),
       healthAutoFillEnabled: false,
       setHealthAutoFillEnabled: (healthAutoFillEnabled) => set({ healthAutoFillEnabled }),
+      medicalNoticeSeen: false,
+      setMedicalNoticeSeen: () => set({ medicalNoticeSeen: true }),
     }),
     {
       name: 'glowi-settings',
