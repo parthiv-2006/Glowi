@@ -442,6 +442,19 @@ export default function ProfileTab() {
           />
         )}
 
+        <Row
+          icon="shield-checkmark-outline"
+          title="Privacy Policy"
+          subtitle="What Glowi collects and your controls"
+          onPress={() => router.push('/legal/privacy')}
+        />
+        <Row
+          icon="document-text-outline"
+          title="Terms of Service"
+          subtitle="The agreement for using Glowi"
+          onPress={() => router.push('/legal/terms')}
+        />
+
         <PressableScale
           onPress={() => {
             haptics.tap();
