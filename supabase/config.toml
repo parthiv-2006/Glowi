@@ -41,3 +41,6 @@ verify_jwt = false
 # cleanup-guests shares push-dispatch's cron identity (same secret header).
 [functions.cleanup-guests]
 verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = true
