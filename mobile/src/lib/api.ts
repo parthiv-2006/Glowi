@@ -465,6 +465,28 @@ export async function upsertPushToken(
   if (error) throw new Error(error.message);
 }
 
+// ─────────────── Data export (raw rows, RLS-scoped) ───────────────
+
+/**
+ * Raw own-rows reads for the GDPR data export (lib/dataExport.ts). Returned
+ * untyped on purpose: the export ships the stored shape verbatim rather than
+ * the app's view of it.
+ */
+export async function getExportRows(
+  table:
+    | 'skin_forecasts'
+    | 'scan_comparisons'
+    | 'conflict_reports'
+    | 'reminder_settings'
+    | 'push_tokens'
+    | 'ai_memories'
+    | 'lifestyle_logs'
+    | 'routine_checkins'
+    | 'chat_messages',
+): Promise<Record<string, unknown>[]> {
+  return unwrap(await supabase.from(table).select('*'));
+}
+
 // ─────────────── Weekly Glow Reports ───────────────
 
 /**
