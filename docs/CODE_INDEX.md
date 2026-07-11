@@ -27,7 +27,8 @@ worse than no entries.
 
 | Route | File | What it is |
 |---|---|---|
-| `/(auth)/welcome`, `sign-in`, `sign-up` | `(auth)/*.tsx` | Auth funnel (guest mode = pre-confirmed user via `auth-signup` fn, ADR-0002) |
+| `/(auth)/welcome`, `sign-in`, `sign-up`, `forgot-password` | `(auth)/*.tsx` | Auth funnel (guest mode = pre-confirmed user via `auth-signup` fn, ADR-0002); forgot-password sends the recovery email with no account enumeration |
+| `/reset-password` | `reset-password.tsx` | Recovery-link landing (session established by the `glowi://reset-password` deep-link handler in `_layout.tsx`; shows link-expired state without one) |
 | `/onboarding` | `onboarding.tsx` | Skin type + goals wizard |
 | `/` (Home tab) | `(tabs)/index.tsx` | Skin Weather card, daily lifestyle check-in, scan CTA, latest results |
 | `/progress` | `(tabs)/progress.tsx` | Score trend, before/after + AI delta, concern sparklines, **scan-to-trend correlations**, streak, scan history |

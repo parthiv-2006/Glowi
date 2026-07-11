@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -23,6 +24,7 @@ import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/spac
 
 import { SplashView } from '@/components/SplashView';
 import { queryClient } from '@/lib/query';
+import { supabase } from '@/lib/supabase';
 import { mostRecentCompletedWeekStart } from '@/lib/glowReport';
 import { cancelServerOwnedReminders, registerPushToken } from '@/lib/notifications';
 import { palette } from '@/theme';
@@ -71,6 +73,35 @@ function usePushRegistration() {
   }, [session?.user.id, setPushRegistered]);
 }
 
+/**
+ * Completes the Supabase password-recovery deep link (glowi://reset-password).
+ * The email link arrives with tokens in the URL fragment; nothing parses that
+ * automatically on native, so establish the recovery session and open the
+ * reset screen. An expired/tampered link carries an error fragment instead —
+ * still route there; the screen shows its link-expired state when no session
+ * materialized. Mirrors the notification deep-link pattern above.
+ */
+function usePasswordRecoveryLink() {
+  const router = useRouter();
+  useEffect(() => {
+    async function handle(url: string | null) {
+      if (!url || !url.includes('reset-password')) return;
+      const params = new URLSearchParams(url.split('#')[1] ?? '');
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      if (params.get('type') === 'recovery' && accessToken && refreshToken) {
+        await supabase.auth
+          .setSession({ access_token: accessToken, refresh_token: refreshToken })
+          .catch(() => {});
+      }
+      router.push('/reset-password');
+    }
+    void Linking.getInitialURL().then(handle);
+    const sub = Linking.addEventListener('url', (e) => void handle(e.url));
+    return () => sub.remove();
+  }, [router]);
+}
+
 function useAuthGate() {
   const initializing = useAuth((s) => s.initializing);
   const session = useAuth((s) => s.session);
@@ -98,6 +129,7 @@ function useAuthGate() {
 function RootNavigator() {
   useAuthGate();
   useNotificationDeepLinks();
+  usePasswordRecoveryLink();
   usePushRegistration();
   return (
     <Stack
@@ -127,6 +159,7 @@ function RootNavigator() {
       <Stack.Screen name="article/[slug]" />
       <Stack.Screen name="memory" options={{ presentation: 'modal' }} />
       <Stack.Screen name="upgrade" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="reset-password" />
     </Stack>
   );
 }
