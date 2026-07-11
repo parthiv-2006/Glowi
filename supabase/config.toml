@@ -37,3 +37,7 @@ verify_jwt = true
 # there is no user JWT on that path.
 [functions.push-dispatch]
 verify_jwt = false
+
+# cleanup-guests shares push-dispatch's cron identity (same secret header).
+[functions.cleanup-guests]
+verify_jwt = false
