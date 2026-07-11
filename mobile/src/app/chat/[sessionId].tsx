@@ -132,6 +132,10 @@ export default function Conversation() {
           <AppText variant="body" style={styles.welcomeSub}>
             I know your scans and what we&apos;ve talked about before. No question is too small.
           </AppText>
+          <AppText variant="caption" style={styles.welcomeSub}>
+            Glowi can&apos;t diagnose — for anything painful, spreading, or worrying, see a
+            dermatologist.
+          </AppText>
           <View style={styles.suggestions}>
             {SUGGESTIONS.map((s) => (
               <PressableScale key={s} onPress={() => send(s)} style={styles.suggestion}>

@@ -22,6 +22,7 @@ import { useScan, useScans } from '@/lib/hooks';
 import { DISCLAIMER } from '@/lib/constants';
 import { haptics } from '@/lib/haptics';
 import type { ScanConcern } from '@/lib/types';
+import { useSettings } from '@/stores/settings';
 import { palette, radii, scoreColor, severityColor, severityLabel, spacing } from '@/theme';
 
 export default function ResultsScreen() {
@@ -30,6 +31,8 @@ export default function ResultsScreen() {
   const { data: scan, isLoading } = useScan(scanId);
   const { data: scans } = useScans();
   const scrollRef = useRef<ScrollView>(null);
+  const medicalNoticeSeen = useSettings((s) => s.medicalNoticeSeen);
+  const setMedicalNoticeSeen = useSettings((s) => s.setMedicalNoticeSeen);
 
   const scoreDelta = useMemo(() => {
     if (!scan || !scans) return null;
@@ -114,6 +117,30 @@ export default function ResultsScreen() {
         </PressableScale>
         <AppText variant="overline">Scan results</AppText>
       </Animated.View>
+
+      {/* One-time "not medical advice" notice — copy pending owner review (D5). */}
+      {!medicalNoticeSeen ? (
+        <Animated.View entering={FadeIn.duration(260)}>
+          <GlassCard style={styles.noticeCard}>
+            <View style={styles.noticeRow}>
+              <Ionicons name="medkit-outline" size={18} color={palette.accentBright} />
+              <AppText variant="caption" style={styles.noticeText}>
+                Glowi describes cosmetic skin appearance — it can&apos;t diagnose. See a
+                dermatologist for anything painful, spreading, or worrying.
+              </AppText>
+              <PressableScale
+                onPress={() => {
+                  haptics.tap();
+                  setMedicalNoticeSeen();
+                }}
+                hitSlop={10}
+              >
+                <Ionicons name="close" size={18} color={palette.textSecondary} />
+              </PressableScale>
+            </View>
+          </GlassCard>
+        </Animated.View>
+      ) : null}
 
       {/* Hero — the reveal */}
       <Animated.View
@@ -310,6 +337,9 @@ function ConcernCard({ concern, onPress }: { concern: ScanConcern; onPress: () =
 /* ── Styles ──────────────────────────────────────────────────────────── */
 
 const styles = StyleSheet.create({
+  noticeCard: { marginBottom: spacing(4) },
+  noticeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
+  noticeText: { flex: 1 },
   backRow: {
     flexDirection: 'row',
     alignItems: 'center',
