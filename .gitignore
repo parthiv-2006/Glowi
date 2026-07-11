@@ -19,6 +19,7 @@ mobile/android/
 # Tooling state
 .omc/
 .claude/settings.local.json
+.claude/worktrees/
 supabase/.temp/
 
 # OS / editor noise
