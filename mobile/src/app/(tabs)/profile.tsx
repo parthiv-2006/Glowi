@@ -25,8 +25,11 @@ import {
   Screen,
   Stagger,
 } from '@/components/ui';
+import { File, Paths } from 'expo-file-system';
+
 import * as api from '@/lib/api';
 import { DISCLAIMER } from '@/lib/constants';
+import { assembleExport, fetchExportTables } from '@/lib/dataExport';
 import { buildDermReportHtml } from '@/lib/dermReport';
 import { haptics } from '@/lib/haptics';
 import { getLastNightSleepHours } from '@/lib/health';
@@ -69,6 +72,7 @@ export default function ProfileTab() {
 
   const [remindersOn, setRemindersOn] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingData, setExportingData] = useState(false);
   const [locationInput, setLocationInput] = useState(locationLabel ?? '');
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
   const [detectingLocation, setDetectingLocation] = useState(false);
@@ -95,6 +99,32 @@ export default function ProfileTab() {
       .maybeSingle()
       .then(({ data }) => setRemindersOn(!!data?.enabled));
   }, [userId]);
+
+  /** Full GDPR export: every user-owned row as one JSON file via the share sheet. */
+  async function exportMyData() {
+    if (exportingData || !userId) return;
+    try {
+      setExportingData(true);
+      haptics.tap();
+      const tables = await fetchExportTables();
+      const payload = assembleExport(
+        { profiles: profile ? [profile as unknown as Record<string, unknown>] : [], ...tables },
+        { userId, exportedAt: new Date().toISOString() },
+      );
+      const file = new File(Paths.cache, `glowi-export-${payload.exported_at.slice(0, 10)}.json`);
+      file.write(JSON.stringify(payload, null, 2));
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Your Glowi data',
+        });
+      }
+    } catch {
+      // A cancelled share sheet is non-fatal — stay on screen.
+    } finally {
+      setExportingData(false);
+    }
+  }
 
   /** Fetches the user's history on demand, prints it to a PDF, opens the share sheet. */
   async function exportDermReport() {
@@ -439,6 +469,15 @@ export default function ProfileTab() {
             title={exporting ? 'Preparing your summary…' : 'Export for your derm'}
             subtitle="Scan history, routine & reactions as a PDF"
             onPress={() => void exportDermReport()}
+          />
+        )}
+
+        {Platform.OS !== 'web' && (
+          <Row
+            icon="download-outline"
+            title={exportingData ? 'Assembling your data…' : 'Export my data'}
+            subtitle="Everything Glowi holds about you, as JSON"
+            onPress={() => void exportMyData()}
           />
         )}
 
