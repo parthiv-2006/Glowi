@@ -11,6 +11,10 @@ import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, MODELS } from '../_shared/anthropic.ts';
 import { assembleMemoryContext, touchMemories } from '../_shared/memory.ts';
+import { enforceRateLimit } from '../_shared/ratelimit.ts';
+
+/** Generous for real coaching use; a hard stop for token-burn loops. */
+const RATE_LIMIT = { max: 40, windowSeconds: 3600 };
 
 interface ChatBody {
   sessionId?: string;
@@ -30,6 +34,8 @@ serve(async (req) => {
   if (message.length > 4000) throw new HttpError(400, 'Message too long');
 
   const svc = serviceClient();
+  // Before the message insert, so a rate-limited send is not persisted.
+  await enforceRateLimit(svc, `chat:${user.id}`, RATE_LIMIT.max, RATE_LIMIT.windowSeconds);
 
   const { data: session } = await svc
     .from('chat_sessions')

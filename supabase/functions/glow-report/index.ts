@@ -17,6 +17,9 @@
 import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, extractJson, MODELS } from '../_shared/anthropic.ts';
+import { enforceRateLimit } from '../_shared/ratelimit.ts';
+
+const RATE_LIMIT = { max: 5, windowSeconds: 86_400 };
 import {
   correlateScanTrends,
   CORRELATION_CAVEAT,
@@ -121,6 +124,9 @@ serve(async (req) => {
     .eq('week_start', weekStart)
     .maybeSingle();
   if (existing) return json({ report: existing });
+
+  // After the cache check: re-opening an existing report stays free.
+  await enforceRateLimit(svc, `glow-report:${user.id}`, RATE_LIMIT.max, RATE_LIMIT.windowSeconds);
 
   const weekEnd = addDaysIso(weekStart, 7); // exclusive upper bound
   const lastDay = addDaysIso(weekStart, 6); // inclusive last day of the week

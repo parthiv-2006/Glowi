@@ -12,6 +12,9 @@ import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, extractJson, MODELS } from '../_shared/anthropic.ts';
 import { base64Prefix, sniffImageMediaType } from '../_shared/images.ts';
+import { enforceRateLimit } from '../_shared/ratelimit.ts';
+
+const RATE_LIMIT = { max: 15, windowSeconds: 86_400 };
 
 interface CompareBody {
   imageABase64?: string;
@@ -84,6 +87,7 @@ serve(async (req) => {
   // Assemble the user's decision context: what the scan found, what they own,
   // and what has burned them before.
   const svc = serviceClient();
+  await enforceRateLimit(svc, `compare-products:${user.id}`, RATE_LIMIT.max, RATE_LIMIT.windowSeconds);
   const [{ data: scan }, { data: shelf }, { data: reactions }] = await Promise.all([
     svc
       .from('scans')
