@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Switch, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  StyleSheet,
+  Switch,
+  TextInput,
+  View,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,6 +55,8 @@ export default function ProfileTab() {
   const profile = useAuth((s) => s.profile);
   const session = useAuth((s) => s.session);
   const signOut = useAuth((s) => s.signOut);
+  const deleteAccount = useAuth((s) => s.deleteAccount);
+  const [deleting, setDeleting] = useState(false);
   const aiMode = useSettings((s) => s.aiMode);
   const setAiMode = useSettings((s) => s.setAiMode);
   const locationLabel = useSettings((s) => s.locationLabel);
@@ -442,6 +452,46 @@ export default function ProfileTab() {
           <Ionicons name="log-out-outline" size={18} color={palette.danger} />
           <AppText variant="subheading" color={palette.danger}>
             Sign out
+          </AppText>
+        </PressableScale>
+
+        <PressableScale
+          disabled={deleting}
+          onPress={() => {
+            haptics.tap();
+            Alert.alert(
+              'Delete account?',
+              'This permanently deletes your scans, photos, chat history, and everything Glowi has learned. This cannot be undone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete forever',
+                  style: 'destructive',
+                  onPress: () => {
+                    setDeleting(true);
+                    deleteAccount()
+                      .then(() => qc.clear())
+                      .catch((e) => {
+                        Alert.alert(
+                          'Deletion failed',
+                          e instanceof Error ? e.message : 'Please try again.',
+                        );
+                      })
+                      .finally(() => setDeleting(false));
+                  },
+                },
+              ],
+            );
+          }}
+          style={styles.signOut}
+        >
+          {deleting ? (
+            <ActivityIndicator size="small" color={palette.danger} />
+          ) : (
+            <Ionicons name="trash-outline" size={18} color={palette.danger} />
+          )}
+          <AppText variant="subheading" color={palette.danger}>
+            Delete account
           </AppText>
         </PressableScale>
 

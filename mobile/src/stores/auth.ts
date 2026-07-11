@@ -11,6 +11,7 @@ import type { Session } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
 import { env } from '@/lib/env';
+import { cancelRoutineReminders, cancelServerOwnedReminders } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types';
 
@@ -26,6 +27,7 @@ interface AuthState {
   continueAsGuest: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   init: () => Promise<void>;
 }
 
@@ -141,6 +143,32 @@ export const useAuth = create<AuthState>((set, get) => ({
   async signOut() {
     await SecureStore.deleteItemAsync(GUEST_KEY).catch(() => {});
     await supabase.auth.signOut();
+    set({ session: null, profile: null });
+  },
+
+  async deleteAccount() {
+    // Server-side erasure (photos + all rows via cascade), then the same
+    // local housekeeping as signOut plus cancelling every scheduled local
+    // reminder by identifier — never cancelAll.
+    const session = get().session;
+    if (!session) throw new Error('No active session');
+    const res = await fetch(`${env.supabaseUrl}/functions/v1/delete-account`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: env.supabaseAnonKey,
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload?.error ?? 'Could not delete account');
+    }
+    await SecureStore.deleteItemAsync(GUEST_KEY).catch(() => {});
+    await cancelRoutineReminders().catch(() => {});
+    await cancelServerOwnedReminders().catch(() => {});
+    // The server user is already gone; local scope is all that's left to clear.
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
     set({ session: null, profile: null });
   },
 }));
