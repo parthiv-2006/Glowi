@@ -22,6 +22,7 @@ interface AuthState {
   profile: Profile | null;
   signInEmail: (email: string, password: string) => Promise<void>;
   signUpEmail: (email: string, password: string, displayName?: string) => Promise<void>;
+  upgradeGuest: (email: string, password: string, displayName?: string) => Promise<void>;
   continueAsGuest: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -30,10 +31,15 @@ interface AuthState {
 
 async function callSignup(
   body: Record<string, unknown>,
+  accessToken?: string,
 ): Promise<{ email: string; password?: string }> {
   const res = await fetch(`${env.supabaseUrl}/functions/v1/auth-signup`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', apikey: env.supabaseAnonKey },
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: env.supabaseAnonKey,
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
     body: JSON.stringify(body),
   });
   const payload = await res.json().catch(() => ({}));
@@ -94,6 +100,26 @@ export const useAuth = create<AuthState>((set, get) => ({
       password,
     });
     if (error) throw new Error(error.message);
+  },
+
+  async upgradeGuest(email, password, displayName) {
+    // Converts the current guest in place via auth-signup mode 'upgrade' —
+    // the user id is unchanged, so scans, chats, shelf, and memories all
+    // survive (ADR-0002 keeps this path independent of email delivery).
+    // A signed-out guest whose SecureStore creds were wiped cannot reach
+    // this screen and is unrecoverable by design.
+    const session = get().session;
+    if (!session) throw new Error('No active session');
+    await callSignup({ mode: 'upgrade', email, password, displayName }, session.access_token);
+    await SecureStore.deleteItemAsync(GUEST_KEY).catch(() => {});
+    // Mint a fresh session under the new credentials so the auth state
+    // reflects the upgraded identity immediately.
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    if (error) throw new Error(error.message);
+    await get().refreshProfile();
   },
 
   async continueAsGuest() {

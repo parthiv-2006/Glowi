@@ -10,7 +10,7 @@ import { motion, palette, spacing } from '@/theme';
 
 export default function UpgradeScreen() {
   const router = useRouter();
-  const signUp = useAuth((s) => s.signUpEmail);
+  const upgradeGuest = useAuth((s) => s.upgradeGuest);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,8 +25,10 @@ export default function UpgradeScreen() {
     }
     setLoading(true);
     try {
-      await signUp(email, password, name || undefined);
-      // Auth gate will redirect to (tabs) once the new session is live
+      // In-place conversion: the guest keeps their user id, so every scan,
+      // chat, and shelf item is still theirs after the upgrade.
+      await upgradeGuest(email, password, name || undefined);
+      router.back();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create account');
       setLoading(false);
