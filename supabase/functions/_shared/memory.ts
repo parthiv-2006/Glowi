@@ -228,10 +228,14 @@ export async function assembleMemoryContext(
     if (bits.length) lines.push(`PROFILE — ${bits.join('; ')}`);
   }
 
+  // Memory contents are model-extracted from user-typed text (ADR-0020):
+  // cap each at assembly so a single stored memory can't dominate the prompt.
+  const MAX_MEMORY_CHARS = 400;
+
   if (gotchaRes.data?.length) {
     lines.push('SAFETY NOTES (always respect these):');
     for (const m of gotchaRes.data) {
-      lines.push(`  ⚠ ${m.content}`);
+      lines.push(`  ⚠ ${String(m.content).slice(0, MAX_MEMORY_CHARS)}`);
       usedMemoryIds.push(m.id);
     }
   }
@@ -251,7 +255,7 @@ export async function assembleMemoryContext(
   if (ranked.length) {
     lines.push(`WHAT YOU REMEMBER ABOUT THIS USER (${rankedLabel}):`);
     for (const m of ranked) {
-      lines.push(`  • [${m.type}] ${m.content}`);
+      lines.push(`  • [${m.type}] ${String(m.content).slice(0, MAX_MEMORY_CHARS)}`);
       usedMemoryIds.push(m.id);
     }
   }
