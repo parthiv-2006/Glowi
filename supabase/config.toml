@@ -14,3 +14,26 @@ verify_jwt = true
 
 [functions.extract-memories]
 verify_jwt = true
+
+[functions.skin-forecast]
+verify_jwt = true
+
+[functions.identify-product]
+verify_jwt = true
+
+[functions.check-conflicts]
+verify_jwt = true
+
+[functions.compare-scans]
+verify_jwt = true
+
+[functions.compare-products]
+verify_jwt = true
+
+[functions.glow-report]
+verify_jwt = true
+
+# push-dispatch is cron-called via pg_net with a shared secret header (ADR-0015);
+# there is no user JWT on that path.
+[functions.push-dispatch]
+verify_jwt = false
