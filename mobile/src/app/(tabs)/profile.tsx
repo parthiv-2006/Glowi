@@ -25,6 +25,7 @@ import {
   Screen,
   Stagger,
 } from '@/components/ui';
+import Constants from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
 
 import * as api from '@/lib/api';
@@ -548,7 +549,10 @@ export default function ProfileTab() {
         </PressableScale>
 
         <View style={styles.footer}>
-          <Badge label="Glowi v0.1.0" color={palette.textTertiary} />
+          <Badge
+            label={`Glowi v${Constants.expoConfig?.version ?? '1.0.0'}`}
+            color={palette.textTertiary}
+          />
           <AppText variant="caption" style={styles.disclaimer}>
             {DISCLAIMER}
           </AppText>

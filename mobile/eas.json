@@ -6,7 +6,10 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
     },
     "preview": {
       "distribution": "internal",
@@ -16,6 +19,11 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_AI_MODE": "live",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://rfuuznnbctfyqttslrbv.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_keR3yn3XgpuiBEZE6Q8xUw_6sEWsysf"
+      },
       "android": {
         "buildType": "app-bundle"
       }
