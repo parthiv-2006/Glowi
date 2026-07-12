@@ -113,12 +113,18 @@ function useAuthGate() {
     if (initializing) return;
     const group = segments[0];
     const inAuth = group === '(auth)';
+    // Pages that render standalone without a session: the hosted legal pages (the
+    // public store-form URLs and the welcome-screen Terms/Privacy links) and the
+    // password-recovery landing (which shows its own link-expired state before a
+    // session exists). These are exempt both from the sign-in bounce and from the
+    // onboarding bounce, so a not-yet-onboarded user can still read them.
+    const publicStandalone = group === 'legal' || group === 'reset-password';
     const onOnboarding = group === 'onboarding';
     const onboarded = !!profile?.onboarded_at;
 
-    if (!session && !inAuth) {
+    if (!session && !inAuth && !publicStandalone) {
       router.replace('/(auth)/welcome');
-    } else if (session && !onboarded && !onOnboarding) {
+    } else if (session && !onboarded && !onOnboarding && !publicStandalone) {
       router.replace('/onboarding');
     } else if (session && onboarded && (inAuth || onOnboarding)) {
       router.replace('/(tabs)');
