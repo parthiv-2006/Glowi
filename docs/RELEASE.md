@@ -26,24 +26,57 @@ review notes live here too (C2). Updated 2026-07-11.
 exists to serve large phones, not tablets, and shipping iPad would double the review/QA
 matrix for a v1 with no tablet design. Revisit post-launch if analytics show demand.
 
+## Web launch hardening (C4)
+
+Verified 2026-07-12 by building the static export (`npx expo export -p web` — 28 routes) and
+driving it route-by-route in a headless browser (public routes unauthenticated; authed routes
+via a guest session). **Result: every route renders or degrades deliberately, with zero console
+errors** (one benign, expected `expo-notifications` "push token changes not supported on web"
+warning appears everywhere — no action).
+
+- **Secret scan of the built bundle:** clean — only the public anon key is present; no
+  service-role key, no Anthropic key, no `ANTHROPIC*` reference.
+- **Public routes (no session):** welcome, sign-in, sign-up, forgot-password, reset-password,
+  legal/privacy, legal/terms — all render.
+- **Authed routes (guest session):** Home (Skin Weather forecast), progress, chat, learn,
+  profile, shelf, report — all render.
+- **Deliberate web degradations (confirmed intentional, no dead UI):** guided scan →
+  library picker (`camera.web.tsx`); local reminders + push registration no-op
+  (`notifications.ts` early-returns on web); Health sleep auto-fill absent (native-only,
+  `health.ts` returns null); the derm-PDF and "Export my data" rows are hidden on web
+  (`Platform.OS !== 'web'` — native share/print unavailable). **Delete account remains
+  available on web**, so the P0 compliance action works in the browser.
+- **Two bugs found and fixed during the drive** (both re-verified on the rebuilt export):
+  1. The auth gate (`_layout.tsx`) only exempted the `(auth)` group, so `/legal/*` and the
+     `/reset-password` landing **bounced to /welcome when logged out** — breaking the hosted
+     store-form URLs and the welcome-screen Terms/Privacy links. Now exempts `legal` +
+     `reset-password` from both the sign-in and onboarding bounces.
+  2. `useSkinForecast` fired an unauthenticated `skin-forecast` call (401) during the cold-load
+     redirect race; now gated on session (`enabled: !!userId`).
+
+**Owner-gated (stubbed — see checklist):** production web host + domain and deploy, and
+`GLOWI_ALLOWED_ORIGINS` set to that origin (closes A4). Until set, the CORS wildcard fallback is
+a dev convenience only. Test guest accounts created during this QA are anonymous/inactive and are
+reaped by the A6 cleanup job at 90 days.
+
 ## Launch checklist (gates G1 — do not tag v1.0.0 until all checked)
 
 - [ ] **HIBP leaked-password protection ON** (Auth → Sign In / Providers → password) —
-  owner-deferred 2026-07-11; security advisor WARN until done.
+      owner-deferred 2026-07-11; security advisor WARN until done.
 - [ ] **`glowi://reset-password` in Auth → URL Configuration → Redirect URLs** — the
-  reset deep link falls back to the Site URL without it.
+      reset deep link falls back to the Site URL without it.
 - [ ] **Custom SMTP (Resend)** once a domain exists — see ARCHITECTURE → Auth
-  operations. Until then auth email rides the built-in sender (few emails/hour).
+      operations. Until then auth email rides the built-in sender (few emails/hour).
 - [ ] **`GLOWI_ALLOWED_ORIGINS` set to the production web origin** (closes A4; the
-  wildcard fallback is a dev convenience only).
+      wildcard fallback is a dev convenience only).
 - [ ] **Password-reset loop verified on a physical device** (request → email → tap →
-  new password works).
+      new password works).
 - [ ] Legal copy (privacy/terms) owner-approved and `LEGAL_UPDATED` bumped.
 - [ ] Medical-disclaimer copy (results notice + chat line) owner-approved.
 - [ ] Production builds smoke-tested on device (Android APK/AAB installed; iOS via
-  TestFlight).
+      TestFlight).
 - [ ] Push cron verified (`cron.job_run_details` shows recent successful runs for all
-  three jobs).
+      three jobs).
 - [ ] Store forms filled from the matrices below; screenshots uploaded.
 - [ ] Supabase advisors clean except documented acceptances.
 
@@ -62,19 +95,19 @@ Top-level: **"Data Not Used to Track You"** (no ATT prompt needed). Every type b
 **linked to the user's identity** (account-scoped) and used only for **App Functionality**
 (none for Tracking, Analytics, or Advertising until E2 analytics ships).
 
-| Apple data type | Specific data | Collected | Purpose | Notes |
-|---|---|---|---|---|
-| Contact Info → Email Address | Account email | Yes (email accounts only) | App Functionality | Guests have no email |
-| Health & Fitness → Health | Sleep hours (opt-in), cycle phase (opt-in, sensitive), lifestyle logs, skin analysis scores/concerns | Yes | App Functionality | Health read-only from HealthKit; user confirms before save |
-| User Content → Photos or Videos | Skin scan + product photos | Yes | App Functionality | Private per-user bucket; sent to Anthropic for analysis |
-| User Content → Other User Content | Chat messages, AI memories, reactions/symptoms, shelf products, routines | Yes | App Functionality | User can view/delete memories in-app |
-| Location → Coarse Location | City-level label + coordinates for Skin Weather | Yes (opt-in) | App Functionality | No precise/background location |
-| Identifiers → Device ID | Expo push token | Yes (if notifications allowed) | App Functionality | Delivering scheduled nudges |
+| Apple data type                   | Specific data                                                                                        | Collected                      | Purpose           | Notes                                                      |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------ | ----------------- | ---------------------------------------------------------- |
+| Contact Info → Email Address      | Account email                                                                                        | Yes (email accounts only)      | App Functionality | Guests have no email                                       |
+| Health & Fitness → Health         | Sleep hours (opt-in), cycle phase (opt-in, sensitive), lifestyle logs, skin analysis scores/concerns | Yes                            | App Functionality | Health read-only from HealthKit; user confirms before save |
+| User Content → Photos or Videos   | Skin scan + product photos                                                                           | Yes                            | App Functionality | Private per-user bucket; sent to Anthropic for analysis    |
+| User Content → Other User Content | Chat messages, AI memories, reactions/symptoms, shelf products, routines                             | Yes                            | App Functionality | User can view/delete memories in-app                       |
+| Location → Coarse Location        | City-level label + coordinates for Skin Weather                                                      | Yes (opt-in)                   | App Functionality | No precise/background location                             |
+| Identifiers → Device ID           | Expo push token                                                                                      | Yes (if notifications allowed) | App Functionality | Delivering scheduled nudges                                |
 
 IP address is processed **transiently for signup rate-limiting and deleted within 1 day**; it is
 not linked to a stored profile — declared under abuse-prevention in the policy, not a persistent
 collection. Crash reporting (E1/Sentry) is **not yet enabled**; when it ships, add
-*Diagnostics → Crash Data* (no email, no photos) and re-review this table.
+_Diagnostics → Crash Data_ (no email, no photos) and re-review this table.
 
 `ITSAppUsesNonExemptEncryption: false` is set in `app.json` (standard HTTPS only) — the
 export-compliance questionnaire is auto-answered.
@@ -87,14 +120,14 @@ encrypted in transit = **Yes**; users can request deletion = **Yes** (Profile �
 in-app). Data collection is **required** only for core content (photos); opt-in categories are
 **optional**.
 
-| Play category | Data type | Collected | Optional? | Purpose |
-|---|---|---|---|---|
-| Personal info | Email address | Yes (email accounts) | Optional (guest avoids it) | Account management, App functionality |
-| Photos and videos | Photos | Yes | Required for scans | App functionality |
-| Health and fitness | Health info (sleep, cycle, lifestyle, skin analysis) | Yes | Optional | App functionality |
-| Messages | Other in-app messages (coach chat) | Yes | Optional | App functionality |
-| Location | Approximate location | Yes | Optional | App functionality |
-| Device or other IDs | Push token; IP (transient, rate-limit) | Yes | Optional | App functionality; Fraud prevention (IP) |
+| Play category       | Data type                                            | Collected            | Optional?                  | Purpose                                  |
+| ------------------- | ---------------------------------------------------- | -------------------- | -------------------------- | ---------------------------------------- |
+| Personal info       | Email address                                        | Yes (email accounts) | Optional (guest avoids it) | Account management, App functionality    |
+| Photos and videos   | Photos                                               | Yes                  | Required for scans         | App functionality                        |
+| Health and fitness  | Health info (sleep, cycle, lifestyle, skin analysis) | Yes                  | Optional                   | App functionality                        |
+| Messages            | Other in-app messages (coach chat)                   | Yes                  | Optional                   | App functionality                        |
+| Location            | Approximate location                                 | Yes                  | Optional                   | App functionality                        |
+| Device or other IDs | Push token; IP (transient, rate-limit)               | Yes                  | Optional                   | App functionality; Fraud prevention (IP) |
 
 **Health Connect declaration (required for `READ_SLEEP`):** in Play Console → App content →
 Health apps declaration, declare sleep read access, its in-app purpose (pre-fill the daily
@@ -103,7 +136,7 @@ Without this declaration the `health.READ_SLEEP` permission is rejected at revie
 
 ### App Review notes (paste into both consoles' review-notes field)
 
-- **What it is:** AI-assisted skincare *coaching for cosmetic and wellness purposes only*. It
+- **What it is:** AI-assisted skincare _coaching for cosmetic and wellness purposes only_. It
   describes the visible appearance of skin and suggests routines/products. **It does not
   diagnose, treat, or cure** — the in-app medical disclaimer (D5) states this on first scan
   results and in chat. This is important for both stores' health-app policies.
@@ -118,11 +151,11 @@ Without this declaration the `health.READ_SLEEP` permission is rejected at revie
 ### Screenshots & store assets checklist (owner)
 
 - [ ] iPhone 6.9" (required) and 6.5" screenshot sets — Home (Skin Weather + check-in),
-  scan results, chat coach, progress/before-after, shelf. Capture in **mock mode** for clean
-  deterministic content (`EXPO_PUBLIC_AI_MODE=mock`).
+      scan results, chat coach, progress/before-after, shelf. Capture in **mock mode** for clean
+      deterministic content (`EXPO_PUBLIC_AI_MODE=mock`).
 - [ ] Android phone screenshots (same five screens).
 - [ ] Feature graphic (Play, 1024×500), app icon already generated (`npm run assets`).
 - [ ] Short + full store descriptions (draft in a follow-up; lead with "AI skincare coach,
-  cosmetic guidance not medical").
+      cosmetic guidance not medical").
 - [ ] `eas.json` `submit.production` filled with App Store Connect app ID + Play service-account
-  JSON (owner credentials) — then `eas submit -p <platform> --latest`.
+      JSON (owner credentials) — then `eas submit -p <platform> --latest`.

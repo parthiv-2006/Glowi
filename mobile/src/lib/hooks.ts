@@ -119,6 +119,7 @@ export function useCheckIn() {
  */
 export function useSkinForecast() {
   const today = new Date().toISOString().slice(0, 10);
+  const userId = useAuth((s) => s.session?.user.id);
   const locationLabel = useSettings((s) => s.locationLabel);
   const locationCoords = useSettings((s) => s.locationCoords);
   return useQuery({
@@ -129,6 +130,10 @@ export function useSkinForecast() {
           ? { ...locationCoords, locationLabel: locationLabel ?? undefined }
           : undefined,
       ),
+    // Never fetch without a session — the Home tab can mount for a frame during
+    // the auth-gate redirect on a cold load, which otherwise fires an
+    // unauthenticated forecast call (401).
+    enabled: !!userId,
     staleTime: 6 * 60 * 60_000,
   });
 }
