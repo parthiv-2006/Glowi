@@ -106,7 +106,7 @@ Every user table has RLS (`crud_own` convention); the scan-images bucket is priv
 
 ## Docs & meta
 
-`README.md` (overview/quick-start) · `docs/ARCHITECTURE.md` (system design) · `docs/MEMORY_SYSTEM.md` (AI memory pipeline) · `docs/FEATURE_BACKLOG.md` (roadmap + status) · `docs/adr/` (decisions) · `mobile/DESIGN.md` + `Glowi app visual enhancement (1)/design_handoff_glowi_redesign/` (visual system — mandatory before UI work) · `plans/` (feature blueprints) · CI: `.github/workflows/ci.yml` (typecheck, lint, test).
+`README.md` (overview/quick-start) · `docs/ARCHITECTURE.md` (system design) · `docs/MEMORY_SYSTEM.md` (AI memory pipeline) · `docs/FEATURE_BACKLOG.md` (roadmap + status) · `docs/adr/` (decisions) · `mobile/DESIGN.md` + `Glowi app visual enhancement (1)/design_handoff_glowi_redesign/` (visual system — mandatory before UI work) · `plans/` (feature blueprints — incl. `ml-face-alignment.md`, F3 scoping for real-time face tracking, ADR-0012) · CI: `.github/workflows/ci.yml` (typecheck, lint, test).
 
 ## Build & assets (`mobile/`)
 
