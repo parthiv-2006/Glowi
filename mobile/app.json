@@ -2,7 +2,7 @@
   "expo": {
     "name": "Glowi",
     "slug": "glowi",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "glowi",
@@ -13,7 +13,8 @@
       "bundleIdentifier": "com.glowi.app",
       "supportsTablet": false,
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Glowi lets you pick an existing photo of a skin concern for AI analysis."
+        "NSPhotoLibraryUsageDescription": "Glowi lets you pick an existing photo of a skin concern for AI analysis.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
