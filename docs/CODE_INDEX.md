@@ -21,7 +21,7 @@ worse than no entries.
 | Touch UI primitives | `mobile/src/components/ui/` — reuse before creating |
 | Change theme/tokens | `mobile/src/theme/index.ts` (design rules: `mobile/DESIGN.md` + design handoff dir) |
 | Change an edge function | `supabase/functions/<name>/index.ts` (shared helpers in `_shared/`) — redeploy after |
-| Seed/catalog data | `supabase/seed/` |
+| Seed/catalog data | `supabase/seed/` (lint before commit: `node supabase/seed/validate.mjs`; authoring guide `docs/CATALOG.md`) |
 
 ## Routes (`mobile/src/app/`, expo-router)
 
