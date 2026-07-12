@@ -47,6 +47,82 @@ matrix for a v1 with no tablet design. Revisit post-launch if analytics show dem
 - [ ] Store forms filled from the matrices below; screenshots uploaded.
 - [ ] Supabase advisors clean except documented acceptances.
 
-## Store submission
+## Store submission (C2)
 
-Filled by task C2 — data-safety matrices, review notes, and screenshots checklist.
+Matrices below are derived from the Privacy Policy data inventory (`mobile/src/lib/legal.ts`)
+and the actual manifest permissions (`app.json`: iOS camera + photo-library + HealthKit sleep;
+Android `CAMERA` + `health.READ_SLEEP`). **Nothing is used for tracking or advertising; no data
+is sold; Anthropic is a subprocessor (processing, not "sharing").** Answer the store forms
+exactly as tabulated; if you change what the app collects, update `legal.ts` **and** these tables
+together.
+
+### Apple — App Privacy (App Store Connect → App Privacy)
+
+Top-level: **"Data Not Used to Track You"** (no ATT prompt needed). Every type below is
+**linked to the user's identity** (account-scoped) and used only for **App Functionality**
+(none for Tracking, Analytics, or Advertising until E2 analytics ships).
+
+| Apple data type | Specific data | Collected | Purpose | Notes |
+|---|---|---|---|---|
+| Contact Info → Email Address | Account email | Yes (email accounts only) | App Functionality | Guests have no email |
+| Health & Fitness → Health | Sleep hours (opt-in), cycle phase (opt-in, sensitive), lifestyle logs, skin analysis scores/concerns | Yes | App Functionality | Health read-only from HealthKit; user confirms before save |
+| User Content → Photos or Videos | Skin scan + product photos | Yes | App Functionality | Private per-user bucket; sent to Anthropic for analysis |
+| User Content → Other User Content | Chat messages, AI memories, reactions/symptoms, shelf products, routines | Yes | App Functionality | User can view/delete memories in-app |
+| Location → Coarse Location | City-level label + coordinates for Skin Weather | Yes (opt-in) | App Functionality | No precise/background location |
+| Identifiers → Device ID | Expo push token | Yes (if notifications allowed) | App Functionality | Delivering scheduled nudges |
+
+IP address is processed **transiently for signup rate-limiting and deleted within 1 day**; it is
+not linked to a stored profile — declared under abuse-prevention in the policy, not a persistent
+collection. Crash reporting (E1/Sentry) is **not yet enabled**; when it ships, add
+*Diagnostics → Crash Data* (no email, no photos) and re-review this table.
+
+`ITSAppUsesNonExemptEncryption: false` is set in `app.json` (standard HTTPS only) — the
+export-compliance questionnaire is auto-answered.
+
+### Google Play — Data Safety form
+
+**Data shared with third parties: None** (Anthropic acts as a service provider on Glowi's
+behalf → Play's processor exemption; still disclosed in the Privacy Policy). **Security:**
+encrypted in transit = **Yes**; users can request deletion = **Yes** (Profile → Delete account,
+in-app). Data collection is **required** only for core content (photos); opt-in categories are
+**optional**.
+
+| Play category | Data type | Collected | Optional? | Purpose |
+|---|---|---|---|---|
+| Personal info | Email address | Yes (email accounts) | Optional (guest avoids it) | Account management, App functionality |
+| Photos and videos | Photos | Yes | Required for scans | App functionality |
+| Health and fitness | Health info (sleep, cycle, lifestyle, skin analysis) | Yes | Optional | App functionality |
+| Messages | Other in-app messages (coach chat) | Yes | Optional | App functionality |
+| Location | Approximate location | Yes | Optional | App functionality |
+| Device or other IDs | Push token; IP (transient, rate-limit) | Yes | Optional | App functionality; Fraud prevention (IP) |
+
+**Health Connect declaration (required for `READ_SLEEP`):** in Play Console → App content →
+Health apps declaration, declare sleep read access, its in-app purpose (pre-fill the daily
+check-in), and provide the hosted **Privacy Policy URL** (the web export's `/legal/privacy`).
+Without this declaration the `health.READ_SLEEP` permission is rejected at review.
+
+### App Review notes (paste into both consoles' review-notes field)
+
+- **What it is:** AI-assisted skincare *coaching for cosmetic and wellness purposes only*. It
+  describes the visible appearance of skin and suggests routines/products. **It does not
+  diagnose, treat, or cure** — the in-app medical disclaimer (D5) states this on first scan
+  results and in chat. This is important for both stores' health-app policies.
+- **Reviewer account:** seed a demo account and paste credentials here. Guest mode ("Continue as
+  guest") also gives full access with no email if the reviewer prefers.
+- **Reviewing a scan without a real face:** the scan flow accepts a **library photo** (tap
+  "Upload photo" instead of the camera); any clear photo of skin returns a result. On web the
+  camera route degrades to a picker automatically.
+- **AI backend:** photos and chat are processed by Anthropic (subprocessor); not used for
+  training; API keys are server-side only.
+
+### Screenshots & store assets checklist (owner)
+
+- [ ] iPhone 6.9" (required) and 6.5" screenshot sets — Home (Skin Weather + check-in),
+  scan results, chat coach, progress/before-after, shelf. Capture in **mock mode** for clean
+  deterministic content (`EXPO_PUBLIC_AI_MODE=mock`).
+- [ ] Android phone screenshots (same five screens).
+- [ ] Feature graphic (Play, 1024×500), app icon already generated (`npm run assets`).
+- [ ] Short + full store descriptions (draft in a follow-up; lead with "AI skincare coach,
+  cosmetic guidance not medical").
+- [ ] `eas.json` `submit.production` filled with App Store Connect app ID + Play service-account
+  JSON (owner credentials) — then `eas submit -p <platform> --latest`.
