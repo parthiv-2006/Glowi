@@ -16,3 +16,17 @@
 
 # Shell scripts must stay LF regardless of platform
 *.sh text eol=lf
+
+# Source and config stay LF in the *working tree* too, not just in the repo.
+# `text=auto` alone hands a Windows checkout CRLF files, and Prettier's endOfLine
+# default is "lf" — so `npm run format:check` (now a CI gate) fails on Windows and
+# passes on Linux. A gate that only breaks for the developer is worse than no gate.
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sql text eol=lf
