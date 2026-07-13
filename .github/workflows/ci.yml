@@ -8,7 +8,7 @@ on:
 
 jobs:
   mobile:
-    name: Mobile · typecheck · lint · test
+    name: Mobile · typecheck · lint · format · test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,5 +31,36 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Format
+        run: npm run format:check
+
       - name: Unit tests
         run: npm test -- --ci
+
+  # The edge functions are TypeScript that CI never looked at: a type error in any of
+  # them merged green and only surfaced at deploy time, or worse, at runtime in front
+  # of a user. Deno is their actual runtime, so Deno is what has to typecheck them.
+  edge-functions:
+    name: Edge functions · deno check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: supabase
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Cache Deno dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/deno
+          key: deno-${{ runner.os }}-${{ hashFiles('supabase/deno.lock') }}
+          restore-keys: deno-${{ runner.os }}-
+
+      # Every function entrypoint plus every shared module — _shared/*.ts is checked
+      # explicitly because a module imported by nothing (yet) still has to compile.
+      - name: Typecheck
+        run: deno check functions/*/index.ts functions/_shared/*.ts
