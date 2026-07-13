@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Platform,
   StyleSheet,
   Switch,
@@ -36,8 +37,10 @@ import { haptics } from '@/lib/haptics';
 import { getLastNightSleepHours } from '@/lib/health';
 import {
   cancelRoutineReminders,
+  getNotificationPermission,
   requestNotificationPermission,
   scheduleRoutineReminders,
+  syncPushRegistration,
 } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/stores/auth';
@@ -70,6 +73,7 @@ export default function ProfileTab() {
   const setCycleTrackingEnabled = useSettings((s) => s.setCycleTrackingEnabled);
   const healthAutoFillEnabled = useSettings((s) => s.healthAutoFillEnabled);
   const setHealthAutoFillEnabled = useSettings((s) => s.setHealthAutoFillEnabled);
+  const setPushRegistered = useSettings((s) => s.setPushRegistered);
 
   const [remindersOn, setRemindersOn] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -232,8 +236,27 @@ export default function ProfileTab() {
     haptics.tap();
     if (value) {
       const ok = await requestNotificationPermission();
-      if (!ok) return;
+      if (!ok) {
+        // Denied. If the OS will no longer show the dialog, the toggle is a dead end
+        // — it just snaps back, forever, with no explanation. Say so, and offer the
+        // only door that still opens.
+        const { canAskAgain } = await getNotificationPermission();
+        if (!canAskAgain) {
+          Alert.alert(
+            'Notifications are off',
+            'Glowi needs notification permission to send routine reminders. You can turn it on in Settings.',
+            [
+              { text: 'Not now', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => void Linking.openSettings() },
+            ],
+          );
+        }
+        return;
+      }
       await scheduleRoutineReminders('08:00', '21:00');
+      // Permission just granted here counts for push too — take the token now.
+      const registered = await syncPushRegistration(userId);
+      setPushRegistered(registered);
     } else {
       await cancelRoutineReminders();
     }
@@ -301,6 +324,7 @@ export default function ProfileTab() {
                     }}
                     style={[styles.segmentBtn, active && styles.segmentActive]}
                     haptic={false}
+                    accessibilityState={{ selected: active }}
                   >
                     <AppText
                       variant="subheading"
@@ -340,6 +364,7 @@ export default function ProfileTab() {
                 style={styles.detectBtn}
                 haptic={false}
                 disabled={detectingLocation}
+                accessibilityLabel="Detect my location"
               >
                 {detectingLocation ? (
                   <ActivityIndicator size="small" color={palette.accentBright} />
@@ -409,6 +434,7 @@ export default function ProfileTab() {
               onValueChange={toggleReminders}
               trackColor={{ true: palette.accent, false: palette.surfaceStrong }}
               thumbColor={palette.text}
+              accessibilityLabel="Routine reminders"
             />
           </View>
         </GlassCard>
@@ -427,6 +453,7 @@ export default function ProfileTab() {
               }}
               trackColor={{ true: palette.accent, false: palette.surfaceStrong }}
               thumbColor={palette.text}
+              accessibilityLabel="Track cycle phase"
             />
           </View>
           <AppText variant="caption" style={styles.blockHint}>
@@ -453,6 +480,7 @@ export default function ProfileTab() {
                 }}
                 trackColor={{ true: palette.accent, false: palette.surfaceStrong }}
                 thumbColor={palette.text}
+                accessibilityLabel="Auto-fill sleep from Health"
               />
             </View>
             <AppText variant="caption" style={styles.blockHint}>

@@ -15,6 +15,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   AppText,
   EmptyState,
+  ErrorState,
   GlassCard,
   PressableScale,
   Screen,
@@ -57,7 +58,7 @@ function ReportRow({ report, onPress }: { report: GlowReport; onPress: () => voi
 
 export default function GlowReportHistoryScreen() {
   const router = useRouter();
-  const { data: reports = [], isLoading } = useGlowReports();
+  const { data: reports = [], isLoading, isError, refetch } = useGlowReports();
 
   // The most recent completed week may not be generated yet — offer it on top.
   const latestWeek = useMemo(() => mostRecentCompletedWeekStart(), []);
@@ -78,6 +79,7 @@ export default function GlowReportHistoryScreen() {
           }}
           style={styles.backBtn}
           haptic={false}
+          accessibilityLabel="Back"
         >
           <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
         </PressableScale>
@@ -99,6 +101,8 @@ export default function GlowReportHistoryScreen() {
           <Skeleton width="100%" height={96} />
           <Skeleton width="100%" height={96} />
         </View>
+      ) : isError ? (
+        <ErrorState title="Couldn't load your reports" onRetry={() => void refetch()} />
       ) : reports.length === 0 && !latestMissing ? (
         <EmptyState
           title="No reports yet"

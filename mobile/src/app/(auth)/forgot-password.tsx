@@ -33,7 +33,12 @@ export default function ForgotPassword() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Screen>
-        <PressableScale onPress={() => router.back()} hitSlop={12} style={styles.back}>
+        <PressableScale
+          onPress={() => router.back()}
+          hitSlop={12}
+          style={styles.back}
+          accessibilityLabel="Back"
+        >
           <Ionicons name="chevron-back" size={26} color={palette.text} />
         </PressableScale>
 

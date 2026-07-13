@@ -9,6 +9,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -28,7 +29,7 @@ import { palette, radii, scoreColor, severityColor, severityLabel, spacing } fro
 export default function ResultsScreen() {
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
   const router = useRouter();
-  const { data: scan, isLoading } = useScan(scanId);
+  const { data: scan, isLoading, isError, refetch } = useScan(scanId);
   const { data: scans } = useScans();
   const scrollRef = useRef<ScrollView>(null);
   const medicalNoticeSeen = useSettings((s) => s.medicalNoticeSeen);
@@ -73,6 +74,15 @@ export default function ResultsScreen() {
     );
   }
 
+  /* ── Query failed ── */
+  if (isError) {
+    return (
+      <Screen bottomInset={spacing(8)}>
+        <ErrorState title="Couldn't load this scan" onRetry={() => void refetch()} />
+      </Screen>
+    );
+  }
+
   /* ── Failed / null ── */
   if (!scan || scan.status === 'failed') {
     return (
@@ -112,6 +122,7 @@ export default function ResultsScreen() {
           }}
           style={styles.backBtn}
           haptic={false}
+          accessibilityLabel="Back"
         >
           <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
         </PressableScale>
@@ -134,6 +145,7 @@ export default function ResultsScreen() {
                   setMedicalNoticeSeen();
                 }}
                 hitSlop={10}
+                accessibilityLabel="Dismiss"
               >
                 <Ionicons name="close" size={18} color={palette.textSecondary} />
               </PressableScale>

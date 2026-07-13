@@ -177,6 +177,8 @@ export function DailyCheckinCard() {
                     onPress={() => apply(s.patch(level as LifestyleLevel))}
                     style={[styles.segmentBtn, active && styles.segmentActive]}
                     haptic={false}
+                    accessibilityLabel={`${s.label}: ${opt}`}
+                    accessibilityState={{ selected: active }}
                   >
                     <AppText
                       variant="caption"
@@ -218,6 +220,8 @@ export function DailyCheckinCard() {
               onPress={() => apply(d.patch(!active))}
               style={[styles.chip, active && styles.chipActive]}
               haptic={false}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: active }}
             >
               <AppText variant="caption" color={active ? palette.textOnAccent : palette.inkSoft}>
                 {d.label}
@@ -241,6 +245,7 @@ export function DailyCheckinCard() {
                   onPress={() => apply({ cycle_phase: active ? null : c.key })}
                   style={[styles.chip, active && styles.chipActive]}
                   haptic={false}
+                  accessibilityState={{ selected: active }}
                 >
                   <AppText
                     variant="caption"

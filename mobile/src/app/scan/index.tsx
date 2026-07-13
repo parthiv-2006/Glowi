@@ -60,7 +60,7 @@ export default function ScanCapture() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <PressableScale onPress={() => router.back()} hitSlop={12}>
+          <PressableScale onPress={() => router.back()} hitSlop={12} accessibilityLabel="Close">
             <Ionicons name="close" size={26} color={palette.inkDark} />
           </PressableScale>
           <AppText variant="overline" color={palette.inkFaintDark}>

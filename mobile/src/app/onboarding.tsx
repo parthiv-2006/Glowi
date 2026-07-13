@@ -170,7 +170,11 @@ export default function Onboarding() {
                 {SKIN_TYPE_OPTIONS.map((opt) => {
                   const active = skinType === opt.id;
                   return (
-                    <PressableScale key={opt.id} onPress={() => setSkinType(opt.id)}>
+                    <PressableScale
+                      key={opt.id}
+                      onPress={() => setSkinType(opt.id)}
+                      accessibilityState={{ selected: active }}
+                    >
                       <GlassCard tier={active ? 'glow' : 'raised'} style={styles.optionCard}>
                         <View style={styles.optionRow}>
                           <View style={{ flex: 1 }}>
@@ -213,6 +217,7 @@ export default function Onboarding() {
                       key={opt.id}
                       onPress={() => toggleGoal(opt.id)}
                       style={styles.goalWrap}
+                      accessibilityState={{ selected: active }}
                     >
                       <GlassCard
                         tier={active ? 'glow' : 'raised'}

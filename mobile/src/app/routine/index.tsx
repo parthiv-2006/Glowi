@@ -26,6 +26,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -74,7 +75,13 @@ function PeriodToggle({ value, onChange }: { value: Period; onChange: (p: Period
       {/* Animated pill */}
       <Animated.View style={[toggle.pill, pillStyle]} />
 
-      <TouchableOpacity style={toggle.side} onPress={() => press('am')} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={toggle.side}
+        onPress={() => press('am')}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityState={{ selected: value === 'am' }}
+      >
         <Ionicons
           name="sunny-outline"
           size={15}
@@ -88,7 +95,13 @@ function PeriodToggle({ value, onChange }: { value: Period; onChange: (p: Period
         </AppText>
       </TouchableOpacity>
 
-      <TouchableOpacity style={toggle.side} onPress={() => press('pm')} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={toggle.side}
+        onPress={() => press('pm')}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityState={{ selected: value === 'pm' }}
+      >
         <Ionicons
           name="moon-outline"
           size={15}
@@ -196,7 +209,11 @@ function StepRow({
           </View>
 
           {/* Remove */}
-          <PressableScale onPress={onRemove} style={styles.removeBtn}>
+          <PressableScale
+            onPress={onRemove}
+            style={styles.removeBtn}
+            accessibilityLabel={`Remove ${productName} from routine`}
+          >
             <Ionicons name="trash-outline" size={18} color={palette.textTertiary} />
           </PressableScale>
         </View>
@@ -252,7 +269,12 @@ export default function RoutineScreen() {
   const qc = useQueryClient();
   const userId = useAuth((s) => s.session?.user.id);
 
-  const { data: routinesRaw, isLoading: routinesLoading } = useRoutines();
+  const {
+    data: routinesRaw,
+    isLoading: routinesLoading,
+    isError: routinesError,
+    refetch: refetchRoutines,
+  } = useRoutines();
   const { data: scans } = useScans();
   const { data: checkins = [] } = useRecentCheckins();
   const { mutate: checkIn, isPending: checkingIn } = useCheckIn();
@@ -389,7 +411,11 @@ export default function RoutineScreen() {
     <Screen bottomInset={spacing(20)}>
       {/* Header */}
       <Animated.View entering={FadeIn.duration(320)} style={styles.header}>
-        <PressableScale onPress={() => router.back()} style={styles.backBtn}>
+        <PressableScale
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityLabel="Back"
+        >
           <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
         </PressableScale>
         <View style={styles.headerText}>
@@ -410,6 +436,8 @@ export default function RoutineScreen() {
       {/* Body */}
       {routinesLoading ? (
         <LoadingSkeleton />
+      ) : routinesError ? (
+        <ErrorState title="Couldn't load your routine" onRetry={() => void refetchRoutines()} />
       ) : hasRoutine ? (
         <RoutineContent
           steps={activeSteps}

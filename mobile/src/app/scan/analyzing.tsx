@@ -21,9 +21,14 @@ import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { ScanTheater, type ScanZone } from '@/components/scan/ScanTheater';
 import { AppText, GlowButton } from '@/components/ui';
 import { getAIProvider } from '@/lib/ai';
-import { attachScanImage, createScan } from '@/lib/api';
+import { AIHttpError } from '@/lib/ai/live';
+import { attachScanImage, createScan, deleteScan } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
-import { scheduleGlowReportReminder, scheduleWeeklyScanReminder } from '@/lib/notifications';
+import {
+  scheduleGlowReportReminder,
+  scheduleWeeklyScanReminder,
+  syncPushRegistration,
+} from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 import type { CaptureMeta } from '@/lib/types';
 import { useAuth } from '@/stores/auth';
@@ -107,6 +112,12 @@ export default function Analyzing() {
       setError('Something went wrong starting the scan.');
       return;
     }
+    // The scan row is inserted as `pending` before the upload and the AI call. If
+    // either throws — a dropped connection mid-scan is the common case — the row
+    // would otherwise linger forever as a pending scan the user can neither open
+    // nor get rid of, polluting their history and the progress trend. Track it so
+    // the catch can take it back out.
+    let pendingScanId: string | null = null;
     try {
       let captureMeta: CaptureMeta | null = null;
       if (meta) {
@@ -121,6 +132,7 @@ export default function Analyzing() {
         notes: notes || undefined,
         captureMeta,
       });
+      pendingScanId = scan.id;
       const path = await uploadImage(userId, scan.id, uri);
       await attachScanImage(scan.id, path);
 
@@ -136,16 +148,35 @@ export default function Analyzing() {
       }
       setDone(true);
       haptics.success();
-      // Server push owns these weekly nudges once a token is registered; the
-      // local schedules are the fallback for devices push can't reach.
+      // Server push owns these weekly nudges once a token is registered; the local
+      // schedules are the fallback for devices push can't reach.
+      //
+      // This is also where the notification permission prompt belongs: a user who
+      // has just watched their first scan complete understands what a reminder is
+      // for. Asking at boot — which is what used to happen — spends the one dialog
+      // iOS ever shows on someone with no reason to say yes. Once they grant it,
+      // register for push immediately rather than waiting for the next cold start.
       if (!useSettings.getState().pushRegistered) {
-        void scheduleWeeklyScanReminder();
-        void scheduleGlowReportReminder();
+        void (async () => {
+          await scheduleWeeklyScanReminder();
+          await scheduleGlowReportReminder();
+          const registered = await syncPushRegistration(userId);
+          useSettings.getState().setPushRegistered(registered);
+        })();
       }
       await wait(650);
       router.replace(`/results/${scan.id}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Analysis failed. Please try again.');
+      // Best-effort: if this also fails (still offline) the row stays, but the user
+      // is already being told the scan failed and a retry creates a fresh one.
+      if (pendingScanId) await deleteScan(pendingScanId).catch(() => {});
+      // AIHttpError messages are written for humans (rate limits, unusable photo).
+      // Anything else is a network or Postgres string and means nothing to the user.
+      setError(
+        e instanceof AIHttpError
+          ? e.message
+          : "Analysis couldn't finish — check your connection and try again.",
+      );
       haptics.error();
     }
   }, [userId, uri, area, notes, meta, router]);
@@ -214,7 +245,7 @@ export default function Analyzing() {
       </View>
 
       {error ? (
-        <Animated.View entering={FadeIn} style={styles.errorBox}>
+        <Animated.View entering={FadeIn} style={styles.errorBox} accessibilityLiveRegion="polite">
           <Ionicons name="alert-circle-outline" size={30} color={palette.ochre} />
           <AppText variant="heading" color={palette.inkDark} style={styles.center}>
             We couldn&apos;t read that one
@@ -229,8 +260,12 @@ export default function Analyzing() {
           />
         </Animated.View>
       ) : (
-        <View style={styles.statusArea}>
-          <View style={styles.progressTrack}>
+        <View style={styles.statusArea} accessibilityLiveRegion="polite">
+          <View
+            style={styles.progressTrack}
+            accessibilityRole="progressbar"
+            accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}
+          >
             <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
           </View>
           {done ? (

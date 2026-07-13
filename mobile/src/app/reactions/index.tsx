@@ -12,6 +12,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -48,7 +49,11 @@ function ReactionCard({ log, onDelete }: { log: ReactionLog; onDelete: () => voi
             {log.product_name}
           </AppText>
         </View>
-        <PressableScale onPress={onDelete} style={styles.deleteBtn}>
+        <PressableScale
+          onPress={onDelete}
+          style={styles.deleteBtn}
+          accessibilityLabel={`Delete reaction log for ${log.product_name}`}
+        >
           <Ionicons name="trash-outline" size={18} color={palette.textTertiary} />
         </PressableScale>
       </View>
@@ -89,7 +94,7 @@ function ReactionCard({ log, onDelete }: { log: ReactionLog; onDelete: () => voi
 
 export default function ReactionLogScreen() {
   const router = useRouter();
-  const { data: logs, isLoading } = useReactionLogs();
+  const { data: logs, isLoading, isError, refetch } = useReactionLogs();
   const { mutate: deleteLog } = useDeleteReactionLog();
 
   return (
@@ -103,6 +108,7 @@ export default function ReactionLogScreen() {
             }}
             style={styles.backBtn}
             haptic={false}
+            accessibilityLabel="Back"
           >
             <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
           </PressableScale>
@@ -116,6 +122,7 @@ export default function ReactionLogScreen() {
             }}
             style={styles.addBtn}
             haptic={false}
+            accessibilityLabel="Log a reaction"
           >
             <Ionicons name="add" size={20} color={palette.textOnAccent} />
           </PressableScale>
@@ -128,6 +135,8 @@ export default function ReactionLogScreen() {
           <Skeleton width="100%" height={96} />
           <Skeleton width="100%" height={96} />
         </View>
+      ) : isError ? (
+        <ErrorState title="Couldn't load your reaction log" onRetry={() => void refetch()} />
       ) : !logs?.length ? (
         <EmptyState
           title="No reactions logged"

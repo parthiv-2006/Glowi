@@ -7,6 +7,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import {
   AppText,
+  ErrorState,
   GlassCard,
   PressableScale,
   ProgressRing,
@@ -19,7 +20,7 @@ import { DailyCheckinCard } from '@/components/DailyCheckinCard';
 import { useScans, useSkinForecast } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/stores/auth';
-import { fonts, palette, radii, scoreColor, severityColor, spacing } from '@/theme';
+import { fonts, palette, radii, scoreColor, severityColor, severityLabel, spacing } from '@/theme';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -31,8 +32,13 @@ function greeting(): string {
 export default function Home() {
   const router = useRouter();
   const profile = useAuth((s) => s.profile);
-  const { data: scans, isLoading } = useScans();
-  const { data: forecast, isLoading: forecastLoading } = useSkinForecast();
+  const { data: scans, isLoading, isError, refetch } = useScans();
+  const {
+    data: forecast,
+    isLoading: forecastLoading,
+    isError: forecastError,
+    refetch: refetchForecast,
+  } = useSkinForecast();
 
   const latest = useMemo(() => scans?.find((s) => s.status === 'complete'), [scans]);
   const firstName = profile?.display_name?.split(' ')[0];
@@ -58,6 +64,7 @@ export default function Home() {
               }}
               style={styles.headerScan}
               haptic={false}
+              accessibilityLabel="Start a scan"
             >
               <Ionicons name="scan-outline" size={22} color={palette.clay} />
             </PressableScale>
@@ -70,6 +77,7 @@ export default function Home() {
               }}
               style={styles.avatar}
               haptic={false}
+              accessibilityLabel="Open profile"
             >
               <AppText variant="heading" color="#FFFFFF" style={styles.avatarText}>
                 {initial}
@@ -92,6 +100,11 @@ export default function Home() {
             compact={!!latest}
             onPress={() => router.push('/forecast')}
           />
+        ) : forecastError ? (
+          <ErrorState
+            title="Couldn't load today's forecast"
+            onRetry={() => void refetchForecast()}
+          />
         ) : null}
 
         <View style={styles.section}>
@@ -104,6 +117,10 @@ export default function Home() {
             <View style={{ height: spacing(3) }} />
             <Skeleton width="100%" height={64} />
           </GlassCard>
+        ) : isError ? (
+          <View style={styles.section}>
+            <ErrorState title="Couldn't load your scans" onRetry={() => void refetch()} />
+          </View>
         ) : latest ? (
           <>
             <PressableScale
@@ -126,7 +143,12 @@ export default function Home() {
                     </AppText>
                     <View style={styles.concernChips}>
                       {latest.concerns.slice(0, 2).map((c) => (
-                        <View key={c.concern_slug} style={styles.chip}>
+                        <View
+                          key={c.concern_slug}
+                          style={styles.chip}
+                          accessible
+                          accessibilityLabel={`${c.display_name}, ${severityLabel(c.severity)} severity`}
+                        >
                           <View
                             style={[styles.chipDot, { backgroundColor: severityColor(c.severity) }]}
                           />

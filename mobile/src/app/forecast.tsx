@@ -11,6 +11,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import {
   AppText,
   EmptyState,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -35,7 +36,7 @@ import { palette, radii, spacing } from '@/theme';
 
 export default function ForecastScreen() {
   const router = useRouter();
-  const { data: forecast, isLoading } = useSkinForecast();
+  const { data: forecast, isLoading, isError, refetch } = useSkinForecast();
 
   if (isLoading) {
     return (
@@ -48,6 +49,14 @@ export default function ForecastScreen() {
         <Skeleton width="100%" height={120} />
         <View style={{ height: spacing(4) }} />
         <Skeleton width="100%" height={160} />
+      </Screen>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Screen bottomInset={spacing(8)}>
+        <ErrorState title="Couldn't load today's forecast" onRetry={() => void refetch()} />
       </Screen>
     );
   }
@@ -108,6 +117,7 @@ export default function ForecastScreen() {
           }}
           style={styles.backBtn}
           haptic={false}
+          accessibilityLabel="Back"
         >
           <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
         </PressableScale>

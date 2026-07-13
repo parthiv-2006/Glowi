@@ -165,7 +165,7 @@ export default function AddShelfItem() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.headerRow}>
-          <PressableScale onPress={() => router.back()} hitSlop={12}>
+          <PressableScale onPress={() => router.back()} hitSlop={12} accessibilityLabel="Close">
             <Ionicons name="close" size={26} color={palette.text} />
           </PressableScale>
           <AppText variant="overline">Add to shelf</AppText>
@@ -266,6 +266,7 @@ export default function AddShelfItem() {
                       }}
                       style={[styles.chip, active && styles.chipActive]}
                       haptic={false}
+                      accessibilityState={{ selected: active }}
                     >
                       <AppText
                         variant="caption"
@@ -285,6 +286,8 @@ export default function AddShelfItem() {
                 setOpened((v) => !v);
               }}
               haptic={false}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: opened }}
             >
               <GlassCard style={styles.toggleRow}>
                 <View>
@@ -356,6 +359,7 @@ export default function AddShelfItem() {
                       }}
                       style={[styles.amountBtn, active && styles.amountActive]}
                       haptic={false}
+                      accessibilityState={{ selected: active }}
                     >
                       <AppText
                         variant="subheading"

@@ -98,7 +98,7 @@ export default function AddReaction() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.headerRow}>
-          <PressableScale onPress={() => router.back()} hitSlop={12}>
+          <PressableScale onPress={() => router.back()} hitSlop={12} accessibilityLabel="Close">
             <Ionicons name="close" size={26} color={palette.text} />
           </PressableScale>
           <AppText variant="overline">Log a reaction</AppText>
@@ -126,6 +126,7 @@ export default function AddReaction() {
                     onPress={() => pickShelfItem(item)}
                     style={[styles.chip, active && styles.chipActive]}
                     haptic={false}
+                    accessibilityState={{ selected: active }}
                   >
                     <AppText
                       variant="caption"
@@ -179,6 +180,7 @@ export default function AddReaction() {
                   onPress={() => toggleSymptom(s)}
                   style={[styles.chip, active && styles.chipActive]}
                   haptic={false}
+                  accessibilityState={{ selected: active }}
                 >
                   <AppText
                     variant="caption"
@@ -208,6 +210,7 @@ export default function AddReaction() {
                   }}
                   style={[styles.segment, active && styles.segmentActive]}
                   haptic={false}
+                  accessibilityState={{ selected: active }}
                 >
                   <AppText
                     variant="subheading"
@@ -237,6 +240,7 @@ export default function AddReaction() {
                   }}
                   style={[styles.chip, active && styles.chipActive]}
                   haptic={false}
+                  accessibilityState={{ selected: active }}
                 >
                   <AppText
                     variant="caption"

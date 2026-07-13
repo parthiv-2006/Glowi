@@ -4,6 +4,7 @@ import { Blur, Canvas, Circle, Fill, Group } from '@shopify/react-native-skia';
 import {
   Easing,
   useDerivedValue,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -12,20 +13,28 @@ import {
 import { palette } from '@/theme';
 
 /**
- * Slow-drifting jade aurora behind dark screens — the signature ambient
+ * Slow-drifting clay aurora behind dark screens — the signature ambient
  * motion of Glowi. GPU-rendered via Skia; purely decorative.
+ *
+ * Under reduce-motion the drift stops and the blobs hold at their mid-cycle
+ * position, so the screen keeps its warmth without the perpetual movement.
  */
 export function AuroraBackground({ intensity = 1 }: { intensity?: number }) {
   const { width, height } = useWindowDimensions();
-  const t = useSharedValue(0);
+  const reduceMotion = useReducedMotion();
+  const t = useSharedValue(reduceMotion ? 0.5 : 0);
 
   useEffect(() => {
+    if (reduceMotion) {
+      t.value = 0.5;
+      return;
+    }
     t.value = withRepeat(
       withTiming(1, { duration: 14000, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
-  }, [t]);
+  }, [t, reduceMotion]);
 
   const c1x = useDerivedValue(() => width * 0.28 + Math.sin(t.value * Math.PI * 2) * 50);
   const c1y = useDerivedValue(() => height * 0.22 + Math.cos(t.value * Math.PI * 2) * 40);

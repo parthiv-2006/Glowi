@@ -22,7 +22,7 @@ export function glowShadow({
   y = 16,
   blur = 34,
   spread = -12,
-  color = 'rgba(188,94,56,0.55)',
+  color = 'rgba(167,84,50,0.55)',
 }: GlowOptions = {}): ViewStyle {
   return { boxShadow: `0px ${y}px ${blur}px ${spread}px ${color}` } as ViewStyle;
 }
@@ -39,7 +39,9 @@ interface GradientTextProps {
 
 export function GradientText({
   children,
-  colors = [palette.clayBright, palette.clay],
+  // clay → clayDeep, not clayBright → clay: this is text, and clayBright is a
+  // glow token that reads at ~1.7:1 on paper.
+  colors = [palette.clay, palette.clayDeep],
   style,
 }: GradientTextProps) {
   return (

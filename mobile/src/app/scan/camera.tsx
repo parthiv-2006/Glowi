@@ -157,7 +157,7 @@ export default function GuidedCamera() {
       ]}
     >
       <View style={styles.headerRow}>
-        <PressableScale onPress={() => router.back()} hitSlop={12}>
+        <PressableScale onPress={() => router.back()} hitSlop={12} accessibilityLabel="Close">
           <Ionicons name="close" size={26} color={palette.inkDark} />
         </PressableScale>
         <AppText variant="overline" color={palette.inkFaintDark}>
@@ -201,11 +201,18 @@ export default function GuidedCamera() {
             }}
             style={styles.sideBtn}
             hitSlop={12}
+            accessibilityLabel="Switch camera"
           >
             <Ionicons name="camera-reverse-outline" size={26} color={palette.inkSoftDark} />
           </PressableScale>
 
-          <PressableScale onPress={capture} disabled={busy} style={styles.shutter}>
+          <PressableScale
+            onPress={capture}
+            disabled={busy}
+            style={styles.shutter}
+            accessibilityLabel="Take photo"
+            accessibilityState={{ disabled: busy }}
+          >
             <View style={styles.shutterInner} />
           </PressableScale>
 
@@ -259,6 +266,8 @@ function AlignmentOverlay({ width, height }: { width: number; height: number }) 
       entering={FadeIn.duration(motion.slow)}
       style={StyleSheet.absoluteFill}
       pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
     >
       <Svg width={width} height={height}>
         <Defs>

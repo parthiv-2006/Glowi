@@ -57,6 +57,8 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.userBubble}
+          accessible
+          accessibilityLabel={`You: ${message.content}`}
         >
           <AppText variant="body" color={palette.textOnAccent} style={styles.userText}>
             {message.content}
@@ -75,7 +77,11 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
     >
       <View style={styles.assistantInner}>
         <GlowiAvatar state="idle" size={24} />
-        <View style={styles.assistantBubble}>
+        <View
+          style={styles.assistantBubble}
+          accessible
+          accessibilityLabel={`Coach: ${message.content.replace(/\*\*/g, '')}`}
+        >
           {paragraphs.map((p, i) => (
             <RichText key={i} text={p.trim()} />
           ))}

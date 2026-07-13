@@ -19,7 +19,7 @@ worse than no entries.
 | Add an AI capability | `mobile/src/lib/ai/types.ts` (interface) → `live.ts` + `mock.ts` (both, always) → usually a new edge function |
 | Add pure domain logic | New `mobile/src/lib/<name>.ts` + test in `lib/__tests__/` — keep it I/O-free |
 | Touch UI primitives | `mobile/src/components/ui/` — reuse before creating |
-| Change theme/tokens | `mobile/src/theme/index.ts` (design rules: `mobile/DESIGN.md` + design handoff dir) |
+| Change theme/tokens | `mobile/src/theme/index.ts` — **the palette has a WCAG AA contrast contract enforced by `theme/__tests__/contrast.test.ts`**; if a colour change fails it, the colour is the bug. `clayBright`/`blush` are glow/fill tokens and are illegible as text on paper — use `clay`. ⚠ `mobile/DESIGN.md` and the design-handoff dir still describe the retired jade "clinical luxe" system, not Warm Editorial — treat them as historical for colour |
 | Change an edge function | `supabase/functions/<name>/index.ts` (shared helpers in `_shared/`) — redeploy after |
 | Seed/catalog data | `supabase/seed/` (lint before commit: `node supabase/seed/validate.mjs`; authoring guide `docs/CATALOG.md`) |
 
@@ -60,7 +60,7 @@ worse than no entries.
 | `hooks.ts` | React Query hooks over api.ts + AI provider (`useScans`, `useShelfItems`, `useScanComparison`, `useCatalogProducts`, `useGlowReport`, `useGlowReports`, …) |
 | `constants.ts` | UI constants, color helpers (`expiryColor`, `FORECAST_ACTION`, `categoryIcon`) |
 | `env.ts` | Typed `EXPO_PUBLIC_*` access |
-| `notifications.ts` | Identifier-based scheduling (`glowi-routine-am/pm`, `glowi-weekly-scan`, `glowi-glow-report` weekly) — never `cancelAll`; report deep-link marker `/report` resolved in `_layout.tsx`; `registerPushToken` (Expo push, server owns weekly nudges once registered) |
+| `notifications.ts` | Identifier-based scheduling (`glowi-routine-am/pm`, `glowi-weekly-scan`, `glowi-glow-report` weekly) — never `cancelAll`; every reminder carries a `data.url` deep link, resolved in `_layout.tsx` (`/report` is a marker resolved to the current completed week at tap time). `ensureAndroidChannel()` **must** run before `getExpoPushTokenAsync` — Android 13+ refuses a push token without a channel. `registerPushToken` never prompts (boot-safe); the permission ask is contextual (first scan, Profile toggle) and calls `syncPushRegistration` to hand the weekly nudges to server push |
 | `haptics.ts` / `responsive.ts` | Haptic + layout helpers |
 | `health.ts` | HealthKit / Health Connect seam — `getLastNightSleepHours` (lazy native imports, null on any failure; needs a dev build, not Expo Go) |
 | `legal.ts` | `PRIVACY_POLICY` / `TERMS_OF_SERVICE` markdown + `LEGAL_UPDATED` — source of truth for `/legal/*` screens and the `docs/legal/*.md` mirrors (DRAFT pending owner review) |
@@ -75,7 +75,9 @@ worse than no entries.
 
 ## Components
 
-**Primitives (`components/ui/` — always reuse first):** `AppText`, `Badge`, `EmptyState`, `GlassCard` (tier="sunken|raised|glow"), `GlowButton`, `PressableScale`, `ProgressRing`, `Screen`, `SectionHeader`, `Skeleton`, `Stagger`, `TextField`, `effects.tsx` (InnerHighlight, glowShadow, GradientText — never fake these as flat fills).
+**Primitives (`components/ui/` — always reuse first):** `AppText`, `Badge`, `EmptyState`, `ErrorState` (failed fetch — mascot + retry; render precedence is **loading → error → empty → data**, so a network failure never masquerades as "no data"), `GlassCard` (tier="sunken|raised|glow"), `GlowButton`, `PressableScale` (defaults `accessibilityRole="button"`; every touchable builds on it), `ProgressRing`, `Screen`, `SectionHeader`, `Skeleton`, `Stagger`, `TextField`, `effects.tsx` (InnerHighlight, glowShadow, GradientText — never fake these as flat fills).
+
+**Accessibility + motion (D3):** the primitives carry the a11y contract (roles, labels, states) so screens inherit it — icon-only controls still owe an `accessibilityLabel`. Every looping animation honours Reanimated's `useReducedMotion` (Stagger, Skeleton, AuroraBackground, ProgressRing, PressableScale, TabBar, ScanTheater). Severity is **never** signalled by colour alone — `severityColor` is always paired with `severityLabel` text, because the AA-corrected sage/ochre/rose share near-identical luminance and differ only in hue.
 
 **Feature (`components/`):** `AuroraBackground` (+`.web`), `BeforeAfterSlider`, `ConcernTrendSparkline`, `DailyCheckinCard` (Home lifestyle check-in — tap-to-upsert scales/chips, opt-in cycle row), `GlowiAvatar` (the mascot — never draw a one-off), `Markdown`, `ProductCard`, `ScoreTrend`, `ShelfItemCard`, `SkinWeatherCard`, `SplashView`, `TabBar`, `GlowReportShareCard` (4:5 share-safe branded card — static ring, no photos, captured via react-native-view-shot), `chat/` (MessageBubble, TypingDots), `scan/` (ScanTheater +`.web`).
 

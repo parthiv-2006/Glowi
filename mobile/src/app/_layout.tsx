@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
@@ -26,7 +27,7 @@ import { SplashView } from '@/components/SplashView';
 import { queryClient } from '@/lib/query';
 import { supabase } from '@/lib/supabase';
 import { mostRecentCompletedWeekStart } from '@/lib/glowReport';
-import { cancelServerOwnedReminders, registerPushToken } from '@/lib/notifications';
+import { syncPushRegistration } from '@/lib/notifications';
 import { palette } from '@/theme';
 import { useAuth } from '@/stores/auth';
 import { useSettings } from '@/stores/settings';
@@ -37,11 +38,28 @@ void SplashScreen.preventAutoHideAsync();
  * Routes a notification tap to its deep link. `/report` is a parameterless
  * marker resolved to the current completed week at tap time, so the repeating
  * weekly reminder always lands on a fresh report.
+ *
+ * Two entry points, because they cover different states:
+ * - `addNotificationResponseReceivedListener` fires for taps while the app is alive
+ *   (foreground or backgrounded).
+ * - `getLastNotificationResponseAsync` recovers the tap that *launched* a killed app.
+ *   The listener is registered during React mount, which is after that response was
+ *   already delivered — so a cold-start tap used to be dropped on the floor and the
+ *   user just landed on Home wondering what the notification was about.
+ *
+ * Both can surface the same response, so taps are deduped by notification id.
  */
 function useNotificationDeepLinks() {
   const router = useRouter();
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+    const handled = new Set<string>();
+
+    function route(response: Notifications.NotificationResponse | null) {
+      if (!response) return;
+      const id = response.notification.request.identifier;
+      if (handled.has(id)) return;
+      handled.add(id);
+
       const url = response.notification.request.content.data?.url;
       if (typeof url !== 'string') return;
       if (url === '/report') {
@@ -49,7 +67,16 @@ function useNotificationDeepLinks() {
       } else {
         router.push(url as Href);
       }
-    });
+    }
+
+    // Web has no notifications module backing this — calling it there throws an
+    // UnavailabilityError straight into the console on every page load.
+    if (Platform.OS !== 'web') {
+      void Notifications.getLastNotificationResponseAsync()
+        .then(route)
+        .catch(() => {});
+    }
+    const sub = Notifications.addNotificationResponseReceivedListener(route);
     return () => sub.remove();
   }, [router]);
 }
@@ -57,8 +84,13 @@ function useNotificationDeepLinks() {
 /**
  * Registers the device for server push once a session exists. On success the
  * server owns the weekly nudges (scan + Glow Report), so their local twins are
- * cancelled; on failure (web, Expo Go, denied permission) the local reminders
- * stay in charge and nothing changes.
+ * cancelled; on failure (web, Expo Go, permission not yet granted) the local
+ * reminders stay in charge and nothing changes.
+ *
+ * This never prompts — it only picks up a token if permission is already granted.
+ * The ask lives where it earns its keep (after the first scan, or the Profile
+ * reminders toggle), and those call `syncPushRegistration` to complete the handoff
+ * on the spot.
  */
 function usePushRegistration() {
   const session = useAuth((s) => s.session);
@@ -66,10 +98,7 @@ function usePushRegistration() {
   useEffect(() => {
     const userId = session?.user.id;
     if (!userId) return;
-    void registerPushToken(userId).then(async (registered) => {
-      setPushRegistered(registered);
-      if (registered) await cancelServerOwnedReminders();
-    });
+    void syncPushRegistration(userId).then(setPushRegistered);
   }, [session?.user.id, setPushRegistered]);
 }
 

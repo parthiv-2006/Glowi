@@ -8,6 +8,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   AppText,
   EmptyState,
+  ErrorState,
   PressableScale,
   Screen,
   Skeleton,
@@ -36,10 +37,11 @@ function CategoryChip({
       onPress={onPress}
       haptic={false}
       style={[styles.chip, selected && styles.chipSelected]}
+      accessibilityState={{ selected }}
     >
       <AppText
         variant="caption"
-        color={selected ? palette.accentBright : palette.textSecondary}
+        color={selected ? palette.clay : palette.textSecondary}
         style={selected ? styles.chipTextSelected : undefined}
       >
         {label}
@@ -143,7 +145,7 @@ function SkeletonCard() {
 // ---------------------------------------------------------------------------
 export default function LearnScreen() {
   const router = useRouter();
-  const { data: articles, isLoading } = useArticles();
+  const { data: articles, isLoading, isError, refetch } = useArticles();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
@@ -223,6 +225,8 @@ export default function LearnScreen() {
             <SkeletonCard />
             <SkeletonCard />
           </>
+        ) : isError ? (
+          <ErrorState title="Couldn't load articles" onRetry={() => void refetch()} />
         ) : filtered.length === 0 ? (
           <EmptyState
             title="No articles found"

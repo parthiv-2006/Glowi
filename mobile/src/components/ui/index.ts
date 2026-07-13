@@ -1,6 +1,7 @@
 export { AppText } from './AppText';
 export { Badge } from './Badge';
 export { EmptyState } from './EmptyState';
+export { ErrorState } from './ErrorState';
 export { GlassCard } from './GlassCard';
 export { GlowButton } from './GlowButton';
 export { PressableScale } from './PressableScale';

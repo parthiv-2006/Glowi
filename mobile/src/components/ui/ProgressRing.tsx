@@ -4,6 +4,7 @@ import Animated, {
   runOnJS,
   useAnimatedProps,
   useAnimatedReaction,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
@@ -28,11 +29,16 @@ interface ProgressRingProps {
   label?: string;
   sublabel?: string;
   delay?: number;
+  /** What the ring measures, e.g. "Skin score". Falls back to the sublabel. */
+  a11yLabel?: string;
 }
 
 /**
  * Animated arc ring — skin scores, concern severities, streaks.
  * The number counts up while the arc fills so the metric reads as computed.
+ *
+ * Under reduce-motion the ring is drawn at its final value with no fill or
+ * count-up: the metric is the point, the animation is the decoration.
  */
 export function ProgressRing({
   value,
@@ -42,24 +48,32 @@ export function ProgressRing({
   label,
   sublabel,
   delay = 0,
+  a11yLabel,
 }: ProgressRingProps) {
   const clamped = Math.min(100, Math.max(0, value));
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progress = useSharedValue(0);
-  const [display, setDisplay] = useState(0);
+  const reduceMotion = useReducedMotion();
+  const progress = useSharedValue(reduceMotion ? clamped / 100 : 0);
+  const [counted, setCounted] = useState(0);
+  // Under reduce-motion there is no count-up to read from — the value is simply itself.
+  const display = reduceMotion ? clamped : counted;
 
   useEffect(() => {
+    if (reduceMotion) {
+      progress.value = clamped / 100;
+      return;
+    }
     progress.value = withDelay(
       delay + FILL_DELAY,
       withTiming(clamped / 100, { duration: FILL_DURATION, easing: motion.easing }),
     );
-  }, [clamped, delay, progress]);
+  }, [clamped, delay, progress, reduceMotion]);
 
   useAnimatedReaction(
     () => Math.round(progress.value * clamped),
     (current, previous) => {
-      if (current !== previous) runOnJS(setDisplay)(current);
+      if (current !== previous) runOnJS(setCounted)(current);
     },
   );
 
@@ -68,7 +82,15 @@ export function ProgressRing({
   }));
 
   return (
-    <View style={{ width: size, height: size }}>
+    <View
+      style={{ width: size, height: size }}
+      // One node, not a loose number + orphaned overline: the ring announces as
+      // "Skin score, 72%" rather than "72" followed by "SCORE".
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={a11yLabel ?? sublabel}
+      accessibilityValue={{ min: 0, max: 100, now: clamped, text: label }}
+    >
       <Svg width={size} height={size}>
         {/* Track */}
         <Circle

@@ -15,13 +15,19 @@ export function TextField({ label, error, style, ...rest }: TextFieldProps) {
   return (
     <View style={styles.wrap}>
       {label ? (
-        <AppText variant="overline" style={styles.label}>
+        // The visual label is decorative to a screen reader — the input carries the
+        // same string as its accessibilityLabel, so announcing it twice is noise.
+        <AppText variant="overline" style={styles.label} accessibilityElementsHidden>
           {label}
         </AppText>
       ) : null}
       <TextInput
         placeholderTextColor={palette.inkFaint}
         selectionColor={palette.clay}
+        accessibilityLabel={label}
+        // Errors are rendered below the field; without this a screen-reader user
+        // focused on the input never learns why their submission failed.
+        accessibilityHint={error ?? undefined}
         {...rest}
         onFocus={(e) => {
           setFocused(true);
@@ -34,7 +40,7 @@ export function TextField({ label, error, style, ...rest }: TextFieldProps) {
         style={[styles.input, focused && styles.focused, error ? styles.errored : null, style]}
       />
       {error ? (
-        <AppText variant="caption" color={palette.rose}>
+        <AppText variant="caption" color={palette.rose} accessibilityLiveRegion="polite">
           {error}
         </AppText>
       ) : null}

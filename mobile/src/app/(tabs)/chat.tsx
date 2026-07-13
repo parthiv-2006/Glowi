@@ -17,6 +17,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 import {
   AppText,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -36,7 +37,7 @@ export default function ChatTab() {
   const router = useRouter();
   const qc = useQueryClient();
   const userId = useAuth((s) => s.session?.user.id);
-  const { data: sessions, isLoading } = useSessions();
+  const { data: sessions, isLoading, isError, refetch } = useSessions();
   const [creating, setCreating] = useState(false);
 
   const STARTERS = ['"Why is my nose congested?"', '"Build me an evening routine."'];
@@ -119,6 +120,8 @@ export default function ChatTab() {
           <Skeleton width="100%" height={72} radius={radii.lg} />
           <Skeleton width="100%" height={72} radius={radii.lg} />
         </View>
+      ) : isError ? (
+        <ErrorState title="Couldn't load your conversations" onRetry={() => void refetch()} />
       ) : sessions?.length ? (
         <Stagger delay={60}>
           {sessions.map((s) => (
@@ -137,7 +140,13 @@ export default function ChatTab() {
                     {formatDistanceToNow(new Date(s.last_message_at), { addSuffix: true })}
                   </AppText>
                 </View>
-                <PressableScale onPress={() => remove(s.id)} hitSlop={10} haptic={false}>
+                <PressableScale
+                  onPress={() => remove(s.id)}
+                  hitSlop={10}
+                  haptic={false}
+                  accessibilityLabel={`Delete ${s.title}`}
+                  accessibilityHint="Permanently deletes this conversation"
+                >
                   <Ionicons name="trash-outline" size={18} color={palette.textTertiary} />
                 </PressableScale>
               </GlassCard>

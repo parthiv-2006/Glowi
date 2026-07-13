@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, View, type ViewStyle } from 'react-nativ
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -38,6 +39,7 @@ export function GlowButton({
   icon,
 }: GlowButtonProps) {
   const inactive = disabled || loading;
+  const reduceMotion = useReducedMotion();
 
   const content = (
     <View style={styles.content}>
@@ -69,22 +71,25 @@ export function GlowButton({
       style={[
         styles.base,
         variant === 'primary' &&
-          glowShadow({ y: 16, blur: 34, spread: -12, color: 'rgba(188,94,56,0.55)' }),
+          glowShadow({ y: 16, blur: 34, spread: -12, color: 'rgba(167,84,50,0.55)' }),
         inactive && styles.disabled,
         style,
       ]}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: !!inactive, busy: !!loading }}
     >
       {variant === 'primary' ? (
+        // clay → clayDeep. The old clayBright → clay ramp put the white label on a
+        // light peach at ~2:1 — the primary CTA was the app's worst contrast failure.
         <LinearGradient
-          colors={[palette.clayBright, palette.clay]}
+          colors={[palette.clay, palette.clayDeep]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fill}
         >
           {content}
-          {sheen && !inactive ? <Sheen /> : null}
+          {sheen && !inactive && !reduceMotion ? <Sheen /> : null}
         </LinearGradient>
       ) : (
         <View style={[styles.fill, styles.ghostFill, variant === 'danger' && styles.dangerFill]}>

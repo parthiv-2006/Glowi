@@ -11,6 +11,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   AppText,
   EmptyState,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -39,7 +40,7 @@ function attentionRank(item: ShelfItem): number {
 
 export default function ShelfScreen() {
   const router = useRouter();
-  const { data: items, isLoading } = useShelfItems();
+  const { data: items, isLoading, isError, refetch } = useShelfItems();
   const { data: reactions = [] } = useReactionLogs();
 
   const sorted = useMemo(
@@ -70,6 +71,7 @@ export default function ShelfScreen() {
             }}
             style={styles.backBtn}
             haptic={false}
+            accessibilityLabel="Back"
           >
             <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
           </PressableScale>
@@ -83,6 +85,7 @@ export default function ShelfScreen() {
             }}
             style={styles.addBtn}
             haptic={false}
+            accessibilityLabel="Add product to shelf"
           >
             <Ionicons name="add" size={20} color={palette.textOnAccent} />
           </PressableScale>
@@ -95,6 +98,8 @@ export default function ShelfScreen() {
           <Skeleton width="100%" height={96} />
           <Skeleton width="100%" height={96} />
         </View>
+      ) : isError ? (
+        <ErrorState title="Couldn't load your shelf" onRetry={() => void refetch()} />
       ) : !items?.length ? (
         <EmptyState
           title="Your shelf is empty"

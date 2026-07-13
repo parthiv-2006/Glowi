@@ -18,6 +18,7 @@ import { TypingDots } from '@/components/chat/TypingDots';
 import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { AppText, PressableScale } from '@/components/ui';
 import { getAIProvider } from '@/lib/ai';
+import { AIHttpError } from '@/lib/ai/live';
 import { qk } from '@/lib/query';
 import { useMessages, useScans } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
@@ -46,6 +47,7 @@ export default function Conversation() {
   const knowsLastScan = scans?.some((s) => s.status === 'complete') ?? false;
   const [draft, setDraft] = useState(draftParam ?? '');
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const turnCount = useRef(0);
 
   // Consolidate memories + session summary when leaving the conversation.
@@ -69,6 +71,7 @@ export default function Conversation() {
     if (!content || sending) return;
     setDraft('');
     setSending(true);
+    setSendError(null);
     haptics.tap();
 
     // Optimistic echo of the user's message.
@@ -85,12 +88,28 @@ export default function Conversation() {
     try {
       await getAIProvider().chat({ sessionId, message: content });
       turnCount.current += 1;
-    } catch {
-      haptics.error();
-    } finally {
-      setSending(false);
       qc.invalidateQueries({ queryKey: qk.messages(sessionId) });
       qc.invalidateQueries({ queryKey: qk.sessions });
+    } catch (e) {
+      haptics.error();
+      // A failed turn persisted nothing server-side, so the invalidate that used to
+      // run here erased the optimistic echo — and since the draft had already been
+      // cleared, the user's message simply vanished with no error anywhere. Give the
+      // words back and say what happened.
+      //
+      // If the turn did land server-side and only the response was lost, the next
+      // refetch surfaces it and the restored draft is a visible duplicate the user
+      // can delete. That's the right way round: showing the text twice is recoverable,
+      // silently eating it is not.
+      qc.setQueryData<ChatMessage[]>(qk.messages(sessionId), (old = []) =>
+        old.filter((m) => m.id !== optimistic.id),
+      );
+      setDraft(content);
+      setSendError(
+        e instanceof AIHttpError ? e.message : "Couldn't send that — check your connection.",
+      );
+    } finally {
+      setSending(false);
     }
   }
 
@@ -103,7 +122,7 @@ export default function Conversation() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <View style={[styles.header, { paddingTop: insets.top + spacing(2) }]}>
-        <PressableScale onPress={() => router.back()} hitSlop={12}>
+        <PressableScale onPress={() => router.back()} hitSlop={12} accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={palette.text} />
         </PressableScale>
         <View style={styles.headerTitle}>
@@ -155,6 +174,7 @@ export default function Conversation() {
           renderItem={({ item }) => <MessageBubble message={item} />}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          accessibilityLiveRegion="polite"
           ListFooterComponent={
             sending ? (
               <View style={styles.typingRow}>
@@ -168,6 +188,16 @@ export default function Conversation() {
       )}
 
       <View style={[styles.inputBar, { paddingBottom: insets.bottom || spacing(3) }]}>
+        {sendError ? (
+          <AppText
+            variant="caption"
+            color={palette.rose}
+            style={styles.sendError}
+            accessibilityLiveRegion="polite"
+          >
+            {sendError}
+          </AppText>
+        ) : null}
         <View style={styles.inputWrap}>
           <TextInput
             value={draft}
@@ -185,6 +215,8 @@ export default function Conversation() {
             disabled={!draft.trim() || sending}
             style={[styles.sendBtn, (!draft.trim() || sending) && styles.sendDisabled]}
             haptic={false}
+            accessibilityLabel="Send message"
+            accessibilityState={{ disabled: !draft.trim() || sending }}
           >
             <Ionicons name="arrow-forward" size={20} color={palette.textOnAccent} />
           </PressableScale>
@@ -239,6 +271,7 @@ const styles = StyleSheet.create({
     borderTopColor: palette.border,
     backgroundColor: palette.bg,
   },
+  sendError: { marginBottom: spacing(2) },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'flex-end',

@@ -8,6 +8,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   PressableScale,
   Screen,
@@ -34,7 +35,7 @@ const ORDER: MemoryType[] = ['gotcha', 'profile_fact', 'goal', 'preference', 'ev
 
 export default function MemoryScreen() {
   const router = useRouter();
-  const { data: memories, isLoading } = useMemories();
+  const { data: memories, isLoading, isError, refetch } = useMemories();
   const del = useDeleteMemory();
 
   const grouped = useMemo(() => {
@@ -55,7 +56,7 @@ export default function MemoryScreen() {
   return (
     <Screen bottomInset={spacing(8)}>
       <View style={styles.headerRow}>
-        <PressableScale onPress={() => router.back()} hitSlop={12}>
+        <PressableScale onPress={() => router.back()} hitSlop={12} accessibilityLabel="Close">
           <Ionicons name="chevron-down" size={26} color={palette.text} />
         </PressableScale>
         <AppText variant="overline">Glowi&apos;s memory</AppText>
@@ -76,6 +77,8 @@ export default function MemoryScreen() {
           <Skeleton width="100%" height={64} radius={radii.lg} />
           <Skeleton width="100%" height={64} radius={radii.lg} />
         </View>
+      ) : isError ? (
+        <ErrorState title="Couldn't load Glowi's memory" onRetry={() => void refetch()} />
       ) : grouped.length === 0 ? (
         <EmptyState
           title="Nothing remembered yet"
@@ -106,7 +109,12 @@ export default function MemoryScreen() {
                     </AppText>
                     <View style={styles.memoryFooter}>
                       <Badge label={m.source} color={palette.textTertiary} />
-                      <PressableScale onPress={() => remove(m.id)} hitSlop={10} haptic={false}>
+                      <PressableScale
+                        onPress={() => remove(m.id)}
+                        hitSlop={10}
+                        haptic={false}
+                        accessibilityLabel={`Delete memory: ${m.content}`}
+                      >
                         <Ionicons name="close-circle" size={20} color={palette.textTertiary} />
                       </PressableScale>
                     </View>

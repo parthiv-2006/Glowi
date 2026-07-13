@@ -13,6 +13,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -37,7 +38,7 @@ const AMOUNTS = [0, 25, 50, 75, 100];
 export default function ShelfItemDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: items, isLoading } = useShelfItems();
+  const { data: items, isLoading, isError, refetch } = useShelfItems();
   const item = items?.find((i) => i.id === id);
 
   const update = useUpdateShelfItem();
@@ -69,6 +70,14 @@ export default function ShelfItemDetail() {
     );
   }
 
+  if (isError) {
+    return (
+      <Screen bottomInset={spacing(8)}>
+        <ErrorState title="Couldn't load this item" onRetry={() => void refetch()} />
+      </Screen>
+    );
+  }
+
   if (!item) {
     return (
       <Screen bottomInset={spacing(8)}>
@@ -96,6 +105,7 @@ export default function ShelfItemDetail() {
           }}
           style={styles.backBtn}
           haptic={false}
+          accessibilityLabel="Back"
         >
           <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
         </PressableScale>
@@ -178,6 +188,7 @@ export default function ShelfItemDetail() {
               }}
               style={[styles.amountBtn, active && styles.amountActive]}
               haptic={false}
+              accessibilityState={{ selected: active }}
             >
               <AppText
                 variant="subheading"
