@@ -146,15 +146,24 @@ was a setting that did nothing either way. `lib/query.ts` now feeds `focusManage
 so stale data refreshes when the user returns to the app: the ordinary way a phone recovers from a
 spell of no signal. Bounded by the existing 60s `staleTime`.
 
-**⚠ Owner decision — connectivity awareness (`onlineManager`).** React Query still believes the
-device is *always online*. Queries therefore fail rather than pausing, mutations are never queued,
-and there is no automatic refetch the instant connectivity returns. Wiring `onlineManager` properly
-requires a connectivity source — `@react-native-community/netinfo` or `expo-network` — both of
-which are **native modules and therefore force a new EAS build**. Not taken unilaterally so late in
-the polish cycle. The error states above mean the app now degrades honestly without it; this would
-make it degrade *gracefully*. Recommend taking it with the next EAS build.
+**Connectivity awareness (`onlineManager`) — resolved 2026-07-13 (owner: take it with `expo-network`).**
+`onlineManager` is now fed from `expo-network` (`lib/query.ts`), so React Query knows when the
+device drops off the network and, more importantly, when it comes back: `refetchOnReconnect`
+heals a stale screen the instant signal returns, instead of waiting for the user to find the
+retry button.
 
-- [ ] Decide on `onlineManager` + a connectivity dep (needs a new EAS build).
+We deliberately **decline React Query's query-pausing** (`networkMode: 'always'` rather than the
+default `'online'`). Pausing sounds like the offline-friendly choice and is a trap here: a paused
+query reports neither `isLoading` nor `isError`, so every route's `loading → error → empty → data`
+chain would fall through to the *empty* state and tell an offline user with a full shelf that
+their shelf is empty — exactly the lie D2 removed. Pausing only pays off with an offline-aware UI
+on ~15 routes plus a persisted mutation queue (an unpersisted paused mutation dies with the
+process anyway); neither exists. Letting fetches fire and fail lands the user on the designed
+`ErrorState` ("check your connection, try again"), which is the honest thing to show. Revisit if
+we ever add mutation persistence.
+
+⚠ `expo-network` is a **native module**: the next EAS build is mandatory before this reaches a
+device. It ships alongside Sentry (E1), which needs a new build for the same reason.
 
 ## Launch checklist (gates G1 — do not tag v1.0.0 until all checked)
 
