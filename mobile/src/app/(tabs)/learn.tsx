@@ -36,10 +36,11 @@ function CategoryChip({
       onPress={onPress}
       haptic={false}
       style={[styles.chip, selected && styles.chipSelected]}
+      accessibilityState={{ selected }}
     >
       <AppText
         variant="caption"
-        color={selected ? palette.accentBright : palette.textSecondary}
+        color={selected ? palette.clay : palette.textSecondary}
         style={selected ? styles.chipTextSelected : undefined}
       >
         {label}

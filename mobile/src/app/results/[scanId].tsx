@@ -112,6 +112,7 @@ export default function ResultsScreen() {
           }}
           style={styles.backBtn}
           haptic={false}
+          accessibilityLabel="Back"
         >
           <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
         </PressableScale>
@@ -134,6 +135,7 @@ export default function ResultsScreen() {
                   setMedicalNoticeSeen();
                 }}
                 hitSlop={10}
+                accessibilityLabel="Dismiss"
               >
                 <Ionicons name="close" size={18} color={palette.textSecondary} />
               </PressableScale>

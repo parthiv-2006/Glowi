@@ -26,10 +26,15 @@ function Dot({ delay }: { delay: number }) {
   return <Animated.View style={[styles.dot, style]} />;
 }
 
-/** Three-dot "Glowi is thinking" indicator. */
+/**
+ * Three-dot "Glowi is thinking" indicator. The animated dots carry no
+ * information of their own, so the whole row collapses into one accessible
+ * element with a plain-language label instead of being silenced — a screen
+ * reader user still needs to know a reply is on its way.
+ */
 export function TypingDots() {
   return (
-    <View style={styles.row}>
+    <View style={styles.row} accessible accessibilityLabel="Coach is typing">
       <Dot delay={0} />
       <Dot delay={140} />
       <Dot delay={280} />

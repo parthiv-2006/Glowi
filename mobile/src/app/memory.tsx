@@ -55,7 +55,7 @@ export default function MemoryScreen() {
   return (
     <Screen bottomInset={spacing(8)}>
       <View style={styles.headerRow}>
-        <PressableScale onPress={() => router.back()} hitSlop={12}>
+        <PressableScale onPress={() => router.back()} hitSlop={12} accessibilityLabel="Close">
           <Ionicons name="chevron-down" size={26} color={palette.text} />
         </PressableScale>
         <AppText variant="overline">Glowi&apos;s memory</AppText>
@@ -106,7 +106,12 @@ export default function MemoryScreen() {
                     </AppText>
                     <View style={styles.memoryFooter}>
                       <Badge label={m.source} color={palette.textTertiary} />
-                      <PressableScale onPress={() => remove(m.id)} hitSlop={10} haptic={false}>
+                      <PressableScale
+                        onPress={() => remove(m.id)}
+                        hitSlop={10}
+                        haptic={false}
+                        accessibilityLabel={`Delete memory: ${m.content}`}
+                      >
                         <Ionicons name="close-circle" size={20} color={palette.textTertiary} />
                       </PressableScale>
                     </View>

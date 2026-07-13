@@ -121,6 +121,7 @@ export default function ReplenishScreen() {
           }}
           style={styles.backBtn}
           haptic={false}
+          accessibilityLabel="Back"
         >
           <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
         </PressableScale>

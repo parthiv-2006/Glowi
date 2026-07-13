@@ -19,7 +19,7 @@ import { DailyCheckinCard } from '@/components/DailyCheckinCard';
 import { useScans, useSkinForecast } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/stores/auth';
-import { fonts, palette, radii, scoreColor, severityColor, spacing } from '@/theme';
+import { fonts, palette, radii, scoreColor, severityColor, severityLabel, spacing } from '@/theme';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -58,6 +58,7 @@ export default function Home() {
               }}
               style={styles.headerScan}
               haptic={false}
+              accessibilityLabel="Start a scan"
             >
               <Ionicons name="scan-outline" size={22} color={palette.clay} />
             </PressableScale>
@@ -70,6 +71,7 @@ export default function Home() {
               }}
               style={styles.avatar}
               haptic={false}
+              accessibilityLabel="Open profile"
             >
               <AppText variant="heading" color="#FFFFFF" style={styles.avatarText}>
                 {initial}
@@ -126,7 +128,12 @@ export default function Home() {
                     </AppText>
                     <View style={styles.concernChips}>
                       {latest.concerns.slice(0, 2).map((c) => (
-                        <View key={c.concern_slug} style={styles.chip}>
+                        <View
+                          key={c.concern_slug}
+                          style={styles.chip}
+                          accessible
+                          accessibilityLabel={`${c.display_name}, ${severityLabel(c.severity)} severity`}
+                        >
                           <View
                             style={[styles.chipDot, { backgroundColor: severityColor(c.severity) }]}
                           />

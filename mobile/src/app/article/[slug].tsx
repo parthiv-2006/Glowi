@@ -102,6 +102,7 @@ export default function ArticleScreen() {
           }}
           style={styles.backPressable}
           haptic={false}
+          accessibilityLabel="Back"
         >
           <View style={styles.backPill}>
             <Ionicons name="chevron-back" size={20} color={palette.text} />

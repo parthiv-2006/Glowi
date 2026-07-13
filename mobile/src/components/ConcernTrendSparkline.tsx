@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppText } from '@/components/ui';
-import { palette, severityColor, spacing } from '@/theme';
+import { palette, severityColor, severityLabel, spacing } from '@/theme';
 
 interface SparklineEntry {
   date: string;
@@ -33,8 +33,15 @@ export function ConcernTrendSparkline({ name, values }: ConcernTrendSparklinePro
   const iconColor =
     dir === 'down' ? palette.success : dir === 'up' ? palette.danger : palette.textSecondary;
 
+  const latest = values[values.length - 1];
+  const trendWord = dir === 'flat' ? 'steady' : dir === 'down' ? 'improving' : 'worsening';
+
   return (
-    <View style={styles.row}>
+    <View
+      style={styles.row}
+      accessible
+      accessibilityLabel={`${name}: ${severityLabel(latest.severity)} severity, ${trendWord}`}
+    >
       <AppText variant="caption" style={styles.name} numberOfLines={1}>
         {name}
       </AppText>

@@ -103,7 +103,7 @@ export default function Conversation() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <View style={[styles.header, { paddingTop: insets.top + spacing(2) }]}>
-        <PressableScale onPress={() => router.back()} hitSlop={12}>
+        <PressableScale onPress={() => router.back()} hitSlop={12} accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={palette.text} />
         </PressableScale>
         <View style={styles.headerTitle}>
@@ -155,6 +155,7 @@ export default function Conversation() {
           renderItem={({ item }) => <MessageBubble message={item} />}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          accessibilityLiveRegion="polite"
           ListFooterComponent={
             sending ? (
               <View style={styles.typingRow}>
@@ -185,6 +186,8 @@ export default function Conversation() {
             disabled={!draft.trim() || sending}
             style={[styles.sendBtn, (!draft.trim() || sending) && styles.sendDisabled]}
             haptic={false}
+            accessibilityLabel="Send message"
+            accessibilityState={{ disabled: !draft.trim() || sending }}
           >
             <Ionicons name="arrow-forward" size={20} color={palette.textOnAccent} />
           </PressableScale>

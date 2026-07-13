@@ -137,7 +137,13 @@ export default function ChatTab() {
                     {formatDistanceToNow(new Date(s.last_message_at), { addSuffix: true })}
                   </AppText>
                 </View>
-                <PressableScale onPress={() => remove(s.id)} hitSlop={10} haptic={false}>
+                <PressableScale
+                  onPress={() => remove(s.id)}
+                  hitSlop={10}
+                  haptic={false}
+                  accessibilityLabel={`Delete ${s.title}`}
+                  accessibilityHint="Permanently deletes this conversation"
+                >
                   <Ionicons name="trash-outline" size={18} color={palette.textTertiary} />
                 </PressableScale>
               </GlassCard>

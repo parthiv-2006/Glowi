@@ -70,6 +70,7 @@ export default function ShelfScreen() {
             }}
             style={styles.backBtn}
             haptic={false}
+            accessibilityLabel="Back"
           >
             <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
           </PressableScale>
@@ -83,6 +84,7 @@ export default function ShelfScreen() {
             }}
             style={styles.addBtn}
             haptic={false}
+            accessibilityLabel="Add product to shelf"
           >
             <Ionicons name="add" size={20} color={palette.textOnAccent} />
           </PressableScale>

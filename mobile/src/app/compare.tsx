@@ -43,13 +43,15 @@ function SlotFrame({
 }) {
   return (
     <View style={styles.slotCol}>
-      <AppText variant="overline" color={winner ? palette.accentBright : palette.textSecondary}>
+      <AppText variant="overline" color={winner ? palette.clay : palette.textSecondary}>
         {label}
       </AppText>
       <PressableScale
         onPress={onPick}
         style={[styles.slot, winner && styles.slotWinner]}
         haptic={false}
+        accessibilityLabel={`${label} photo`}
+        accessibilityHint={uri ? 'Retake photo' : 'Add a photo'}
       >
         {uri ? (
           <Image source={{ uri }} style={styles.slotImage} resizeMode="cover" />
@@ -136,7 +138,7 @@ export default function CompareScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <PressableScale onPress={() => router.back()} hitSlop={12}>
+          <PressableScale onPress={() => router.back()} hitSlop={12} accessibilityLabel="Close">
             <Ionicons name="close" size={26} color={palette.text} />
           </PressableScale>
           <AppText variant="overline">In-store compare</AppText>

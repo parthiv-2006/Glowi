@@ -272,6 +272,7 @@ function BackRow({ onBack }: { onBack: () => void }) {
         }}
         style={styles.backBtn}
         haptic={false}
+        accessibilityLabel="Back"
       >
         <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
       </PressableScale>

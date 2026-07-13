@@ -48,7 +48,11 @@ function ReactionCard({ log, onDelete }: { log: ReactionLog; onDelete: () => voi
             {log.product_name}
           </AppText>
         </View>
-        <PressableScale onPress={onDelete} style={styles.deleteBtn}>
+        <PressableScale
+          onPress={onDelete}
+          style={styles.deleteBtn}
+          accessibilityLabel={`Delete reaction log for ${log.product_name}`}
+        >
           <Ionicons name="trash-outline" size={18} color={palette.textTertiary} />
         </PressableScale>
       </View>
@@ -103,6 +107,7 @@ export default function ReactionLogScreen() {
             }}
             style={styles.backBtn}
             haptic={false}
+            accessibilityLabel="Back"
           >
             <Ionicons name="chevron-back" size={22} color={palette.accentBright} />
           </PressableScale>
@@ -116,6 +121,7 @@ export default function ReactionLogScreen() {
             }}
             style={styles.addBtn}
             haptic={false}
+            accessibilityLabel="Log a reaction"
           >
             <Ionicons name="add" size={20} color={palette.textOnAccent} />
           </PressableScale>
