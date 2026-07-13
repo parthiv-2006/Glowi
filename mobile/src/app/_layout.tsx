@@ -22,15 +22,22 @@ import {
   HankenGrotesk_700Bold,
 } from '@expo-google-fonts/hanken-grotesk';
 import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/space-mono';
+import * as Sentry from '@sentry/react-native';
 
+import { CrashFallback } from '@/components/CrashFallback';
 import { SplashView } from '@/components/SplashView';
 import { queryClient } from '@/lib/query';
+import { initSentry, setSentryUser } from '@/lib/sentry';
 import { supabase } from '@/lib/supabase';
 import { mostRecentCompletedWeekStart } from '@/lib/glowReport';
 import { syncPushRegistration } from '@/lib/notifications';
 import { palette } from '@/theme';
 import { useAuth } from '@/stores/auth';
 import { useSettings } from '@/stores/settings';
+
+// Before anything else can throw: a crash reporter that starts late misses exactly
+// the crashes worth having. No-ops when no DSN is configured.
+initSentry();
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -161,11 +168,24 @@ function useAuthGate() {
   }, [initializing, session, profile, segments, router]);
 }
 
+/**
+ * Attaches the signed-in user to crash reports — as an opaque id, never an email.
+ * Without it every crash is anonymous and a user who writes in ("the app died when
+ * I opened my shelf") cannot be matched to their trace.
+ */
+function useSentryIdentity() {
+  const userId = useAuth((s) => s.session?.user.id) ?? null;
+  useEffect(() => {
+    setSentryUser(userId);
+  }, [userId]);
+}
+
 function RootNavigator() {
   useAuthGate();
   useNotificationDeepLinks();
   usePasswordRecoveryLink();
   usePushRegistration();
+  useSentryIdentity();
   return (
     <Stack
       screenOptions={{
@@ -201,7 +221,7 @@ function RootNavigator() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const init = useAuth((s) => s.init);
   const initializing = useAuth((s) => s.initializing);
   const [fontsLoaded] = useFonts({
@@ -231,12 +251,23 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* Inside SafeAreaProvider so the fallback screen can lay itself out; outside
+          the navigator so a render error anywhere in the app still lands here
+          instead of on React Native's blank white screen. */}
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <StatusBar style="dark" />
-          <RootNavigator />
-        </QueryClientProvider>
+        <Sentry.ErrorBoundary
+          fallback={({ resetError }) => <CrashFallback onRestart={resetError} />}
+        >
+          <QueryClientProvider client={queryClient}>
+            <StatusBar style="dark" />
+            <RootNavigator />
+          </QueryClientProvider>
+        </Sentry.ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
+
+// Sentry.wrap adds the native crash handlers and touch breadcrumbs that a plain
+// JS-side init cannot reach.
+export default Sentry.wrap(RootLayout);

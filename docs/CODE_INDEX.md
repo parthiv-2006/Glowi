@@ -65,6 +65,7 @@ worse than no entries.
 | `health.ts` | HealthKit / Health Connect seam — `getLastNightSleepHours` (lazy native imports, null on any failure; needs a dev build, not Expo Go) |
 | `legal.ts` | `PRIVACY_POLICY` / `TERMS_OF_SERVICE` markdown + `LEGAL_UPDATED` — source of truth for `/legal/*` screens and the `docs/legal/*.md` mirrors (DRAFT pending owner review) |
 | `dataExport.ts` | GDPR export — pure `assembleExport` (unit-tested; strips embeddings) + `fetchExportTables` over api.ts; shared as JSON from Profile → Export my data |
+| `sentry.ts` | Crash reporting — `initSentry` (called at the top of `_layout.tsx`) + `setSentryUser` (opaque id, **never email**). Inert without `EXPO_PUBLIC_SENTRY_DSN`. ⚠ Screenshots/view-hierarchy/PII/console+XHR breadcrumbs are all **off on purpose** — a crash on the results screen would otherwise ship the user's face to a third party. Don't relax without re-reading the privacy policy |
 
 **Pure domain logic (unit-tested in `lib/__tests__/`):**
 `streak.ts` (check-in streaks) · `shelf.ts` (PAO expiry, stock) · `reactions.ts` (ingredient risk cross-referencing) · `routineSequence.ts` (wait times, order warnings) · `routineGenerator.ts` (scan → routine steps) · `budget.ts` (cost-per-use, quarter spend) · `replenishment.ts` (`replenishmentTriggers` — expiring/expired/low/out; `suggestReplacements` — ranked same-category catalog replacements, scored on scan-concern match + skin type + price, reaction-hard-excluded) · `correlation.ts` (scan-to-trend correlation insights, incl. lifestyle sustained-streak events and opt-in cycle-phase run events; ⚠ lockstep mirror of `supabase/functions/_shared/correlation.ts`) · `ingredientConcerns.ts` (ingredient → concern targeting map for the correlation "why" line; ⚠ lockstep mirror of `supabase/functions/_shared/ingredientConcerns.ts`) · `captureQuality.ts` (`assessCapture` — pure rec-709 luma exposure verdict for guided-scan photos; Skia decode lives in `scan/camera.tsx`) · `glowReport.ts` (`mostRecentCompletedWeekStart`/`weekEndOf` — pure Monday-anchored week math for the Weekly Glow Report) · `milestones.ts` (check-in streak milestones — `achievedMilestone`/`nextMilestone`/`milestoneCrossedInWeek`; ⚠ lockstep mirror of `supabase/functions/_shared/milestones.ts`) · `dermReport.ts` (`buildDermReportHtml` — print-ready, HTML-escaped derm-visit summary for expo-print) · `sleepMapping.ts` (device sleep hours → 0–2 sleep_quality; implausible readings → null)
@@ -79,7 +80,7 @@ worse than no entries.
 
 **Accessibility + motion (D3):** the primitives carry the a11y contract (roles, labels, states) so screens inherit it — icon-only controls still owe an `accessibilityLabel`. Every looping animation honours Reanimated's `useReducedMotion` (Stagger, Skeleton, AuroraBackground, ProgressRing, PressableScale, TabBar, ScanTheater). Severity is **never** signalled by colour alone — `severityColor` is always paired with `severityLabel` text, because the AA-corrected sage/ochre/rose share near-identical luminance and differ only in hue.
 
-**Feature (`components/`):** `AuroraBackground` (+`.web`), `BeforeAfterSlider`, `ConcernTrendSparkline`, `DailyCheckinCard` (Home lifestyle check-in — tap-to-upsert scales/chips, opt-in cycle row), `GlowiAvatar` (the mascot — never draw a one-off), `Markdown`, `ProductCard`, `ScoreTrend`, `ShelfItemCard`, `SkinWeatherCard`, `SplashView`, `TabBar`, `GlowReportShareCard` (4:5 share-safe branded card — static ring, no photos, captured via react-native-view-shot), `chat/` (MessageBubble, TypingDots), `scan/` (ScanTheater +`.web`).
+**Feature (`components/`):** `CrashFallback` (what a render crash shows — Glowi + Restart, rendered by the `Sentry.ErrorBoundary` in `_layout.tsx`; works with or without a DSN), `AuroraBackground` (+`.web`), `BeforeAfterSlider`, `ConcernTrendSparkline`, `DailyCheckinCard` (Home lifestyle check-in — tap-to-upsert scales/chips, opt-in cycle row), `GlowiAvatar` (the mascot — never draw a one-off), `Markdown`, `ProductCard`, `ScoreTrend`, `ShelfItemCard`, `SkinWeatherCard`, `SplashView`, `TabBar`, `GlowReportShareCard` (4:5 share-safe branded card — static ring, no photos, captured via react-native-view-shot), `chat/` (MessageBubble, TypingDots), `scan/` (ScanTheater +`.web`).
 
 ## Backend (`supabase/`)
 
@@ -116,6 +117,11 @@ Every user table has RLS (`crud_own` convention); the scan-images bucket is priv
 `GlowiAvatar`, the source of truth for the app icon) · `scripts/generate-assets.mjs`
 (`npm run assets` — renders every icon/splash/favicon PNG from the brand marks via
 `sharp`; idempotent) · `eas.json` (EAS build profiles: `development` dev-client,
-`preview` internal APK, `production` app-bundle).
+`preview` internal APK, `production` app-bundle) · `metro.config.js` (Sentry's Metro
+wrapper — it exists solely to emit source maps; delete it and production stack traces
+stop being readable).
+
+⚠ `expo-network` and `@sentry/react-native` are **native modules**: both need a fresh EAS
+build to reach a device.
 
 **Quality gate (run from `mobile/`):** `npm run typecheck && npm run lint && npm test`, `npm run format` before committing.
