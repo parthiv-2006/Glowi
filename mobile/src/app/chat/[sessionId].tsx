@@ -19,6 +19,7 @@ import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { AppText, PressableScale } from '@/components/ui';
 import { getAIProvider } from '@/lib/ai';
 import { AIHttpError } from '@/lib/ai/live';
+import { track } from '@/lib/analytics';
 import { qk } from '@/lib/query';
 import { useMessages, useScans } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
@@ -87,6 +88,7 @@ export default function Conversation() {
 
     try {
       await getAIProvider().chat({ sessionId, message: content });
+      track('chat_message_sent');
       turnCount.current += 1;
       qc.invalidateQueries({ queryKey: qk.messages(sessionId) });
       qc.invalidateQueries({ queryKey: qk.sessions });

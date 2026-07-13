@@ -65,6 +65,7 @@ worse than no entries.
 | `health.ts` | HealthKit / Health Connect seam — `getLastNightSleepHours` (lazy native imports, null on any failure; needs a dev build, not Expo Go) |
 | `legal.ts` | `PRIVACY_POLICY` / `TERMS_OF_SERVICE` markdown + `LEGAL_UPDATED` — source of truth for `/legal/*` screens and the `docs/legal/*.md` mirrors (DRAFT pending owner review) |
 | `dataExport.ts` | GDPR export — pure `assembleExport` (unit-tested; strips embeddings) + `fetchExportTables` over api.ts; shared as JSON from Profile → Export my data |
+| `analytics.ts` | Product-analytics **seam, with no provider installed** (owner decision, E2) — `track(event)` / `identifyUser(id)` / `setAnalyticsSink(sink)`. Events are bare strings from a closed union, so **no payload can exist**: no scan score, chat text or health value can reach a vendor even by a later edit. Counts only. Opt-out (`settings.analyticsEnabled`) is enforced at the single choke point in `track`, so a new event is private by default. Dropping in PostHog = implement one `AnalyticsSink` |
 | `sentry.ts` | Crash reporting — `initSentry` (called at the top of `_layout.tsx`) + `setSentryUser` (opaque id, **never email**). Inert without `EXPO_PUBLIC_SENTRY_DSN`. ⚠ Screenshots/view-hierarchy/PII/console+XHR breadcrumbs are all **off on purpose** — a crash on the results screen would otherwise ship the user's face to a third party. Don't relax without re-reading the privacy policy |
 
 **Pure domain logic (unit-tested in `lib/__tests__/`):**

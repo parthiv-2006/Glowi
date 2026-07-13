@@ -30,6 +30,13 @@ interface SettingsState {
   /** True once the one-time "not medical advice" notice on first scan results was dismissed. */
   medicalNoticeSeen: boolean;
   setMedicalNoticeSeen: () => void;
+  /**
+   * Opt-*out* (default on): anonymous usage counts. Honoured at the single choke
+   * point in `lib/analytics.ts`, so turning this off silences every event —
+   * including any added later.
+   */
+  analyticsEnabled: boolean;
+  setAnalyticsEnabled: (enabled: boolean) => void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -49,6 +56,8 @@ export const useSettings = create<SettingsState>()(
       setHealthAutoFillEnabled: (healthAutoFillEnabled) => set({ healthAutoFillEnabled }),
       medicalNoticeSeen: false,
       setMedicalNoticeSeen: () => set({ medicalNoticeSeen: true }),
+      analyticsEnabled: true,
+      setAnalyticsEnabled: (analyticsEnabled) => set({ analyticsEnabled }),
     }),
     {
       name: 'glowi-settings',

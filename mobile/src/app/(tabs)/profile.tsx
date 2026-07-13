@@ -73,6 +73,8 @@ export default function ProfileTab() {
   const setCycleTrackingEnabled = useSettings((s) => s.setCycleTrackingEnabled);
   const healthAutoFillEnabled = useSettings((s) => s.healthAutoFillEnabled);
   const setHealthAutoFillEnabled = useSettings((s) => s.setHealthAutoFillEnabled);
+  const analyticsEnabled = useSettings((s) => s.analyticsEnabled);
+  const setAnalyticsEnabled = useSettings((s) => s.setAnalyticsEnabled);
   const setPushRegistered = useSettings((s) => s.setPushRegistered);
 
   const [remindersOn, setRemindersOn] = useState(false);
@@ -459,6 +461,29 @@ export default function ProfileTab() {
           <AppText variant="caption" style={styles.blockHint}>
             Adds a cycle-phase row to your daily check-in. It stays in your account, is never
             shared, and is deleted the moment you clear a day&apos;s log.
+          </AppText>
+        </GlassCard>
+
+        <GlassCard style={styles.block}>
+          <View style={styles.reminderRow}>
+            <View style={styles.blockHead}>
+              <Ionicons name="bar-chart-outline" size={18} color={palette.accentBright} />
+              <AppText variant="heading">Share usage analytics</AppText>
+            </View>
+            <Switch
+              value={analyticsEnabled}
+              onValueChange={(value) => {
+                haptics.tap();
+                setAnalyticsEnabled(value);
+              }}
+              trackColor={{ true: palette.accent, false: palette.surfaceStrong }}
+              thumbColor={palette.text}
+              accessibilityLabel="Share usage analytics"
+            />
+          </View>
+          <AppText variant="caption" style={styles.blockHint}>
+            Anonymous counts of which features get used — never your photos, chats, scores or health
+            data. Turn it off and Glowi sends nothing at all.
           </AppText>
         </GlassCard>
 

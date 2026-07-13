@@ -199,6 +199,32 @@ review below are proportionate at this scale.
 - [ ] Sentry project created, DSN + source-map secrets set on the EAS production profile.
 - [ ] Forced test crash appears in Sentry with a readable stack and no PII.
 
+## Product analytics (E2 — seam only, no provider)
+
+Owner decision (2026-07-13): **instrument now, choose a vendor later.** `lib/analytics.ts`
+carries seven events — `session_start`, `scan_completed`, `chat_message_sent`,
+`checkin_logged`, `report_opened`, `replenishment_viewed`, `upgrade_completed` — and no sink.
+Nothing is sent anywhere today: no dependency, no network call, no bundle weight. The
+expensive half (instrumenting seven flows across a shipped app) is done; the cheap half
+(installing a provider) is one `AnalyticsSink` implementation away.
+
+**No store-form or policy change is needed while the sink is unset** — the app collects
+nothing. The Apple/Play matrices below stay as they are.
+
+**If a provider is later installed** (PostHog remains the recommendation), all three of these
+must happen together, or we would be collecting data we never disclosed:
+
+- [ ] Implement `AnalyticsSink` and call `setAnalyticsSink` once at startup.
+- [ ] Update the privacy policy (`lib/legal.ts`) to name the vendor and bump `LEGAL_UPDATED`.
+- [ ] Add _Diagnostics → Product Interaction_ to the Apple privacy labels and the Play Data
+      Safety form.
+
+Events carry **no properties, by type** — an `AnalyticsEvent` is a bare string from a closed
+union, so there is no parameter through which a scan score, chat message or sleep value could
+reach a vendor, by accident or by a later edit. A future dimension is a *new event name*, never
+a payload. The Profile → "Share usage analytics" opt-out is enforced at one choke point in
+`track()`, so it silences every event, including ones added after this was written.
+
 ## Launch checklist (gates G1 — do not tag v1.0.0 until all checked)
 
 - [ ] **New EAS build cut** — `expo-network` (connectivity) and `@sentry/react-native` (crash
@@ -235,7 +261,8 @@ together.
 
 Top-level: **"Data Not Used to Track You"** (no ATT prompt needed). Every type below is
 **linked to the user's identity** (account-scoped) and used only for **App Functionality**
-(none for Tracking, Analytics, or Advertising until E2 analytics ships).
+(none for Tracking, Analytics, or Advertising — E2 shipped the analytics *seam* with no provider
+installed, so nothing is collected; see the E2 section for what to change if one is added).
 
 | Apple data type                   | Specific data                                                                                        | Collected                      | Purpose           | Notes                                                      |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------ | ----------------- | ---------------------------------------------------------- |

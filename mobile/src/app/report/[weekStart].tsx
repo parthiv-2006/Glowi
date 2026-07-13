@@ -5,7 +5,7 @@
  * ring is derived from the user's own scan history for the reported week; the
  * stored report carries only counted stats (see GlowReportContent).
  */
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +28,7 @@ import {
   Stagger,
 } from '@/components/ui';
 import { GlowReportShareCard } from '@/components/GlowReportShareCard';
+import { track } from '@/lib/analytics';
 import { useGlowReport, useScans } from '@/lib/hooks';
 import { weekEndOf } from '@/lib/glowReport';
 import { DISCLAIMER } from '@/lib/constants';
@@ -42,6 +43,10 @@ export default function GlowReportScreen() {
   const { data: scans = [] } = useScans();
   const shareRef = useRef<View>(null);
   const [sharing, setSharing] = useState(false);
+
+  useEffect(() => {
+    track('report_opened');
+  }, []);
 
   // The reported week's ending skin score + movement, from the user's own scans.
   const { endScore, scoreDelta } = useMemo(() => {

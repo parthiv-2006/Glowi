@@ -3,7 +3,7 @@
  * replacements under each shelf item that's expiring, expired, low, or out,
  * so the Shelf's expiry/stock signals turn into an actual next purchase.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ import {
   Stagger,
 } from '@/components/ui';
 import { ProductCard } from '@/components/ProductCard';
+import { track } from '@/lib/analytics';
 import { createSession } from '@/lib/api';
 import { expiryColor, stockColor } from '@/lib/constants';
 import { haptics } from '@/lib/haptics';
@@ -63,6 +64,11 @@ export default function ReplenishScreen() {
   const userId = useAuth((s) => s.session?.user.id);
   const profile = useAuth((s) => s.profile);
   const [askingItemId, setAskingItemId] = useState<string | null>(null);
+
+  useEffect(() => {
+    track('replenishment_viewed');
+  }, []);
+
   const {
     data: shelf,
     isLoading: shelfLoading,
