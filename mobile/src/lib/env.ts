@@ -17,4 +17,10 @@ export const env = {
   ),
   /** Default AI mode; user-overridable at runtime in Profile → Developer. */
   defaultAiMode: (process.env.EXPO_PUBLIC_AI_MODE === 'live' ? 'live' : 'mock') as 'live' | 'mock',
+  /**
+   * Sentry DSN. Optional on purpose: unset means crash reporting is simply off, and
+   * the app must run perfectly well without it (dev machines, forks, and every build
+   * made before the owner created the Sentry project). Never `required()`.
+   */
+  sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || undefined,
 } as const;

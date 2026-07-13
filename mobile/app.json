@@ -77,7 +77,8 @@
             "minSdkVersion": 26
           }
         }
-      ]
+      ],
+      "@sentry/react-native/expo"
     ],
     "experiments": {
       "typedRoutes": true,

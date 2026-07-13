@@ -165,8 +165,44 @@ we ever add mutation persistence.
 ⚠ `expo-network` is a **native module**: the next EAS build is mandatory before this reaches a
 device. It ships alongside Sentry (E1), which needs a new build for the same reason.
 
+## Crash reporting (E1 — Sentry)
+
+Wired and inert until the owner supplies a DSN. `@sentry/react-native` initializes in
+`_layout.tsx` via `lib/sentry.ts`; the root is wrapped in `Sentry.ErrorBoundary` with the
+designed `CrashFallback` screen, so a render crash shows Glowi and a Restart button instead of
+React Native's blank white screen. **The fallback works with or without a DSN** — reporting is
+the optional half, not the recovery.
+
+**Privacy posture (do not relax without re-reading `docs/legal/privacy-policy.md`).** Glowi
+handles face photos, sleep and cycle data, so Sentry's defaults are wrong for us by
+construction and are all off: `attachScreenshot: false` (a crash on the results screen would
+otherwise ship a photo of the user's face to a third party), `attachViewHierarchy: false`,
+`sendDefaultPii: false`, no session replay. Console and XHR breadcrumbs are dropped in
+`beforeBreadcrumb` — they would carry chat text and scan payloads. The user is attached as an
+opaque `id` only, never an email.
+
+**Owner setup, in order:**
+
+1. Create the Sentry project (platform: React Native) → copy the DSN.
+2. Set `EXPO_PUBLIC_SENTRY_DSN` on the EAS **production** profile (it is a publishable value —
+   a DSN only permits writing events).
+3. For readable stack traces, add `SENTRY_ORG`, `SENTRY_PROJECT` and `SENTRY_AUTH_TOKEN` as EAS
+   **secrets** (build-time only — never `EXPO_PUBLIC_*`, they must not reach the bundle). The
+   `@sentry/react-native/expo` config plugin and `metro.config.js` upload source maps on build;
+   without the token the build still succeeds and just warns.
+4. Verify: production-profile build → force a crash → the event appears in Sentry with a
+   readable stack, no screenshot attached, and no email on the user.
+
+Edge functions deliberately have **no** Sentry — Supabase function logs plus the weekly log
+review below are proportionate at this scale.
+
+- [ ] Sentry project created, DSN + source-map secrets set on the EAS production profile.
+- [ ] Forced test crash appears in Sentry with a readable stack and no PII.
+
 ## Launch checklist (gates G1 — do not tag v1.0.0 until all checked)
 
+- [ ] **New EAS build cut** — `expo-network` (connectivity) and `@sentry/react-native` (crash
+      reporting) are native modules; neither reaches a device on the existing build.
 - [ ] **HIBP leaked-password protection ON** (Auth → Sign In / Providers → password) —
       owner-deferred 2026-07-11; security advisor WARN until done.
 - [ ] **`glowi://reset-password` in Auth → URL Configuration → Redirect URLs** — the
