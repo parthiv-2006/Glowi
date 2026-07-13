@@ -17,6 +17,7 @@ import Animated, {
   Easing,
   FadeIn,
   useDerivedValue,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -108,18 +109,24 @@ function MeshNode({
 export function ScanTheater({ width, height, active = true, zones = [] }: ScanTheaterProps) {
   const t = useSharedValue(0); // beam sweep 0→1
   const drift = useSharedValue(0); // particle clock
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    // Reduce-motion: park both clocks. The mesh, reticles and zone callouts still
+    // draw — only the perpetual sweep and particle drift stop. The beam itself is
+    // suppressed below rather than frozen mid-face, where it would read as a glitch.
+    if (reduceMotion) return;
     t.value = withRepeat(
       withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
       -1,
       false,
     );
     drift.value = withRepeat(withTiming(1, { duration: 4200, easing: Easing.linear }), -1, false);
-  }, [t, drift]);
+  }, [t, drift, reduceMotion]);
 
   const beamY = useDerivedValue(() => t.value * height);
   const beamOpacity = useDerivedValue(() => {
+    if (reduceMotion) return 0;
     // fade the beam in/out at the travel extremes
     const edge = Math.min(t.value, 1 - t.value) * 4;
     return Math.min(1, edge) * (active ? 1 : 0.15);

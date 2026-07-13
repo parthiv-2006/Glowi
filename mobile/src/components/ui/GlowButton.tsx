@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, View, type ViewStyle } from 'react-nativ
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -38,6 +39,7 @@ export function GlowButton({
   icon,
 }: GlowButtonProps) {
   const inactive = disabled || loading;
+  const reduceMotion = useReducedMotion();
 
   const content = (
     <View style={styles.content}>
@@ -75,6 +77,7 @@ export function GlowButton({
       ]}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: !!inactive, busy: !!loading }}
     >
       {variant === 'primary' ? (
         // clay → clayDeep. The old clayBright → clay ramp put the white label on a
@@ -86,7 +89,7 @@ export function GlowButton({
           style={styles.fill}
         >
           {content}
-          {sheen && !inactive ? <Sheen /> : null}
+          {sheen && !inactive && !reduceMotion ? <Sheen /> : null}
         </LinearGradient>
       ) : (
         <View style={[styles.fill, styles.ghostFill, variant === 'danger' && styles.dangerFill]}>

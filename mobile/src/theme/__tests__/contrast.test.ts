@@ -1,3 +1,5 @@
+import { describe, expect, it, jest } from '@jest/globals';
+
 // `theme/index.ts` pulls Reanimated in for `motion.easing`, which can't initialize its
 // worklets runtime under jest. The palette itself is plain data — stub the one symbol.
 jest.mock('react-native-reanimated', () => ({

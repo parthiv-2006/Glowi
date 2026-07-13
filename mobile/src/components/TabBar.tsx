@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
@@ -11,18 +12,25 @@ import Animated, {
 import { haptics } from '@/lib/haptics';
 import { fonts, radii, spacing } from '@/theme';
 
-const ACTIVE_COLOR = '#E0A984'; // clayBright
-const INACTIVE_COLOR = '#9C9081'; // warm muted
+const ACTIVE_COLOR = '#E0A984'; // clayBright — 6.2:1 on the espresso bar
+const INACTIVE_COLOR = '#A3988A'; // warm muted — lightened from #9C9081 to clear AA (4.5:1)
 
 const ICONS: Record<
   string,
-  { on: keyof typeof Ionicons.glyphMap; off: keyof typeof Ionicons.glyphMap; label: string }
+  {
+    on: keyof typeof Ionicons.glyphMap;
+    off: keyof typeof Ionicons.glyphMap;
+    /** The 8px Space Mono glyph on screen. */
+    label: string;
+    /** What a screen reader says — the on-screen labels are truncated shorthand. */
+    a11yLabel: string;
+  }
 > = {
-  index: { on: 'home', off: 'home-outline', label: 'HOME' },
-  chat: { on: 'chatbubble', off: 'chatbubble-outline', label: 'COACH' },
-  progress: { on: 'analytics', off: 'analytics-outline', label: 'TRACK' },
-  learn: { on: 'book', off: 'book-outline', label: 'LEARN' },
-  profile: { on: 'person', off: 'person-outline', label: 'YOU' },
+  index: { on: 'home', off: 'home-outline', label: 'HOME', a11yLabel: 'Home' },
+  chat: { on: 'chatbubble', off: 'chatbubble-outline', label: 'COACH', a11yLabel: 'Coach' },
+  progress: { on: 'analytics', off: 'analytics-outline', label: 'TRACK', a11yLabel: 'Progress' },
+  learn: { on: 'book', off: 'book-outline', label: 'LEARN', a11yLabel: 'Learn' },
+  profile: { on: 'person', off: 'person-outline', label: 'YOU', a11yLabel: 'Profile' },
 };
 
 function TabButton({
@@ -35,6 +43,7 @@ function TabButton({
   onPress: () => void;
 }) {
   const scale = useSharedValue(1);
+  const reduceMotion = useReducedMotion();
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const icons = ICONS[name] ?? ICONS.index;
   const color = focused ? ACTIVE_COLOR : INACTIVE_COLOR;
@@ -42,8 +51,15 @@ function TabButton({
   return (
     <Pressable
       style={styles.tab}
-      onPressIn={() => (scale.value = withTiming(0.86, { duration: 120 }))}
-      onPressOut={() => (scale.value = withSpring(1, { damping: 12, stiffness: 240 }))}
+      accessibilityRole="tab"
+      accessibilityLabel={icons.a11yLabel}
+      accessibilityState={{ selected: focused }}
+      onPressIn={() => {
+        if (!reduceMotion) scale.value = withTiming(0.86, { duration: 120 });
+      }}
+      onPressOut={() => {
+        if (!reduceMotion) scale.value = withSpring(1, { damping: 12, stiffness: 240 });
+      }}
       onPress={() => {
         haptics.tap();
         onPress();
@@ -80,7 +96,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
         { paddingBottom: insets.bottom || spacing(3), pointerEvents: 'box-none' },
       ]}
     >
-      <View style={[styles.bar, { width: barWidth }]}>
+      <View style={[styles.bar, { width: barWidth }]} accessibilityRole="tablist">
         {state.routes.map((route, index) => {
           const focused = state.index === index;
           return (
