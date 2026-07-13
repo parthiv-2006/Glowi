@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
@@ -68,7 +69,13 @@ function useNotificationDeepLinks() {
       }
     }
 
-    void Notifications.getLastNotificationResponseAsync().then(route);
+    // Web has no notifications module backing this — calling it there throws an
+    // UnavailabilityError straight into the console on every page load.
+    if (Platform.OS !== 'web') {
+      void Notifications.getLastNotificationResponseAsync()
+        .then(route)
+        .catch(() => {});
+    }
     const sub = Notifications.addNotificationResponseReceivedListener(route);
     return () => sub.remove();
   }, [router]);

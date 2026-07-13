@@ -9,6 +9,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -28,7 +29,7 @@ import { palette, radii, scoreColor, severityColor, severityLabel, spacing } fro
 export default function ResultsScreen() {
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
   const router = useRouter();
-  const { data: scan, isLoading } = useScan(scanId);
+  const { data: scan, isLoading, isError, refetch } = useScan(scanId);
   const { data: scans } = useScans();
   const scrollRef = useRef<ScrollView>(null);
   const medicalNoticeSeen = useSettings((s) => s.medicalNoticeSeen);
@@ -69,6 +70,15 @@ export default function ResultsScreen() {
           <View style={{ height: spacing(4) }} />
           <Skeleton width="100%" height={120} />
         </View>
+      </Screen>
+    );
+  }
+
+  /* ── Query failed ── */
+  if (isError) {
+    return (
+      <Screen bottomInset={spacing(8)}>
+        <ErrorState title="Couldn't load this scan" onRetry={() => void refetch()} />
       </Screen>
     );
   }

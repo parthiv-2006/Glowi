@@ -55,12 +55,13 @@ export function ProgressRing({
   const circumference = 2 * Math.PI * radius;
   const reduceMotion = useReducedMotion();
   const progress = useSharedValue(reduceMotion ? clamped / 100 : 0);
-  const [display, setDisplay] = useState(reduceMotion ? clamped : 0);
+  const [counted, setCounted] = useState(0);
+  // Under reduce-motion there is no count-up to read from — the value is simply itself.
+  const display = reduceMotion ? clamped : counted;
 
   useEffect(() => {
     if (reduceMotion) {
       progress.value = clamped / 100;
-      setDisplay(clamped);
       return;
     }
     progress.value = withDelay(
@@ -72,7 +73,7 @@ export function ProgressRing({
   useAnimatedReaction(
     () => Math.round(progress.value * clamped),
     (current, previous) => {
-      if (current !== previous) runOnJS(setDisplay)(current);
+      if (current !== previous) runOnJS(setCounted)(current);
     },
   );
 

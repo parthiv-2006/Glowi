@@ -1,12 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
+import { palette } from '../index';
+
 // `theme/index.ts` pulls Reanimated in for `motion.easing`, which can't initialize its
 // worklets runtime under jest. The palette itself is plain data — stub the one symbol.
+// (babel-plugin-jest-hoist lifts this above the import above.)
 jest.mock('react-native-reanimated', () => ({
   Easing: { bezier: () => null },
 }));
-
-import { palette } from '../index';
 
 /**
  * The palette's contrast contract (WCAG 2.1 AA).

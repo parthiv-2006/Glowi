@@ -7,6 +7,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   AppText,
   Badge,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -119,7 +120,12 @@ function ScanRow({ scan, onPress }: { scan: Scan; onPress: () => void }) {
 
 export default function ProgressScreen() {
   const router = useRouter();
-  const { data: scans = [], isLoading: scansLoading } = useScans();
+  const {
+    data: scans = [],
+    isLoading: scansLoading,
+    isError: scansError,
+    refetch: refetchScans,
+  } = useScans();
   const { data: checkins = [] } = useRecentCheckins();
   const { data: shelfItems = [] } = useShelfItems();
   const { data: reactions = [] } = useReactionLogs();
@@ -232,6 +238,18 @@ export default function ProgressScreen() {
             <Skeleton width="48%" height={100} />
           </View>
         </View>
+      </Screen>
+    );
+  }
+
+  if (scansError) {
+    return (
+      <Screen bottomInset={spacing(20)}>
+        <AppText variant="overline">Your journey</AppText>
+        <AppText variant="display" style={styles.title}>
+          Progress
+        </AppText>
+        <ErrorState title="Couldn't load your progress" onRetry={() => void refetchScans()} />
       </Screen>
     );
   }

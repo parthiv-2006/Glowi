@@ -26,6 +26,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -268,7 +269,12 @@ export default function RoutineScreen() {
   const qc = useQueryClient();
   const userId = useAuth((s) => s.session?.user.id);
 
-  const { data: routinesRaw, isLoading: routinesLoading } = useRoutines();
+  const {
+    data: routinesRaw,
+    isLoading: routinesLoading,
+    isError: routinesError,
+    refetch: refetchRoutines,
+  } = useRoutines();
   const { data: scans } = useScans();
   const { data: checkins = [] } = useRecentCheckins();
   const { mutate: checkIn, isPending: checkingIn } = useCheckIn();
@@ -430,6 +436,8 @@ export default function RoutineScreen() {
       {/* Body */}
       {routinesLoading ? (
         <LoadingSkeleton />
+      ) : routinesError ? (
+        <ErrorState title="Couldn't load your routine" onRetry={() => void refetchRoutines()} />
       ) : hasRoutine ? (
         <RoutineContent
           steps={activeSteps}

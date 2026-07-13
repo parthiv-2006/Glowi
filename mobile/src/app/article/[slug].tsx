@@ -14,7 +14,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AppText, GlassCard, PressableScale, SectionHeader, Skeleton } from '@/components/ui';
+import {
+  AppText,
+  ErrorState,
+  GlassCard,
+  PressableScale,
+  SectionHeader,
+  Skeleton,
+} from '@/components/ui';
 import { Markdown } from '@/components/Markdown';
 import { useArticle } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
@@ -41,7 +48,7 @@ export default function ArticleScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { data: article, isLoading } = useArticle(slug);
+  const { data: article, isLoading, isError, refetch } = useArticle(slug);
 
   // Scroll position shared value for parallax
   const scrollY = useSharedValue(0);
@@ -172,6 +179,8 @@ export default function ArticleScreen() {
                 </View>
               ))}
             </View>
+          ) : isError ? (
+            <ErrorState title="Couldn't load this article" onRetry={() => void refetch()} />
           ) : article ? (
             <>
               {/* Article body */}
@@ -227,7 +236,7 @@ export default function ArticleScreen() {
               )}
             </>
           ) : (
-            // Error state
+            // Not found — fetch succeeded but no article matches this slug.
             <View style={styles.errorWrap}>
               <AppText variant="heading" color={palette.textSecondary} style={styles.centerText}>
                 Article not found.

@@ -17,6 +17,7 @@ import * as Sharing from 'expo-sharing';
 import {
   AppText,
   EmptyState,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -37,7 +38,7 @@ export default function GlowReportScreen() {
   const router = useRouter();
   const { weekStart } = useLocalSearchParams<{ weekStart: string }>();
   const week = String(weekStart ?? '');
-  const { data: report, isLoading, isError } = useGlowReport(week);
+  const { data: report, isLoading, isError, refetch } = useGlowReport(week);
   const { data: scans = [] } = useScans();
   const shareRef = useRef<View>(null);
   const [sharing, setSharing] = useState(false);
@@ -98,7 +99,16 @@ export default function GlowReportScreen() {
     );
   }
 
-  if (isError || !report) {
+  if (isError) {
+    return (
+      <Screen bottomInset={spacing(8)}>
+        <BackRow onBack={() => router.back()} />
+        <ErrorState title="Couldn't load this report" onRetry={() => void refetch()} />
+      </Screen>
+    );
+  }
+
+  if (!report) {
     return (
       <Screen bottomInset={spacing(8)}>
         <BackRow onBack={() => router.back()} />

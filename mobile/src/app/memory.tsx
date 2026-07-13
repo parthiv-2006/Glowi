@@ -8,6 +8,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   PressableScale,
   Screen,
@@ -34,7 +35,7 @@ const ORDER: MemoryType[] = ['gotcha', 'profile_fact', 'goal', 'preference', 'ev
 
 export default function MemoryScreen() {
   const router = useRouter();
-  const { data: memories, isLoading } = useMemories();
+  const { data: memories, isLoading, isError, refetch } = useMemories();
   const del = useDeleteMemory();
 
   const grouped = useMemo(() => {
@@ -76,6 +77,8 @@ export default function MemoryScreen() {
           <Skeleton width="100%" height={64} radius={radii.lg} />
           <Skeleton width="100%" height={64} radius={radii.lg} />
         </View>
+      ) : isError ? (
+        <ErrorState title="Couldn't load Glowi's memory" onRetry={() => void refetch()} />
       ) : grouped.length === 0 ? (
         <EmptyState
           title="Nothing remembered yet"

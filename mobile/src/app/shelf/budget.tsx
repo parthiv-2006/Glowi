@@ -11,6 +11,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   AppText,
   EmptyState,
+  ErrorState,
   GlassCard,
   PressableScale,
   Screen,
@@ -25,7 +26,7 @@ import { palette, radii, spacing } from '@/theme';
 
 export default function ShelfBudget() {
   const router = useRouter();
-  const { data: items, isLoading } = useShelfItems();
+  const { data: items, isLoading, isError, refetch } = useShelfItems();
 
   const active = useMemo(() => (items ?? []).filter((i) => i.status === 'active'), [items]);
   const priced = useMemo(() => active.filter((i) => i.price_usd != null), [active]);
@@ -56,6 +57,8 @@ export default function ShelfBudget() {
           <Skeleton width="100%" height={96} />
           <Skeleton width="100%" height={96} />
         </View>
+      ) : isError ? (
+        <ErrorState title="Couldn't load your shelf budget" onRetry={() => void refetch()} />
       ) : !priced.length ? (
         <EmptyState
           title="No prices yet"

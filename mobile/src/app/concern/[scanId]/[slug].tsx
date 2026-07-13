@@ -14,6 +14,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   PressableScale,
   ProgressRing,
@@ -59,7 +60,12 @@ export default function ConcernDetailScreen() {
   const { scanId, slug } = useLocalSearchParams<{ scanId: string; slug: string }>();
   const router = useRouter();
 
-  const { data: concern, isLoading: concernLoading } = useConcern(slug);
+  const {
+    data: concern,
+    isLoading: concernLoading,
+    isError: concernError,
+    refetch: refetchConcern,
+  } = useConcern(slug);
   const { data: scan, isLoading: scanLoading } = useScan(scanId);
   const { data: products, isLoading: productsLoading } = useProductsForConcern(slug);
   const { data: guide, isLoading: guideLoading } = useNutritionGuide(slug);
@@ -91,6 +97,8 @@ export default function ConcernDetailScreen() {
       {/* Header */}
       {headerLoading ? (
         <HeaderSkeleton />
+      ) : concernError ? (
+        <ErrorState title="Couldn't load this concern" onRetry={() => void refetchConcern()} />
       ) : concern ? (
         <Animated.View
           entering={FadeInDown.delay(80).duration(460).springify().damping(16)}

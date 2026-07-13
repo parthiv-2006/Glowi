@@ -14,6 +14,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   PressableScale,
   Screen,
@@ -62,10 +63,20 @@ export default function ReplenishScreen() {
   const userId = useAuth((s) => s.session?.user.id);
   const profile = useAuth((s) => s.profile);
   const [askingItemId, setAskingItemId] = useState<string | null>(null);
-  const { data: shelf, isLoading: shelfLoading } = useShelfItems();
+  const {
+    data: shelf,
+    isLoading: shelfLoading,
+    isError: shelfError,
+    refetch: refetchShelf,
+  } = useShelfItems();
   const { data: reactions = [] } = useReactionLogs();
   const { data: scans } = useScans();
-  const { data: catalog, isLoading: catalogLoading } = useCatalogProducts();
+  const {
+    data: catalog,
+    isLoading: catalogLoading,
+    isError: catalogError,
+    refetch: refetchCatalog,
+  } = useCatalogProducts();
 
   const latestScan = useMemo(() => scans?.find((s) => s.status === 'complete') ?? null, [scans]);
   const triggers = useMemo(() => (shelf ? replenishmentTriggers(shelf) : []), [shelf]);
@@ -86,6 +97,7 @@ export default function ReplenishScreen() {
   }, [triggers, catalog, latestScan, reactions, shelf, profile]);
 
   const isLoading = shelfLoading || catalogLoading;
+  const isError = shelfError || catalogError;
 
   /**
    * Catalog fallback: when the curated catalog has no safe match, hand the
@@ -134,6 +146,14 @@ export default function ReplenishScreen() {
           <Skeleton width="100%" height={96} />
           <Skeleton width="100%" height={96} />
         </View>
+      ) : isError ? (
+        <ErrorState
+          title="Couldn't load what to get next"
+          onRetry={() => {
+            void refetchShelf();
+            void refetchCatalog();
+          }}
+        />
       ) : !grouped.length ? (
         <EmptyState
           title="Nothing needs replacing"

@@ -106,6 +106,56 @@ remaining verification needs a physical device and is owner-gated below.
 - [ ] Android 13+: push token registers (check a `push_tokens` row appears) and notifications
       show under a "Reminders & reports" channel in system settings.
 
+## Offline & error states (D2)
+
+Route-by-route audit, 2026-07-13.
+
+**The systemic defect.** Every query-driven route handled `isLoading` (skeleton) and rendered an
+`EmptyState` when the data array came back empty — and *nothing* handled query failure. A failed
+fetch produces no data, so every screen fell straight through to its empty state: a user with a
+full shelf and twenty scans, on a dropped connection, was told "Your shelf is empty" and "No scans
+yet". A network failure was indistinguishable from having no data — and the empty states invite
+the user to *act* ("Take your first scan"), so the app was actively encouraging people to
+re-do work they had already done.
+
+Fixed with a new `ErrorState` primitive (`components/ui/ErrorState.tsx`) — mascot, plain-language
+title, retry button — wired into every route's render precedence, which is now
+**loading → error → empty → data**. It deliberately does not print the underlying exception:
+a Postgres or fetch message means nothing to the person reading it, and the retry is the useful
+part. Routes covered: Home, Progress, Coach list, Learn, results, concern detail, forecast, report
+list + detail, article, shelf (index/detail/budget/replenish/conflicts), routine, reactions, memory.
+
+**Three flows called out in the plan, each verified by reading the code:**
+
+1. **Mid-scan network drop — was broken.** `createScan` inserts a `pending` row *before* the
+   upload and the AI call. Nothing cleaned it up when either threw, so a dropped connection left
+   an orphaned pending scan in the user's history permanently. Now removed on failure, and the
+   raw exception text is no longer shown to the user.
+2. **Chat send failure — was broken, worse than the plan suspected.** The concern was a duplicate
+   message on retry; the actual bug was *silent loss*. The draft was cleared on send, and the
+   `finally` block invalidated the message list — which refetched from a server that had persisted
+   nothing, wiping the optimistic bubble. The user's message vanished with no error anywhere. The
+   text is now returned to the input and the failure is stated.
+3. **Check-in tap failure — was already correct.** `useUpsertLifestyleLog` snapshots the cache in
+   `onMutate`, restores it in `onError`, invalidates in `onSettled`. The rollback works. (It
+   reverts silently, with no message — acceptable for a one-tap control, noted not fixed.)
+
+**Foreground refresh.** React Query detects focus via a browser `visibilitychange` listener, which
+does not exist in React Native — so its focus tracking was inert and `refetchOnWindowFocus: false`
+was a setting that did nothing either way. `lib/query.ts` now feeds `focusManager` from `AppState`,
+so stale data refreshes when the user returns to the app: the ordinary way a phone recovers from a
+spell of no signal. Bounded by the existing 60s `staleTime`.
+
+**⚠ Owner decision — connectivity awareness (`onlineManager`).** React Query still believes the
+device is *always online*. Queries therefore fail rather than pausing, mutations are never queued,
+and there is no automatic refetch the instant connectivity returns. Wiring `onlineManager` properly
+requires a connectivity source — `@react-native-community/netinfo` or `expo-network` — both of
+which are **native modules and therefore force a new EAS build**. Not taken unilaterally so late in
+the polish cycle. The error states above mean the app now degrades honestly without it; this would
+make it degrade *gracefully*. Recommend taking it with the next EAS build.
+
+- [ ] Decide on `onlineManager` + a connectivity dep (needs a new EAS build).
+
 ## Launch checklist (gates G1 — do not tag v1.0.0 until all checked)
 
 - [ ] **HIBP leaked-password protection ON** (Auth → Sign In / Providers → password) —

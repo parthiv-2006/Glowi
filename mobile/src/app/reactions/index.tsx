@@ -12,6 +12,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -93,7 +94,7 @@ function ReactionCard({ log, onDelete }: { log: ReactionLog; onDelete: () => voi
 
 export default function ReactionLogScreen() {
   const router = useRouter();
-  const { data: logs, isLoading } = useReactionLogs();
+  const { data: logs, isLoading, isError, refetch } = useReactionLogs();
   const { mutate: deleteLog } = useDeleteReactionLog();
 
   return (
@@ -134,6 +135,8 @@ export default function ReactionLogScreen() {
           <Skeleton width="100%" height={96} />
           <Skeleton width="100%" height={96} />
         </View>
+      ) : isError ? (
+        <ErrorState title="Couldn't load your reaction log" onRetry={() => void refetch()} />
       ) : !logs?.length ? (
         <EmptyState
           title="No reactions logged"

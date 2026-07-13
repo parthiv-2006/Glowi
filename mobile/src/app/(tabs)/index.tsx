@@ -7,6 +7,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import {
   AppText,
+  ErrorState,
   GlassCard,
   PressableScale,
   ProgressRing,
@@ -31,8 +32,13 @@ function greeting(): string {
 export default function Home() {
   const router = useRouter();
   const profile = useAuth((s) => s.profile);
-  const { data: scans, isLoading } = useScans();
-  const { data: forecast, isLoading: forecastLoading } = useSkinForecast();
+  const { data: scans, isLoading, isError, refetch } = useScans();
+  const {
+    data: forecast,
+    isLoading: forecastLoading,
+    isError: forecastError,
+    refetch: refetchForecast,
+  } = useSkinForecast();
 
   const latest = useMemo(() => scans?.find((s) => s.status === 'complete'), [scans]);
   const firstName = profile?.display_name?.split(' ')[0];
@@ -94,6 +100,11 @@ export default function Home() {
             compact={!!latest}
             onPress={() => router.push('/forecast')}
           />
+        ) : forecastError ? (
+          <ErrorState
+            title="Couldn't load today's forecast"
+            onRetry={() => void refetchForecast()}
+          />
         ) : null}
 
         <View style={styles.section}>
@@ -106,6 +117,10 @@ export default function Home() {
             <View style={{ height: spacing(3) }} />
             <Skeleton width="100%" height={64} />
           </GlassCard>
+        ) : isError ? (
+          <View style={styles.section}>
+            <ErrorState title="Couldn't load your scans" onRetry={() => void refetch()} />
+          </View>
         ) : latest ? (
           <>
             <PressableScale

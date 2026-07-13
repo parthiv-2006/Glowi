@@ -13,6 +13,7 @@ import {
   AppText,
   Badge,
   EmptyState,
+  ErrorState,
   GlassCard,
   GlowButton,
   PressableScale,
@@ -37,7 +38,7 @@ const AMOUNTS = [0, 25, 50, 75, 100];
 export default function ShelfItemDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: items, isLoading } = useShelfItems();
+  const { data: items, isLoading, isError, refetch } = useShelfItems();
   const item = items?.find((i) => i.id === id);
 
   const update = useUpdateShelfItem();
@@ -65,6 +66,14 @@ export default function ShelfItemDetail() {
         <Skeleton width="70%" height={28} />
         <View style={{ height: spacing(4) }} />
         <Skeleton width="100%" height={140} />
+      </Screen>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Screen bottomInset={spacing(8)}>
+        <ErrorState title="Couldn't load this item" onRetry={() => void refetch()} />
       </Screen>
     );
   }
