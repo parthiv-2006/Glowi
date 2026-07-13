@@ -12,6 +12,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { AppText, GlassCard, PressableScale } from '@/components/ui';
 import { useLifestyleLogs, useUpsertLifestyleLog } from '@/lib/hooks';
 import type { LifestyleLogInput } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
 import { getLastNightSleepHours } from '@/lib/health';
 import { formatSleepHours, sleepQualityFromHours } from '@/lib/sleepMapping';
@@ -117,7 +118,11 @@ export function DailyCheckinCard() {
 
   const apply = (patch: CheckinPatch) => {
     haptics.tap();
-    upsert.mutate({ log_date: date, ...patch });
+    upsert.mutate(
+      { log_date: date, ...patch },
+      // On success only — an optimistic tap that rolls back is not a check-in.
+      { onSuccess: () => track('checkin_logged') },
+    );
   };
 
   // "Logged" once all three scales are answered — diet flags always carry a value.

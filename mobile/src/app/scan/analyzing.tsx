@@ -22,6 +22,7 @@ import { ScanTheater, type ScanZone } from '@/components/scan/ScanTheater';
 import { AppText, GlowButton } from '@/components/ui';
 import { getAIProvider } from '@/lib/ai';
 import { AIHttpError } from '@/lib/ai/live';
+import { track } from '@/lib/analytics';
 import { attachScanImage, createScan, deleteScan } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import {
@@ -164,6 +165,7 @@ export default function Analyzing() {
           useSettings.getState().setPushRegistered(registered);
         })();
       }
+      track('scan_completed');
       await wait(650);
       router.replace(`/results/${scan.id}`);
     } catch (e) {

@@ -26,6 +26,7 @@ import * as Sentry from '@sentry/react-native';
 
 import { CrashFallback } from '@/components/CrashFallback';
 import { SplashView } from '@/components/SplashView';
+import { identifyUser, track } from '@/lib/analytics';
 import { queryClient } from '@/lib/query';
 import { initSentry, setSentryUser } from '@/lib/sentry';
 import { supabase } from '@/lib/supabase';
@@ -169,14 +170,19 @@ function useAuthGate() {
 }
 
 /**
- * Attaches the signed-in user to crash reports — as an opaque id, never an email.
- * Without it every crash is anonymous and a user who writes in ("the app died when
- * I opened my shelf") cannot be matched to their trace.
+ * Attaches the signed-in user to crash reports and analytics — as an opaque id,
+ * never an email. Without it every crash is anonymous and a user who writes in
+ * ("the app died when I opened my shelf") cannot be matched to their trace.
+ *
+ * `session_start` fires once a session exists rather than at boot, so the count
+ * means "a user opened the app", not "the process started".
  */
-function useSentryIdentity() {
+function useIdentity() {
   const userId = useAuth((s) => s.session?.user.id) ?? null;
   useEffect(() => {
     setSentryUser(userId);
+    identifyUser(userId);
+    if (userId) track('session_start');
   }, [userId]);
 }
 
@@ -185,7 +191,7 @@ function RootNavigator() {
   useNotificationDeepLinks();
   usePasswordRecoveryLink();
   usePushRegistration();
-  useSentryIdentity();
+  useIdentity();
   return (
     <Stack
       screenOptions={{

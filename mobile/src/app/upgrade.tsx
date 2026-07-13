@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { AppText, GlowButton, PressableScale, Screen, TextField } from '@/components/ui';
+import { track } from '@/lib/analytics';
 import { useAuth } from '@/stores/auth';
 import { motion, palette, spacing } from '@/theme';
 
@@ -28,6 +29,7 @@ export default function UpgradeScreen() {
       // In-place conversion: the guest keeps their user id, so every scan,
       // chat, and shelf item is still theirs after the upgrade.
       await upgradeGuest(email, password, name || undefined);
+      track('upgrade_completed');
       router.back();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create account');
