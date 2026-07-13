@@ -59,6 +59,53 @@ warning appears everywhere — no action).
 a dev convenience only. Test guest accounts created during this QA are anonymous/inactive and are
 reaped by the A6 cleanup job at 90 days.
 
+## Notifications & reminders (D4)
+
+Code audit of the notification pipeline, 2026-07-13. Five defects found and fixed; the
+remaining verification needs a physical device and is owner-gated below.
+
+**Fixed in code:**
+
+1. **Android push registration could never succeed on Android 13+.** `getExpoPushTokenAsync`
+   requires a notification channel to exist first, and no channel was ever created. Every
+   Android push registration failed silently (the function swallows errors and returns
+   `false`), so those devices fell back to local reminders forever and the server never had a
+   token to push to. `ensureAndroidChannel()` now runs before token acquisition and before any
+   scheduling — which also means notifications file under a named "Reminders & reports" channel
+   in system settings instead of an unnamed fallback.
+2. **A notification tap that cold-started the app was dropped.** Deep links were handled only
+   by `addNotificationResponseReceivedListener`, which is registered during React mount — after
+   the OS has already delivered the response that launched the process. Tapping the Glow Report
+   push from a killed app landed the user on Home with no explanation. `_layout.tsx` now also
+   reads `getLastNotificationResponseAsync()` on mount and dedupes by notification id.
+3. **The permission prompt fired at boot.** `registerPushToken` requested permission as soon as
+   a session existed — i.e. immediately after sign-up, before the user had seen a single scan.
+   That is both bad manners and the surest route to a permanent denial (iOS only ever shows the
+   dialog once). Registration is now silent and only picks up a token if permission is *already*
+   granted; the ask happens contextually (after the first scan, or the Profile reminders
+   toggle), and `syncPushRegistration()` completes the local→server handoff on the spot rather
+   than waiting for the next cold start.
+4. **Routine and weekly-scan reminders had no deep link.** Only the Glow Report reminder carried
+   a `data.url`; the others just opened the app wherever it happened to be. AM/PM reminders now
+   route to `/routine` and the weekly scan nudge to `/scan`.
+5. **A denied permission was a dead end.** Nothing checked `canAskAgain`, so once a user had
+   declined, the Profile reminders toggle silently snapped back forever with no explanation and
+   no route to system settings.
+
+**Owner device QA (cannot be verified from a build machine — needs a real device):**
+
+- [ ] Permission prompt appears **after the first scan**, not at sign-up.
+- [ ] Decline the prompt → app stays fully functional; Profile → Reminders explains and offers
+      a jump to system settings rather than snapping back silently.
+- [ ] AM/PM routine reminders fire at the set times and open `/routine`.
+- [ ] Weekly scan nudge fires and opens `/scan`.
+- [ ] **Cold start:** kill the app, send/await a Glow Report push, tap it → lands on the correct
+      week's report (this is the path that was broken).
+- [ ] Once push registers, the local weekly reminders stop — no double-notification in the week
+      after registration.
+- [ ] Android 13+: push token registers (check a `push_tokens` row appears) and notifications
+      show under a "Reminders & reports" channel in system settings.
+
 ## Launch checklist (gates G1 — do not tag v1.0.0 until all checked)
 
 - [ ] **HIBP leaked-password protection ON** (Auth → Sign In / Providers → password) —

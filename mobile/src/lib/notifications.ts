@@ -20,10 +20,46 @@ function parseTime(hhmm: string): { hour: number; minute: number } {
   return { hour: Number.isFinite(h) ? h : 8, minute: Number.isFinite(m) ? m : 0 };
 }
 
+const ANDROID_CHANNEL_ID = 'default';
+
+/**
+ * Android requires a notification channel before it will hand out a push token —
+ * on Android 13+ `getExpoPushTokenAsync` fails without one, so every push
+ * registration on Android silently returned false before this existed. It also
+ * decides what the user sees in system settings: without it our notifications are
+ * filed under a generic fallback channel rather than a named Glowi one.
+ *
+ * Idempotent; a no-op off Android.
+ */
+async function ensureAndroidChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+    name: 'Reminders & reports',
+    importance: Notifications.AndroidImportance.DEFAULT,
+  });
+}
+
+/** Current permission state — never prompts. */
+export async function getNotificationPermission(): Promise<{
+  granted: boolean;
+  /** False once the OS will no longer show the dialog: the only way back is system settings. */
+  canAskAgain: boolean;
+}> {
+  if (Platform.OS === 'web') return { granted: false, canAskAgain: false };
+  const settings = await Notifications.getPermissionsAsync();
+  return { granted: settings.granted, canAskAgain: settings.canAskAgain };
+}
+
+/**
+ * Prompts for permission if we're still allowed to. Call this from a moment where
+ * the user has just done something that implies they want reminders — never at boot.
+ */
 export async function requestNotificationPermission(): Promise<boolean> {
   if (Platform.OS === 'web') return false;
+  await ensureAndroidChannel();
   const settings = await Notifications.getPermissionsAsync();
   if (settings.granted) return true;
+  if (!settings.canAskAgain) return false;
   const req = await Notifications.requestPermissionsAsync();
   return req.granted;
 }
@@ -41,7 +77,11 @@ export async function scheduleRoutineReminders(amTime: string, pmTime: string): 
 
   await Notifications.scheduleNotificationAsync({
     identifier: 'glowi-routine-am',
-    content: { title: 'Good morning ☀️', body: 'Time for your AM skincare routine.' },
+    content: {
+      title: 'Good morning ☀️',
+      body: 'Time for your AM skincare routine.',
+      data: { url: '/routine' },
+    },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour: am.hour,
@@ -50,7 +90,11 @@ export async function scheduleRoutineReminders(amTime: string, pmTime: string): 
   });
   await Notifications.scheduleNotificationAsync({
     identifier: 'glowi-routine-pm',
-    content: { title: 'Wind down 🌙', body: 'Your PM routine is waiting — keep the streak alive.' },
+    content: {
+      title: 'Wind down 🌙',
+      body: 'Your PM routine is waiting — keep the streak alive.',
+      data: { url: '/routine' },
+    },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour: pm.hour,
@@ -77,6 +121,7 @@ export async function scheduleWeeklyScanReminder(): Promise<void> {
     content: {
       title: 'Time for your weekly skin scan 📸',
       body: 'Track your progress — it only takes 30 seconds.',
+      data: { url: '/scan' },
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
@@ -87,14 +132,21 @@ export async function scheduleWeeklyScanReminder(): Promise<void> {
 }
 
 /**
- * Registers this device's Expo push token so the server (push-dispatch, fired
- * by pg_cron) can reach it. Returns false — and callers keep the local weekly
- * reminders — on web, simulators, denied permission, or Expo Go (remote push
- * is unsupported there since SDK 53); the upsert refreshes an existing row.
+ * Registers this device's Expo push token so the server (push-dispatch, fired by
+ * pg_cron) can reach it. Returns false — and callers keep the local weekly
+ * reminders — on web, simulators, Expo Go (remote push is unsupported there since
+ * SDK 53), or when notification permission has not been granted.
+ *
+ * Deliberately does NOT prompt. This runs at boot the moment a session exists, and
+ * a permission dialog thrown at a user who has not yet seen a single scan is both
+ * bad manners and the fastest way to a permanent denial. The ask happens where it
+ * means something (after the first scan, or the Profile reminders toggle) and this
+ * picks the token up on the next call. The upsert refreshes an existing row.
  */
 export async function registerPushToken(userId: string): Promise<boolean> {
   if (Platform.OS === 'web' || !Device.isDevice) return false;
-  const granted = await requestNotificationPermission();
+  await ensureAndroidChannel(); // must precede getExpoPushTokenAsync on Android 13+
+  const { granted } = await getNotificationPermission();
   if (!granted) return false;
   try {
     const projectId: string | undefined = Constants.expoConfig?.extra?.eas?.projectId;
@@ -105,6 +157,17 @@ export async function registerPushToken(userId: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Registers for push and, on success, hands the weekly nudges over to the server.
+ * Call after any contextual permission grant so the handoff happens immediately
+ * rather than waiting for the next cold start.
+ */
+export async function syncPushRegistration(userId: string): Promise<boolean> {
+  const registered = await registerPushToken(userId);
+  if (registered) await cancelServerOwnedReminders();
+  return registered;
 }
 
 /**
