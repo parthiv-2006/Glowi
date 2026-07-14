@@ -225,10 +225,46 @@ reach a vendor, by accident or by a later edit. A future dimension is a *new eve
 a payload. The Profile → "Share usage analytics" opt-out is enforced at one choke point in
 `track()`, so it silences every event, including ones added after this was written.
 
+## Tests (E4) and E2E (E5)
+
+**Every push runs** (`.github/workflows/ci.yml`): mobile typecheck · lint · `format:check` ·
+201 Jest tests; edge functions `deno check` · `deno test`. Don't push red.
+
+The Jest suite now includes component tests (React Native Testing Library) for the four
+flows whose failures would be silent: sign-up validation, the check-in card's optimistic
+upsert **and its rollback**, chat send **restoring the draft when it fails**, and the
+replenish route's `loading → error → empty → data` precedence. They mock Supabase at the
+client boundary (`src/test/supabaseMock.ts`) so React Query, the mutation lifecycle and
+`api.ts` all execute for real — mocking `hooks.ts` instead would stub out the exact code
+those bugs lived in.
+
+**E2E (Maestro) is manual-dispatch only** — `.github/workflows/e2e.yml`, or
+`maestro test .maestro/` locally against a mock-mode dev build. Four flows:
+guest→scan, **guest→upgrade→data survives** (the B1 regression test), check-in
+persistence, chat send.
+
+- [ ] ⚠️ **Run the Maestro suite green at least once.** The flows are written but have
+      **never been executed** — they need the pending EAS build (see below). Expect to fix
+      selectors on the first run; that is the flows doing their job. E5 is not done until
+      this box is ticked.
+- [ ] Run it again before each release build, and after anything touching auth, scan or chat.
+
+## Performance (E6)
+
+See [PERFORMANCE.md](PERFORMANCE.md). Baseline: **8.6 MB** Android JS bundle. One unused font
+face was removed from the cold-start critical path. The on-device half (frame cost, real
+cold-start numbers, scroll jank on a mid-tier Android) is **deferred to the next build**, and
+one real problem is knowingly open: **every list route fetches the user's entire history and
+mounts all of it** — invisible today, a support ticket in two years. It needs a pagination
+decision, not a mechanical edit.
+
+- [ ] Profile on a mid-tier Android once a build exists; then plan the list-virtualization fix.
+
 ## Launch checklist (gates G1 — do not tag v1.0.0 until all checked)
 
 - [ ] **New EAS build cut** — `expo-network` (connectivity) and `@sentry/react-native` (crash
-      reporting) are native modules; neither reaches a device on the existing build.
+      reporting) are native modules; neither reaches a device on the existing build. **The
+      Maestro suite and the on-device perf pass both block on this.**
 - [ ] **HIBP leaked-password protection ON** (Auth → Sign In / Providers → password) —
       owner-deferred 2026-07-11; security advisor WARN until done.
 - [ ] **`glowi://reset-password` in Auth → URL Configuration → Redirect URLs** — the

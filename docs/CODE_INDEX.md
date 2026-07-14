@@ -102,7 +102,8 @@ worse than no entries.
 | `push-dispatch` | Scheduled Expo push sends (glow-report ready / lapsed-scan nudge) — cron-called, shared-secret auth, not user JWT |
 | `cleanup-guests` | Monthly sweep of guest accounts inactive 90+ days (storage first, then auth cascade; capped/run; `{"dryRun":true}` supported) — cron-called, same shared-secret auth as push-dispatch (ADR-0018) |
 | `delete-account` | Permanent erasure of the calling user (JWT-verified): storage prefix drained, then `auth.admin.deleteUser` cascades all rows (ADR-0019; Apple 5.1.1(v)/GDPR) |
-| `_shared/` | `http.ts` (CORS/serve), `anthropic.ts`, `images.ts` (magic-byte sniffing), `memory.ts` (`assembleMemoryContext` — semantic ranking via `match_memories` when a queryText is given, importance/recency fallback), `embeddings.ts` (gte-small via `Supabase.ai`, 384-dim), `correlation.ts` + `ingredientConcerns.ts` + `milestones.ts` (⚠ lockstep mirrors of the mobile modules of the same name), db helpers |
+| `_shared/` | `http.ts` (CORS/serve), `anthropic.ts`, `images.ts` (magic-byte sniffing), `ratelimit.ts` (`enforceRateLimit` — fails **open** on RPC error by design), `products.ts` (`parseProductBlock` — pulls `<products>[…]</products>` out of a chat reply; strips the block even when truncated mid-array, so raw markup never reaches the user), `memory.ts` (`assembleMemoryContext` — semantic ranking via `match_memories` when a queryText is given, importance/recency fallback), `embeddings.ts` (gte-small via `Supabase.ai`, 384-dim), `correlation.ts` + `ingredientConcerns.ts` + `milestones.ts` (⚠ lockstep mirrors of the mobile modules of the same name), db helpers |
+| `_shared/__tests__/` | Deno unit tests (`deno test --allow-env functions/_shared/__tests__/`, run in CI): `extractJson` (fences, nesting, braces-in-strings, truncation), image sniffing (incl. the negative cases — that is the security boundary), rate limiting (over budget **and** fail-open), product-block parsing |
 
 **Migrations (append-only source of truth):** 0001 core tables · 0002 RLS · 0003 storage+triggers · 0004 guest flag · 0005 skin_forecasts · 0006 shelf_items · 0007 rate limit · 0008 drop raw_model_output · 0009 lock trigger fns · 0010 conflicts + key_ingredients · 0011 scan_comparisons · 0012 reaction_logs · 0013 shelf price_usd · 0014 scans.capture_meta (guided-capture context) · 0015 lifestyle_logs (daily check-in: sleep/stress/water 0–2, diet flags, opt-in cycle_phase) · 0016 glow_reports (one immutable Weekly Glow Report per user per completed week; `content` jsonb, unique `(user_id, week_start)`) · 0017 push_tokens (Expo push tokens, unique per token) · 0018 push cron (pg_cron + pg_net schedules calling `push-dispatch` with the Vault `push_dispatch_secret`) · 0019 pg_net schema lint fix · 0020 memory embeddings (pgvector `embedding vector(384)` on ai_memories + HNSW index + `match_memories` RPC) · 0021 bucket limits (scan-images: 10 MB `file_size_limit`, JPEG/PNG/WebP `allowed_mime_types`) · 0022 RLS initplan + FK indexes (every user-table policy rewritten with `(select auth.uid())`, covering indexes for the nine advisor-flagged FKs) · 0023 guest cleanup cron (monthly pg_cron → `cleanup-guests`, Vault shared secret) · 0024 `email_taken` helper (SECURITY DEFINER availability pre-check for guest upgrade; service-role only).
 
@@ -110,7 +111,24 @@ Every user table has RLS (`crud_own` convention); the scan-images bucket is priv
 
 ## Docs & meta
 
-`README.md` (overview/quick-start) · `docs/ARCHITECTURE.md` (system design) · `docs/MEMORY_SYSTEM.md` (AI memory pipeline) · `docs/FEATURE_BACKLOG.md` (roadmap + status) · `docs/RELEASE.md` (build/submit runbook, store-form matrices, launch checklist) · `docs/adr/` (decisions) · `mobile/DESIGN.md` + `Glowi app visual enhancement (1)/design_handoff_glowi_redesign/` (visual system — mandatory before UI work) · `plans/` (feature blueprints — incl. `ml-face-alignment.md`, F3 scoping for real-time face tracking, ADR-0012) · CI: `.github/workflows/ci.yml` (typecheck, lint, test).
+`README.md` (overview/quick-start) · `docs/ARCHITECTURE.md` (system design) · `docs/MEMORY_SYSTEM.md` (AI memory pipeline) · `docs/FEATURE_BACKLOG.md` (roadmap + status) · `docs/RELEASE.md` (build/submit runbook, store-form matrices, launch checklist) · `docs/PERFORMANCE.md` (E6 audit — what was measured, and the unbounded-list cliff that is knowingly still open) · `docs/adr/` (decisions) · `mobile/DESIGN.md` + `Glowi app visual enhancement (1)/design_handoff_glowi_redesign/` (visual system — mandatory before UI work) · `plans/` (feature blueprints — incl. `ml-face-alignment.md`, F3 scoping for real-time face tracking, ADR-0012).
+
+**CI:** `.github/workflows/ci.yml` (mobile: typecheck · lint · format:check · jest; edge functions: `deno check` · `deno test`) · `.github/workflows/e2e.yml` (Maestro, **manual dispatch only**).
+
+## Tests
+
+| Where | What |
+|---|---|
+| `mobile/src/lib/__tests__/` | Pure domain logic — the modules listed above, plus the correlation parity fixture |
+| `mobile/src/theme/__tests__/` | The WCAG AA contrast contract (a failing colour is a bug, not a failing test) |
+| `mobile/src/{app,components}/**/__tests__/` | Component tests (RNTL): sign-up funnel · DailyCheckinCard (optimistic upsert + rollback) · chat send (draft restored on failure) · replenish (the `loading → error → empty → data` precedence) |
+| `mobile/src/test/` | **Not tests** — the harness. `supabaseMock.ts` fakes the PostgREST wire so hooks/stores/React Query all run for real; `render.tsx` wraps a component in the app's providers. Mock here, not at `hooks.ts`, or you stub out the very code the bugs lived in |
+| `supabase/functions/_shared/__tests__/` | Deno tests (see the edge-function table above) |
+| `mobile/.maestro/` | E2E flows (guest scan · **guest upgrade keeps its data** · check-in · chat), mock-mode, ⚠ **written but never yet executed** — they need the pending EAS build. See its README |
+
+`mobile/jest.setup.js` stubs the `EXPO_PUBLIC_*` env and mocks the two native modules that
+break at *import* time under Jest: AsyncStorage (any store touches it) and `expo-network`
+(`lib/query.ts` wires it into React Query's `onlineManager` at module load).
 
 ## Build & assets (`mobile/`)
 
