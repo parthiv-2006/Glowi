@@ -2,7 +2,8 @@
   "//": "Deno config for type-checking the edge functions in CI (E3). Deliberately lives at supabase/ rather than supabase/functions/ — it is an ancestor of the functions, so `deno check` picks it up, but it is not inside the directory the Supabase CLI deploys, so it cannot change what runs in production. The edge runtime resolves npm: specifiers itself; this only teaches a local/CI Deno to do the same.",
   "nodeModulesDir": "auto",
   "imports": {
-    "@supabase/supabase-js": "npm:@supabase/supabase-js@2"
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
+    "@std/assert": "jsr:@std/assert@^1"
   },
   "compilerOptions": {
     "strict": true
