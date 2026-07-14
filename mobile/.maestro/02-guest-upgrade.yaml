@@ -1,0 +1,71 @@
+# The regression test for the P0 bug of the whole polish effort (B1).
+#
+# `upgrade.tsx` used to call signUpEmail, which minted a BRAND NEW user and signed
+# into it — so every scan, chat, routine and shelf item the guest had built up was
+# silently orphaned, while the screen's own copy promised they were "saved". The fix
+# converts the existing guest in place, keeping the user id and therefore every
+# RLS-owned row.
+#
+# Which means the assertion that matters here is not "the upgrade succeeded". It is
+# "the data is still there afterwards". A flow that only checked for a happy screen
+# would have passed against the bug.
+appId: com.glowi.app
+name: Guest upgrades to an account and keeps their data
+---
+- clearState
+- launchApp
+
+- tapOn: 'Continue as guest'
+- extendedWaitUntil:
+    visible: "Let's go"
+    timeout: 20000
+
+# Skip through onboarding — this flow is about the upgrade, not the wizard.
+- tapOn: "Let's go"
+- tapOn:
+    index: 0
+    text: '.*'
+- tapOn: 'Continue'
+- tapOn:
+    index: 0
+    text: '.*'
+- tapOn: 'Start exploring'
+
+# ── Create something worth losing ──────────────────────────────────────────
+# A check-in is the cheapest durable row to make: one tap, one upsert, and it is
+# visible on Home afterwards, so its survival is easy to assert.
+- extendedWaitUntil:
+    visible: "Today's check-in"
+    timeout: 15000
+- tapOn:
+    id: 'Sleep: Great'
+- tapOn:
+    id: 'Stress: Calm'
+- tapOn:
+    id: 'Water: Good'
+- extendedWaitUntil:
+    visible: 'Logged for today'
+    timeout: 15000
+
+# ── Upgrade ────────────────────────────────────────────────────────────────
+- tapOn:
+    id: 'Open profile'
+- assertVisible: 'Save your progress'
+- tapOn: 'Create an account'
+
+- assertVisible: 'Create your account'
+- tapOn: 'you@example.com'
+# A fresh address per run: the same one twice would hit "email already in use",
+# which is a different (also valid) test, not this one.
+- inputText: 'maestro-${maestro.randomInteger(1, 99999999)}@glowi.test'
+- tapOn: 'At least 8 characters'
+- inputText: 'maestro-test-password'
+- tapOn: 'Create account'
+
+# ── The assertion this flow exists for ─────────────────────────────────────
+# Back on Home, as a real account now — and the check-in the *guest* logged is
+# still there. If B1 ever regresses, this is where it is caught: the upgrade will
+# look perfectly successful and this line will fail.
+- extendedWaitUntil:
+    visible: 'Logged for today'
+    timeout: 25000

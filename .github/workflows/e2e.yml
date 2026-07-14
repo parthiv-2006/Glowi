@@ -1,0 +1,82 @@
+# E2E is manual-dispatch only, on purpose.
+#
+# An Android emulator on every push would add ~15 minutes to a pipeline that
+# currently finishes in about three, to re-prove flows that change rarely. The
+# release checklist in docs/RELEASE.md is where this suite is expected to be green;
+# run it before a build goes out, and after anything that touches auth, scan, or chat.
+#
+# ⚠️ The flows have never been executed — see mobile/.maestro/README.md. The first
+# green run is what turns E5 from "written" into "done".
+name: E2E (Maestro)
+
+on:
+  workflow_dispatch:
+    inputs:
+      flow:
+        description: 'A single flow file to run (default: all of them)'
+        required: false
+        default: '.maestro/'
+
+jobs:
+  android:
+    name: Maestro · Android · mock mode
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      # The mock flag is read at bundle time, so it has to be set for the build, not
+      # for the test run. Without it the flows would drive the live provider and spend
+      # real Anthropic tokens on every CI click.
+      - name: Build a mock-mode debug APK
+        working-directory: mobile
+        env:
+          EXPO_PUBLIC_AI_MODE: mock
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          npx expo prebuild --platform android --no-install
+          ./android/gradlew -p android assembleDebug
+
+      - name: Run the flows
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          script: |
+            adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            maestro test --format junit --output maestro-report.xml "mobile/${{ inputs.flow || '.maestro/' }}"
+
+      # Screenshots and the JUnit report are the only evidence of what a failure
+      # looked like — a red X with no artifact is a debugging dead end.
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-results
+          path: |
+            maestro-report.xml
+            ~/.maestro/tests/**
+          retention-days: 14

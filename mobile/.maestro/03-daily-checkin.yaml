@@ -1,0 +1,52 @@
+# The daily habit: three taps, no save button, each one an immediate upsert.
+# Component tests already cover the optimistic merge and its rollback; what only a
+# device can prove is that the taps survive a real round trip to Postgres through
+# RLS and are still there when the app comes back.
+appId: com.glowi.app
+name: Daily check-in persists
+---
+- clearState
+- launchApp
+
+- tapOn: 'Continue as guest'
+- extendedWaitUntil:
+    visible: "Let's go"
+    timeout: 20000
+- tapOn: "Let's go"
+- tapOn:
+    index: 0
+    text: '.*'
+- tapOn: 'Continue'
+- tapOn:
+    index: 0
+    text: '.*'
+- tapOn: 'Start exploring'
+
+# ── Check in ───────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Today's check-in"
+    timeout: 15000
+
+- tapOn:
+    id: 'Sleep: Poor'
+- tapOn:
+    id: 'Stress: High'
+- tapOn:
+    id: 'Water: Okay'
+
+# Answering all three scales collapses the card to its summary — and the summary
+# is generated from the stored row, so seeing the right words means the right
+# values landed.
+- extendedWaitUntil:
+    visible: 'Logged for today'
+    timeout: 15000
+- assertVisible: 'Poor sleep · High stress · Okay water'
+
+# ── And it is real, not just optimistic ────────────────────────────────────
+# A relaunch drops every optimistic cache write. What comes back is what Postgres
+# actually stored.
+- launchApp
+- extendedWaitUntil:
+    visible: 'Logged for today'
+    timeout: 20000
+- assertVisible: 'Poor sleep · High stress · Okay water'
