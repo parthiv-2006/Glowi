@@ -21,7 +21,7 @@ import {
   HankenGrotesk_600SemiBold,
   HankenGrotesk_700Bold,
 } from '@expo-google-fonts/hanken-grotesk';
-import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/space-mono';
+import { SpaceMono_400Regular } from '@expo-google-fonts/space-mono';
 import * as Sentry from '@sentry/react-native';
 
 import { CrashFallback } from '@/components/CrashFallback';
@@ -240,7 +240,6 @@ function RootLayout() {
     HankenGrotesk_600SemiBold,
     HankenGrotesk_700Bold,
     SpaceMono_400Regular,
-    SpaceMono_700Bold,
   });
 
   useEffect(() => {
