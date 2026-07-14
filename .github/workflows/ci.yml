@@ -41,7 +41,7 @@ jobs:
   # them merged green and only surfaced at deploy time, or worse, at runtime in front
   # of a user. Deno is their actual runtime, so Deno is what has to typecheck them.
   edge-functions:
-    name: Edge functions · deno check
+    name: Edge functions · deno check · deno test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -64,3 +64,9 @@ jobs:
       # explicitly because a module imported by nothing (yet) still has to compile.
       - name: Typecheck
         run: deno check functions/*/index.ts functions/_shared/*.ts
+
+      # --allow-env because anthropic.ts and http.ts read their config from the
+      # environment at import time. Nothing else is granted: these are pure-logic
+      # tests and must not be able to reach the network or the disk.
+      - name: Unit tests
+        run: deno test --allow-env functions/_shared/__tests__/

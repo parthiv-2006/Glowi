@@ -11,6 +11,7 @@ import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, MODELS } from '../_shared/anthropic.ts';
 import { assembleMemoryContext, touchMemories } from '../_shared/memory.ts';
+import { parseProductBlock } from '../_shared/products.ts';
 import { enforceRateLimit } from '../_shared/ratelimit.ts';
 
 /** Generous for real coaching use; a hard stop for token-burn loops. */
@@ -22,7 +23,6 @@ interface ChatBody {
 }
 
 const HISTORY_LIMIT = 20;
-const PRODUCTS_RE = /<products>\s*(\[[\s\S]*?\])\s*<\/products>/;
 
 serve(async (req) => {
   const { user } = await requireUser(req);
@@ -113,21 +113,9 @@ ${catalog}`;
     messages: history.length ? history : [{ role: 'user', content: message }],
   });
 
-  // Parse optional product block out of the visible reply.
-  let productRefs: string[] = [];
-  const reply = raw
-    .replace(PRODUCTS_RE, (_, group: string) => {
-      try {
-        const slugs = JSON.parse(group);
-        if (Array.isArray(slugs)) {
-          productRefs = slugs.filter((s) => typeof s === 'string').slice(0, 3);
-        }
-      } catch {
-        // Malformed block — drop it silently; the prose reply stands alone.
-      }
-      return '';
-    })
-    .trim();
+  // Parse the optional product block out of the visible reply.
+  const { reply, productRefs: claimed } = parseProductBlock(raw);
+  let productRefs = claimed;
 
   if (productRefs.length) {
     // Validate against the real catalog before persisting.

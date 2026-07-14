@@ -1,0 +1,63 @@
+# Fresh install → guest → onboarding → scan → results.
+# The spine of the product: if this breaks, nothing else matters.
+appId: com.glowi.app
+name: Guest signs up and completes a scan
+---
+- clearState
+- launchApp
+
+# ── Welcome ────────────────────────────────────────────────────────────────
+- assertVisible: 'Continue as guest'
+- tapOn: 'Continue as guest'
+
+# Guest creation is a real round trip to the auth-signup edge function.
+- extendedWaitUntil:
+    visible: "Let's go"
+    timeout: 20000
+
+# ── Onboarding: skin type, then goals ──────────────────────────────────────
+- tapOn: "Let's go"
+# Each step needs a selection before Continue does anything. Skin types and
+# concern names come from the taxonomy; tap by position so a reworded label
+# does not fail the flow for the wrong reason.
+- tapOn:
+    index: 0
+    text: '.*'
+- tapOn: 'Continue'
+- tapOn:
+    index: 0
+    text: '.*'
+- tapOn: 'Start exploring'
+
+# ── Home ───────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      id: 'Start a scan'
+    timeout: 15000
+- tapOn:
+    id: 'Start a scan'
+
+# ── Scan ───────────────────────────────────────────────────────────────────
+# Upload from the library rather than driving the guided camera: an emulator has
+# no face to align, and guided capture is verified by hand, not by a robot.
+- assertVisible: 'Upload'
+- tapOn: 'Upload'
+# The OS photo picker — its chrome is not ours, so this is the one selector that
+# will differ by platform and Android version. Fix it here when it moves.
+- tapOn:
+    point: '50%,40%'
+- extendedWaitUntil:
+    visible: 'Analyze my skin'
+    timeout: 15000
+- tapOn: 'Analyze my skin'
+
+# The mock provider answers instantly; the analyzing screen still plays its
+# theater, and the scan row is a real insert + update.
+- extendedWaitUntil:
+    visible: 'Scan results'
+    timeout: 30000
+
+# ── Results ────────────────────────────────────────────────────────────────
+# The "not medical advice" line is a store-review requirement (D5) — part of the
+# flow, not decoration. If it ever silently disappears, this fails.
+- assertVisible: 'Glowi describes cosmetic skin appearance.*'

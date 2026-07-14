@@ -13,3 +13,14 @@ process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??= 'sb_publishable_test';
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
+
+// expo-network is native too, and `lib/query.ts` wires it into React Query's
+// onlineManager at import — which anything importing `hooks.ts` drags in. The
+// auto-mock returns undefined from `addNetworkStateListener`, so onlineManager's
+// cleanup calls `sub.remove()` on nothing and the whole suite dies. Report a
+// plain online device: offline behaviour is asserted by failing a query, not by
+// faking the radio.
+jest.mock('expo-network', () => ({
+  getNetworkStateAsync: jest.fn(async () => ({ isConnected: true, isInternetReachable: true })),
+  addNetworkStateListener: jest.fn(() => ({ remove: jest.fn() })),
+}));

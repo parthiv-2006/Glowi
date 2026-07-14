@@ -95,9 +95,10 @@ export const fonts = {
   bodyMedium: 'HankenGrotesk_500Medium',
   bodySemiBold: 'HankenGrotesk_600SemiBold',
   bodyBold: 'HankenGrotesk_700Bold',
-  // Space Mono — overlines, data, labels
+  // Space Mono — overlines, data, labels.
+  // Regular only: nothing ever used the bold face, and every family listed here is
+  // a font file the splash screen waits on before the app can paint.
   mono: 'SpaceMono_400Regular',
-  monoBold: 'SpaceMono_700Bold',
   // Backward-compat aliases
   display: 'Newsreader_500Medium',
   displayBold: 'Newsreader_500Medium',

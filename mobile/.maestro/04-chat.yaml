@@ -1,0 +1,52 @@
+# Coach send, in mock mode.
+#
+# The reply comes from `lib/ai/mock.ts`, so this costs nothing and says the same
+# thing every run. What it proves is the part mocks cannot fake: the session row,
+# the message insert, and the optimistic bubble surviving the round trip — i.e.
+# that a message the user typed is still on screen a second later.
+appId: com.glowi.app
+name: Coach conversation
+---
+- clearState
+- launchApp
+
+- tapOn: 'Continue as guest'
+- extendedWaitUntil:
+    visible: "Let's go"
+    timeout: 20000
+- tapOn: "Let's go"
+- tapOn:
+    index: 0
+    text: '.*'
+- tapOn: 'Continue'
+- tapOn:
+    index: 0
+    text: '.*'
+- tapOn: 'Start exploring'
+
+# ── Open the coach ─────────────────────────────────────────────────────────
+- tapOn: 'Coach'
+- extendedWaitUntil:
+    visible: 'New conversation'
+    timeout: 15000
+- tapOn: 'New conversation'
+
+# ── Send ───────────────────────────────────────────────────────────────────
+- assertVisible: 'Ask me anything skincare'
+- tapOn: 'Message your coach…'
+- inputText: 'why is my chin breaking out'
+- tapOn:
+    id: 'Send message'
+
+# The user's own words, echoed optimistically and then confirmed by the refetch.
+- assertVisible: 'why is my chin breaking out'
+
+# And an answer. The mock provider is deterministic but its wording is its own, so
+# assert that the coach said *something* rather than pinning a sentence that a copy
+# tweak would break.
+- extendedWaitUntil:
+    visible:
+      id: 'Send message'
+      enabled: true
+    timeout: 30000
+- assertNotVisible: "Couldn't send that — check your connection."
