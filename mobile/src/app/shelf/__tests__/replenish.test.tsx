@@ -13,7 +13,7 @@ import ReplenishScreen from '@/app/shelf/replenish';
 import { renderWithProviders } from '@/test/render';
 import { resetSupabaseMock, setResponder, type QueryResult } from '@/test/supabaseMock';
 import { useAuth } from '@/stores/auth';
-import type { ShelfItem } from '@/lib/types';
+import type { Product, ShelfItem } from '@/lib/types';
 
 jest.mock('@/lib/supabase', () => jest.requireActual('@/test/supabaseMock'));
 jest.mock('expo-router', () => ({ useRouter: () => ({ back: jest.fn(), push: jest.fn() }) }));
@@ -107,5 +107,51 @@ describe('replenish screen', () => {
     expect(screen.queryByText('Nothing needs replacing')).toBeNull();
     // No catalog match, so the coach fallback is offered rather than a dead end.
     expect(screen.getByText('Ask your coach what to get')).toBeTruthy();
+  });
+
+  it('replaces the deterministic rationale with the AI coach line once it resolves (F1)', async () => {
+    const replacement: Product = {
+      id: 'prod-1',
+      slug: 'niacinamide-serum',
+      brand: 'The Ordinary',
+      name: 'Niacinamide Serum',
+      category: 'serum',
+      description: '',
+      key_ingredients: ['niacinamide'],
+      price_usd: 10,
+      image_url: null,
+      retailer_links: [],
+      skin_types: [],
+      am_pm: 'both',
+      step_order: 1,
+    };
+    // useShelfItems (the list) must resolve before ReplenishGroup mounts and
+    // fires the mock's own shelf_items lookup (a single row, via
+    // .maybeSingle()) — the generic table-keyed responder can't tell those
+    // two queries apart by shape, so give the list on the first call and the
+    // single row matching real .maybeSingle() shape on every call after.
+    let shelfCalls = 0;
+    setResponder((call) => {
+      if (call.table === 'shelf_items') {
+        shelfCalls += 1;
+        return shelfCalls === 1 ? ok([emptyBottle]) : ok(emptyBottle);
+      }
+      if (call.table === 'products') return ok([replacement]);
+      return { data: [], error: null };
+    });
+
+    renderWithProviders(<ReplenishScreen />);
+
+    // The mock AI provider resolves with a coach-voiced line that replaces
+    // the deterministic composeWhy rationale, not sit alongside it — this
+    // asserts the full line, including the trigger-item label half.
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'The Ordinary Niacinamide Serum brings niacinamide to the table — a solid step up from Acme Vitamin C Serum.',
+        ),
+      ).toBeTruthy();
+    });
+    expect(screen.queryByText('Same category as what you already own')).toBeNull();
   });
 });

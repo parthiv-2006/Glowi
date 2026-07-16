@@ -103,6 +103,10 @@ export const supabase = {
   // to assert on one of these should spy on it there, where the types are available.
   auth: {
     getSession: async () => ({ data: { session: null }, error: null }),
+    // mockProvider's requireUserId() calls this on every AI method; a fixed
+    // id is enough since these tests assert on data shape, not on whose data
+    // it is.
+    getUser: async () => ({ data: { user: { id: 'mock-user' } }, error: null }),
     signInWithPassword: async () => ({ data: { session: null }, error: null }),
     signOut: async () => ({ error: null }),
     updateUser: async () => ({ data: { user: null }, error: null }),
