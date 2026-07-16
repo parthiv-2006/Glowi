@@ -97,14 +97,19 @@ Two families of tables (full DDL in `supabase/migrations/0001_core_tables.sql`):
   semantic retrieval ([ADR-0016](adr/0016-semantic-memory-retrieval.md)).
 
 **Replenishment** (`lib/replenishment.ts`) is a pure-client engine, the same class as
-Shelf Budget — zero AI calls, no new table. `replenishmentTriggers` flags shelf items
-that are expiring, expired, low, or out, reusing `shelf.ts`'s PAO/stock logic.
-`suggestReplacements` ranks same-category catalog products (`getCatalogProducts`)
+Shelf Budget — zero AI calls, no new table for the ranking itself. `replenishmentTriggers`
+flags shelf items that are expiring, expired, low, or out, reusing `shelf.ts`'s PAO/stock
+logic. `suggestReplacements` ranks same-category catalog products (`getCatalogProducts`)
 against the latest scan's concerns (via `ingredientConcerns.ts`), the user's skin type,
 and price, hard-excluding anything already owned and anything sharing an ingredient
 with a logged reaction (`reactions.ts` — a reacted ingredient is a "never again", per
 [ADR-0009](adr/0009-reaction-log.md)). Surfaced from the Shelf via a "See what to get
-next" link into `/shelf/replenish` whenever a trigger exists.
+next" link into `/shelf/replenish` whenever a trigger exists. A thin AI layer on top
+(F1) gives each ranked suggestion one coach-voiced "why this over that" line: the
+`replenishment-copy` edge function batches every uncached candidate for a trigger into
+one Claude call and caches results per `(user, trigger_item, product)` in
+`replenishment_copy` (migration 0025), so the deterministic ranking stays free and only
+the coach copy ever costs a token — and only once per pairing.
 
 **Weekly Glow Report** (`glow_reports`, migration 0016) reuses the `skin_forecasts`
 idempotent-cache pattern at weekly grain: one immutable row per user per completed week,
@@ -136,8 +141,8 @@ flag); `set_updated_at` triggers maintain timestamps.
 
 The app depends only on the `AIProvider` interface (`lib/ai/types.ts`):
 `analyzeScan`, `chat`, `extractMemories`, `skinForecast`, `identifyProduct`,
-`checkConflicts`, `compareScans`, `compareProducts`, `glowReport`. Two implementations
-([ADR-0003](adr/0003-ai-provider-seam.md)):
+`checkConflicts`, `compareScans`, `compareProducts`, `glowReport`,
+`replenishmentCopy`. Two implementations ([ADR-0003](adr/0003-ai-provider-seam.md)):
 
 - **Live** (`lib/ai/live.ts`) invokes edge functions.
 - **Mock** (`lib/ai/mock.ts`) runs on-device with realistic, staged behavior and writes
@@ -154,6 +159,7 @@ The app depends only on the `AIProvider` interface (`lib/ai/types.ts`):
 | `identify-product` | Reads a product photo with Claude vision and returns structured details (name, brand, category, key ingredients, PAO, catalog match) for The Shelf, **validated** against the category enum and catalog. Persists nothing — the client confirms before saving ([ADR-0006](adr/0006-the-shelf-inventory.md)). |
 | `check-conflicts` | Filters the user's active shelf items down to those with known `key_ingredients`; if a cached `conflict_reports` row is at least as new as the latest shelf change, returns it with no Claude call. Otherwise asks Claude (temperature 0) for strict-JSON ingredient interactions, parses via `extractJson`, caches, and returns the report ([ADR-0008](adr/0008-ingredient-conflict-checker.md)). |
 | `compare-products` | In-store decision support: reads two product photos in a single Claude vision call whose prompt embeds the user's latest scan concerns, shelf ingredients, and reaction log; **validates** the verdict/category enums server-side and persists nothing ([ADR-0010](adr/0010-in-store-compare.md)). |
+| `replenishment-copy` | One short coach-voiced line per Smart Replenishment suggestion (F1): batches every uncached candidate for a triggered shelf item into one Claude call, maps lines back to candidates by ordinal position (never a model-authored key), and caches per `(user, trigger_item, product)` in `replenishment_copy` so a repeat visit costs no Claude call. |
 | `auth-signup` | Creates pre-confirmed email and guest users via the admin API ([ADR-0002](adr/0002-prefilled-auth-signup-function.md)). |
 | `push-dispatch` | Sends scheduled Expo push notifications (Monday "Glow Report ready", Wednesday lapsed-scan nudge). Called by pg_cron via pg_net, authenticated by a Vault-held shared secret instead of a user JWT; dead tokens self-prune ([ADR-0015](adr/0015-server-push-notifications.md)). |
 
