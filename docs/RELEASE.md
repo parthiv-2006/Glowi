@@ -228,7 +228,7 @@ a payload. The Profile → "Share usage analytics" opt-out is enforced at one ch
 ## Tests (E4) and E2E (E5)
 
 **Every push runs** (`.github/workflows/ci.yml`): mobile typecheck · lint · `format:check` ·
-201 Jest tests; edge functions `deno check` · `deno test`. Don't push red.
+205 Jest tests; edge functions `deno check` · 37 `deno test`s. Don't push red.
 
 The Jest suite now includes component tests (React Native Testing Library) for the four
 flows whose failures would be silent: sign-up validation, the check-in card's optimistic
@@ -260,7 +260,37 @@ decision, not a mechanical edit.
 
 - [ ] Profile on a mid-tier Android once a build exists; then plan the list-virtualization fix.
 
-## Launch checklist (gates G1 — do not tag v1.0.0 until all checked)
+## Release-candidate gate (G1) — ran 2026-07-16, all engineering checks green
+
+The final pre-launch review (`polish_product.md` task G1) ran against `main` with a
+clean tree. **`v1.0.0` tags this engineering-complete release candidate**; the launch
+checklist below gates *store submission and public launch*, not the tag — its open
+items all need owner credentials or a physical device.
+
+- **Supabase advisors** — clean except the two documented acceptances:
+  `rate_limit_events` RLS-enabled-no-policy (INFO; deliberate — the table is written
+  only by the SECURITY DEFINER `check_rate_limit` RPC and read by nobody else), and
+  the HIBP leaked-password WARN (owner-gated toggle, below). Performance advisor
+  shows only INFO `unused_index` rows — the A3/0026 covering indexes, unused because
+  production traffic is near zero.
+- **Quality gate** — typecheck, lint, `format:check`, 205 Jest tests (24 suites),
+  `deno check` over all 14 functions + 12 shared modules, 37 Deno tests: all green.
+- **Security review of the release diff** (`47be17f..HEAD`, the ~60 polish commits) —
+  no findings. Verified: `auth-signup` upgrade mode derives its target from the
+  caller's JWT only and refuses non-guests; `delete-account` fails closed on partial
+  storage deletion; `cleanup-guests` authenticates timing-safely and skips (never
+  orphans) on storage failure; `email_taken` is service-role-only (no enumeration
+  oracle); all 10 AI functions rate-limit after their cache checks; prompt fencing
+  (`<user_context>`/`<week_facts>`, ADR-0020) present in all five prompt-assembling
+  functions; auth-gate exemptions expose only static legal pages and the recovery
+  landing; no secrets in the diff.
+- **Live production checks** — `glowi-push-glow-report` and `glowi-push-scan-nudge`
+  crons both succeeded on their latest runs; `glowi-cleanup-guests` (monthly, first
+  run Aug 1) verified end-to-end via a dry-run through the real cron path
+  (`net.http_post` + Vault secret → 200, `{"dryRun":true,"count":0}`); the rate
+  limiter is writing live events (`skin-forecast`, `signup` buckets).
+
+## Launch checklist (gates store submission — owner items)
 
 - [ ] **New EAS build cut** — `expo-network` (connectivity) and `@sentry/react-native` (crash
       reporting) are native modules; neither reaches a device on the existing build. **The
@@ -279,10 +309,12 @@ decision, not a mechanical edit.
 - [ ] Medical-disclaimer copy (results notice + chat line) owner-approved.
 - [ ] Production builds smoke-tested on device (Android APK/AAB installed; iOS via
       TestFlight).
-- [ ] Push cron verified (`cron.job_run_details` shows recent successful runs for all
-      three jobs).
+- [x] Push cron verified 2026-07-16 (`cron.job_run_details`: both push jobs succeeded
+      on their latest runs; `cleanup-guests` hasn't had its first monthly firing yet —
+      Aug 1 — but its full cron path returned 200 on a dry-run invocation).
 - [ ] Store forms filled from the matrices below; screenshots uploaded.
-- [ ] Supabase advisors clean except documented acceptances.
+- [x] Supabase advisors clean except documented acceptances (verified 2026-07-16 — see
+      the G1 gate record above).
 
 ## Store submission (C2)
 
