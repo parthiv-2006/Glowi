@@ -26,11 +26,18 @@ import { track } from '@/lib/analytics';
 import { createSession } from '@/lib/api';
 import { expiryColor, stockColor } from '@/lib/constants';
 import { haptics } from '@/lib/haptics';
-import { useCatalogProducts, useReactionLogs, useScans, useShelfItems } from '@/lib/hooks';
+import {
+  useCatalogProducts,
+  useReactionLogs,
+  useReplenishmentCopy,
+  useScans,
+  useShelfItems,
+} from '@/lib/hooks';
 import { qk } from '@/lib/query';
 import {
   replenishmentTriggers,
   suggestReplacements,
+  type ReplacementSuggestion,
   type ReplenishmentTrigger,
 } from '@/lib/replenishment';
 import { useAuth } from '@/stores/auth';
@@ -57,6 +64,63 @@ const REASON_PHRASE: Record<ReplenishmentTrigger['reason'], string> = {
   out: 'is used up',
   low_stock: 'is running low',
 };
+
+interface ReplenishGroupProps {
+  trigger: ReplenishmentTrigger;
+  suggestions: ReplacementSuggestion[];
+  askingItemId: string | null;
+  onAskCoach: (trigger: ReplenishmentTrigger) => void;
+}
+
+/**
+ * One triggered shelf item and its ranked replacements. Its own component so
+ * the AI copy hook — scoped to this trigger's candidate ids — follows the
+ * rules of hooks instead of running inside the outer .map().
+ */
+function ReplenishGroup({ trigger, suggestions, askingItemId, onAskCoach }: ReplenishGroupProps) {
+  const productIds = useMemo(() => suggestions.map((s) => s.product.id), [suggestions]);
+  const { data: aiCopy } = useReplenishmentCopy(trigger.item.id, productIds);
+
+  return (
+    <View style={styles.group}>
+      <View style={styles.groupHeader}>
+        <AppText variant="heading" numberOfLines={1} style={styles.groupTitle}>
+          {trigger.item.name}
+        </AppText>
+        <Badge label={REASON_LABEL[trigger.reason]} color={reasonColor(trigger.reason)} />
+      </View>
+
+      {suggestions.length ? (
+        <View style={styles.cards}>
+          {suggestions.map((s) => (
+            <ProductCard
+              key={s.product.id}
+              product={s.product}
+              rationale={aiCopy?.[s.product.id] ?? s.why}
+            />
+          ))}
+        </View>
+      ) : (
+        <PressableScale onPress={() => onAskCoach(trigger)}>
+          <GlassCard style={styles.noMatch}>
+            <AppText variant="caption" color={palette.textSecondary}>
+              No safe match in the catalog yet for this category.
+            </AppText>
+            <View style={styles.askCoachRow}>
+              <Ionicons name="chatbubble-ellipses-outline" size={16} color={palette.accentBright} />
+              <AppText variant="subheading" color={palette.accentBright}>
+                {askingItemId === trigger.item.id
+                  ? 'Opening your coach…'
+                  : 'Ask your coach what to get'}
+              </AppText>
+              <Ionicons name="chevron-forward" size={14} color={palette.textTertiary} />
+            </View>
+          </GlassCard>
+        </PressableScale>
+      )}
+    </View>
+  );
+}
 
 export default function ReplenishScreen() {
   const router = useRouter();
@@ -178,43 +242,13 @@ export default function ReplenishScreen() {
 
           <Stagger delay={80} interval={60}>
             {grouped.map(({ trigger, suggestions }) => (
-              <View key={trigger.item.id} style={styles.group}>
-                <View style={styles.groupHeader}>
-                  <AppText variant="heading" numberOfLines={1} style={styles.groupTitle}>
-                    {trigger.item.name}
-                  </AppText>
-                  <Badge label={REASON_LABEL[trigger.reason]} color={reasonColor(trigger.reason)} />
-                </View>
-
-                {suggestions.length ? (
-                  <View style={styles.cards}>
-                    {suggestions.map((s) => (
-                      <ProductCard key={s.product.id} product={s.product} rationale={s.why} />
-                    ))}
-                  </View>
-                ) : (
-                  <PressableScale onPress={() => void askCoach(trigger)}>
-                    <GlassCard style={styles.noMatch}>
-                      <AppText variant="caption" color={palette.textSecondary}>
-                        No safe match in the catalog yet for this category.
-                      </AppText>
-                      <View style={styles.askCoachRow}>
-                        <Ionicons
-                          name="chatbubble-ellipses-outline"
-                          size={16}
-                          color={palette.accentBright}
-                        />
-                        <AppText variant="subheading" color={palette.accentBright}>
-                          {askingItemId === trigger.item.id
-                            ? 'Opening your coach…'
-                            : 'Ask your coach what to get'}
-                        </AppText>
-                        <Ionicons name="chevron-forward" size={14} color={palette.textTertiary} />
-                      </View>
-                    </GlassCard>
-                  </PressableScale>
-                )}
-              </View>
+              <ReplenishGroup
+                key={trigger.item.id}
+                trigger={trigger}
+                suggestions={suggestions}
+                askingItemId={askingItemId}
+                onAskCoach={(t) => void askCoach(t)}
+              />
             ))}
           </Stagger>
         </>

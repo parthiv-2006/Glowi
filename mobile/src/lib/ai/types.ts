@@ -90,6 +90,19 @@ export interface AIProvider {
    * same week hits the cache with no Claude call.
    */
   glowReport(input: GlowReportInput): Promise<GlowReport>;
+  /**
+   * Returns a short coach-voiced "why this over that" line per candidate
+   * product for a triggered shelf item, keyed by product id. Cached per
+   * (shelf item, product) pair server-side — repeat calls for the same pair
+   * hit the cache with no Claude call. Missing keys in the result mean the
+   * caller should fall back to its own deterministic rationale.
+   */
+  replenishmentCopy(input: ReplenishmentCopyInput): Promise<Record<string, string>>;
+}
+
+export interface ReplenishmentCopyInput {
+  triggerItemId: string;
+  productIds: string[];
 }
 
 export interface CompareProductsInput {

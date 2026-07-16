@@ -298,3 +298,19 @@ export function useScanComparison(scanIdBefore: string | null, scanIdAfter: stri
     staleTime: Infinity,
   });
 }
+
+/**
+ * Coach-voiced "why this over that" line per candidate product for a
+ * triggered shelf item (F1). Cached server-side per (shelf item, product)
+ * pair, so this hook's own Infinity staleTime never re-pays a Claude call —
+ * missing keys in the result just mean the caller keeps its deterministic
+ * rationale for that candidate.
+ */
+export function useReplenishmentCopy(triggerItemId: string | null, productIds: string[]) {
+  return useQuery({
+    queryKey: qk.replenishmentCopy(triggerItemId ?? '', productIds),
+    queryFn: () => getAIProvider().replenishmentCopy({ triggerItemId: triggerItemId!, productIds }),
+    enabled: !!triggerItemId && productIds.length > 0,
+    staleTime: Infinity,
+  });
+}

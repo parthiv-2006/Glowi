@@ -19,6 +19,7 @@ import type {
   ExtractResult,
   GlowReportInput,
   IdentifyProductInput,
+  ReplenishmentCopyInput,
   SkinForecastInput,
 } from './types';
 
@@ -105,5 +106,16 @@ export const liveProvider: AIProvider = {
   async glowReport({ weekStart }: GlowReportInput): Promise<GlowReport> {
     const result = await invoke<{ report: GlowReport }>('glow-report', { week_start: weekStart });
     return result.report;
+  },
+
+  async replenishmentCopy({
+    triggerItemId,
+    productIds,
+  }: ReplenishmentCopyInput): Promise<Record<string, string>> {
+    const result = await invoke<{ copy: Record<string, string> }>('replenishment-copy', {
+      triggerItemId,
+      productIds,
+    });
+    return result.copy;
   },
 };

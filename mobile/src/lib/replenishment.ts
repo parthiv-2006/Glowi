@@ -11,7 +11,11 @@ import { normalizeIngredient } from './reactions';
 import { expiryStatus, stockStatus } from './shelf';
 import type { Product, ReactionLog, Scan, ShelfItem, SkinType } from './types';
 
-/** Max ranked replacement suggestions returned per trigger. */
+/**
+ * Max ranked replacement suggestions returned per trigger. Must match the
+ * replenishment-copy edge function's MAX_CANDIDATES (F1) — the AI copy
+ * batch is sized to however many suggestions this produces.
+ */
 export const MAX_SUGGESTIONS = 3;
 
 /** A shelf item that warrants replacement, and why. */

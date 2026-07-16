@@ -36,6 +36,7 @@ import type {
   ExtractResult,
   GlowReportInput,
   IdentifyProductInput,
+  ReplenishmentCopyInput,
   SkinForecastInput,
 } from './types';
 import { DEFAULT_LOCATION, deriveForecast, synthesizeEnvironment } from './forecast';
@@ -772,6 +773,36 @@ export const mockProvider: AIProvider = {
       .single();
     if (error) throw new Error(error.message);
     return data as GlowReport;
+  },
+
+  async replenishmentCopy({
+    triggerItemId,
+    productIds,
+  }: ReplenishmentCopyInput): Promise<Record<string, string>> {
+    await requireUserId();
+    // Same cap as the replenishment-copy edge function's MAX_CANDIDATES —
+    // must stay in lockstep so live and mock never disagree on how many
+    // candidates get a line, regardless of what the caller passes in.
+    const ids = [...new Set(productIds)].slice(0, 3);
+    if (!ids.length) return {};
+
+    // Deterministic, zero-network copy from the same catalog data the live
+    // function would use — no randomness, so a demo replay looks consistent.
+    const [{ data: triggerItem }, { data: candidates }] = await Promise.all([
+      supabase.from('shelf_items').select('name, brand').eq('id', triggerItemId).maybeSingle(),
+      supabase.from('products').select('id, brand, name, key_ingredients').in('id', ids),
+    ]);
+    const triggerLabel =
+      [triggerItem?.brand, triggerItem?.name].filter(Boolean).join(' ') || 'what you have now';
+
+    const copy: Record<string, string> = {};
+    for (const product of candidates ?? []) {
+      const lead = (product.key_ingredients as string[] | null)?.[0];
+      copy[product.id] = lead
+        ? `${product.brand} ${product.name} brings ${lead} to the table — a solid step up from ${triggerLabel}.`
+        : `${product.brand} ${product.name} is a clean swap for ${triggerLabel}.`;
+    }
+    return copy;
   },
 
   async extractMemories(sessionId: string): Promise<ExtractResult> {
