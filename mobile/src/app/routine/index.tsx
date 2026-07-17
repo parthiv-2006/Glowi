@@ -34,6 +34,7 @@ import {
   Skeleton,
   Stagger,
 } from '@/components/ui';
+import { RoutineTimeline } from '@/components/RoutineTimeline';
 import { CATEGORY_LABEL } from '@/lib/constants';
 import { getProductsForConcern, saveRoutine } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
@@ -522,6 +523,12 @@ function RoutineContent({
 
   return (
     <View style={styles.contentWrap}>
+      {steps.length >= 2 && (
+        <Animated.View entering={FadeIn.duration(280)}>
+          <RoutineTimeline steps={steps} period={period} warningsCount={warnings.length} />
+        </Animated.View>
+      )}
+
       {warnings.length > 0 && (
         <Animated.View entering={FadeIn.duration(280)}>
           <GlassCard style={styles.warningsCard}>
