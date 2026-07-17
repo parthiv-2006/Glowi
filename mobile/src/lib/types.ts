@@ -259,9 +259,12 @@ export interface ShelfItem {
   updated_at: string;
 }
 
+/** Severity of a flagged ingredient interaction. */
+export type ConflictSeverity = 'avoid' | 'caution' | 'time_of_day';
+
 /** One flagged ingredient interaction from the conflict checker. */
 export interface IngredientConflict {
-  severity: 'avoid' | 'caution' | 'time_of_day';
+  severity: ConflictSeverity;
   /** The specific ingredients involved in the interaction. */
   ingredients: string[];
   /** Names of the user's shelf items that contain those ingredients. */

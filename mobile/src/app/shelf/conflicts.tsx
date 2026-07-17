@@ -2,11 +2,12 @@
  * Ingredient Conflict Checker — analyses the active shelf for ingredient
  * interactions and surfaces severity-coded cards with citations.
  */
-import { StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import {
   AppText,
@@ -16,13 +17,14 @@ import {
   PressableScale,
   Screen,
   Skeleton,
-  Stagger,
 } from '@/components/ui';
+import { ConflictGraph } from '@/components/ConflictGraph';
 import { getAIProvider } from '@/lib/ai';
+import { buildConflictGraph } from '@/lib/conflictGraph';
 import { haptics } from '@/lib/haptics';
 import { qk } from '@/lib/query';
 import type { IngredientConflict } from '@/lib/types';
-import { palette, radii, spacing } from '@/theme';
+import { motion, palette, radii, spacing } from '@/theme';
 
 const SEVERITY_COLOR: Record<IngredientConflict['severity'], string> = {
   avoid: palette.danger,
@@ -36,12 +38,18 @@ const SEVERITY_LABEL: Record<IngredientConflict['severity'], string> = {
   time_of_day: 'Time of day',
 };
 
-function ConflictCard({ conflict }: { conflict: IngredientConflict }) {
+function ConflictCard({
+  conflict,
+  highlighted = false,
+}: {
+  conflict: IngredientConflict;
+  highlighted?: boolean;
+}) {
   const color = SEVERITY_COLOR[conflict.severity];
   const label = SEVERITY_LABEL[conflict.severity];
 
   return (
-    <GlassCard style={styles.card}>
+    <GlassCard style={[styles.card, highlighted ? { borderWidth: 1.5, borderColor: color } : null]}>
       <View style={[styles.accentBar, { backgroundColor: color }]} />
       <View style={styles.cardBody}>
         <View style={[styles.chip, { borderColor: color }]}>
@@ -79,6 +87,11 @@ function ConflictCard({ conflict }: { conflict: IngredientConflict }) {
 
 export default function ConflictsScreen() {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
+  const scrollRef = useRef<ScrollView>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [listY, setListY] = useState(0);
+  const cardOffsets = useRef<number[]>([]);
 
   const {
     data: report,
@@ -99,8 +112,22 @@ export default function ConflictsScreen() {
 
   const busy = isLoading || isRefetching;
 
+  // The graph is a visual index over the cards; it only appears with ≥2 linked products.
+  const graph = report ? buildConflictGraph(report) : null;
+  const showGraph = !!graph && graph.nodes.length >= 2 && graph.edges.length > 0;
+
+  // Select a conflict from the graph, then scroll its card into view and highlight it.
+  const handleSelectConflict = (index: number) => {
+    haptics.tap();
+    setSelected(index);
+    const offset = cardOffsets.current[index];
+    if (offset !== undefined) {
+      scrollRef.current?.scrollTo({ y: listY + offset - spacing(3), animated: !reduceMotion });
+    }
+  };
+
   return (
-    <Screen bottomInset={spacing(8)}>
+    <Screen ref={scrollRef} bottomInset={spacing(8)}>
       <Animated.View entering={FadeIn.duration(260)} style={styles.headerRow}>
         <View style={styles.headerLeft}>
           <PressableScale
@@ -148,7 +175,7 @@ export default function ConflictsScreen() {
             }}
           />
         </View>
-      ) : !report?.conflicts.length ? (
+      ) : !report || report.conflicts.length === 0 ? (
         <EmptyState
           title="No conflicts found"
           body="Your current products are safe to layer together. Add more products to your shelf to get richer analysis."
@@ -169,12 +196,38 @@ export default function ConflictsScreen() {
             Flagged across your active shelf products.
           </AppText>
 
-          <View style={styles.list}>
-            <Stagger delay={80} interval={60}>
-              {report.conflicts.map((conflict, i) => (
-                <ConflictCard key={i} conflict={conflict} />
-              ))}
-            </Stagger>
+          {showGraph ? (
+            <GlassCard style={styles.graphCard}>
+              <AppText variant="overline" style={styles.graphOverline}>
+                How they interact
+              </AppText>
+              <ConflictGraph
+                report={report}
+                selectedConflict={selected}
+                onSelectConflict={handleSelectConflict}
+              />
+            </GlassCard>
+          ) : null}
+
+          <View style={styles.list} onLayout={(e) => setListY(e.nativeEvent.layout.y)}>
+            {report.conflicts.map((conflict, i) => (
+              <Animated.View
+                key={i}
+                entering={
+                  reduceMotion
+                    ? FadeIn.duration(motion.base)
+                    : FadeInDown.delay(80 + i * 60)
+                        .duration(motion.slow)
+                        .springify()
+                        .damping(16)
+                }
+                onLayout={(e) => {
+                  cardOffsets.current[i] = e.nativeEvent.layout.y;
+                }}
+              >
+                <ConflictCard conflict={conflict} highlighted={selected === i} />
+              </Animated.View>
+            ))}
           </View>
 
           <GlowButton
@@ -215,6 +268,8 @@ const styles = StyleSheet.create({
   errorText: { textAlign: 'center' },
   title: { fontSize: 30 },
   subtitle: { marginTop: spacing(1), marginBottom: spacing(5) },
+  graphCard: { marginBottom: spacing(5) },
+  graphOverline: { marginBottom: spacing(3), textAlign: 'center' },
   list: { gap: spacing(3), marginBottom: spacing(4) },
   card: {
     flexDirection: 'row',
