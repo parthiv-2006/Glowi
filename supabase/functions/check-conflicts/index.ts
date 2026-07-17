@@ -11,6 +11,7 @@ import { serve, json, HttpError } from '../_shared/http.ts';
 import { serviceClient, requireUser } from '../_shared/supabase.ts';
 import { callClaude, extractJson, MODELS } from '../_shared/anthropic.ts';
 import { enforceRateLimit } from '../_shared/ratelimit.ts';
+import { sanitizeConflicts, type IngredientConflict } from '../_shared/conflicts.ts';
 
 const RATE_LIMIT = { max: 10, windowSeconds: 86_400 };
 
@@ -86,11 +87,11 @@ serve(async (req) => {
     messages: [{ role: 'user', content: `Shelf:\n${shelfBlock}` }],
   });
 
-  // 5. Parse — fall back to empty conflicts rather than crashing on malformed output.
-  let conflicts: unknown[] = [];
+  // 5. Parse and validate field-by-field — never trust model output into the
+  //    DB unchecked. Fall back to empty conflicts rather than crashing.
+  let conflicts: IngredientConflict[] = [];
   try {
-    const parsed = extractJson<{ conflicts?: unknown[] }>(raw);
-    if (Array.isArray(parsed.conflicts)) conflicts = parsed.conflicts;
+    conflicts = sanitizeConflicts(extractJson<unknown>(raw));
   } catch {
     console.error('check-conflicts: failed to parse Claude response', raw.slice(0, 200));
   }
