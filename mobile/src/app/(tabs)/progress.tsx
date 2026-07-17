@@ -19,6 +19,7 @@ import {
 } from '@/components/ui';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 import { ConcernTrendSparkline } from '@/components/ConcernTrendSparkline';
+import { CorrelationChart } from '@/components/CorrelationChart';
 import { GlowiAvatar } from '@/components/GlowiAvatar';
 import { ScoreTrend } from '@/components/ScoreTrend';
 import {
@@ -464,6 +465,7 @@ export default function ProgressScreen() {
                     <AppText variant="subheading" style={styles.insightHeadline}>
                       {insight.headline}
                     </AppText>
+                    <CorrelationChart insight={insight} scans={completedScans} />
                     {why && (
                       <AppText
                         variant="caption"
