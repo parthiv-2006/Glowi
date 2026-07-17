@@ -23,6 +23,8 @@ import {
   Stagger,
 } from '@/components/ui';
 import { ProductCard } from '@/components/ProductCard';
+import { FaceZoneMap } from '@/components/FaceZoneMap';
+import { zoneSeverities } from '@/lib/faceZones';
 import {
   useConcern,
   useNutritionGuide,
@@ -136,6 +138,15 @@ export default function ConcernDetailScreen() {
               />
             </View>
           ) : null}
+        </Animated.View>
+      ) : null}
+
+      {/* Face-zone map — where this one concern was seen, tinted by severity. */}
+      {scanConcern && zoneSeverities([scanConcern]).zones.size > 0 ? (
+        <Animated.View entering={FadeIn.delay(160).duration(340)} style={styles.mapCard}>
+          <GlassCard>
+            <FaceZoneMap concerns={[scanConcern]} height={150} />
+          </GlassCard>
         </Animated.View>
       ) : null}
 
@@ -542,6 +553,11 @@ const styles = StyleSheet.create({
   },
   severityBadge: {
     alignSelf: 'center',
+  },
+
+  /* Face-zone map */
+  mapCard: {
+    marginBottom: spacing(5),
   },
 
   /* Tab bar */

@@ -19,7 +19,9 @@ import {
   Skeleton,
   Stagger,
 } from '@/components/ui';
+import { FaceZoneMap } from '@/components/FaceZoneMap';
 import { useScan, useScans } from '@/lib/hooks';
+import { zoneSeverities } from '@/lib/faceZones';
 import { DISCLAIMER } from '@/lib/constants';
 import { haptics } from '@/lib/haptics';
 import type { ScanConcern } from '@/lib/types';
@@ -213,6 +215,17 @@ export default function ResultsScreen() {
           style={styles.seeMoreBtn}
         />
       </Animated.View>
+
+      {/* Face-zone map — where concerns appeared, tinted by severity. Additive:
+          unmappable areas fall through to text and the concern chips are untouched. */}
+      {zoneSeverities(scan.concerns).zones.size > 0 ? (
+        <Animated.View entering={FadeInDown.delay(140).duration(460)} style={styles.section}>
+          <GlassCard>
+            <SectionHeader overline="Map" title="Where we saw it" />
+            <FaceZoneMap concerns={scan.concerns} />
+          </GlassCard>
+        </Animated.View>
+      ) : null}
 
       {/* Concerns section */}
       <View style={styles.section}>
