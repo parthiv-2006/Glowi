@@ -23,7 +23,7 @@ import {
   Skeleton,
 } from '@/components/ui';
 import { Markdown } from '@/components/Markdown';
-import { useArticle } from '@/lib/hooks';
+import { useArticle, useLearnFavorites, useToggleLearnFavorite } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
 import { gradientFor, palette, radii, spacing } from '@/theme';
 
@@ -49,6 +49,9 @@ export default function ArticleScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { data: article, isLoading, isError, refetch } = useArticle(slug);
+  const { data: favoriteSlugs } = useLearnFavorites();
+  const toggleFavorite = useToggleLearnFavorite();
+  const isFavorited = !!slug && (favoriteSlugs ?? []).includes(slug);
 
   // Scroll position shared value for parallax
   const scrollY = useSharedValue(0);
@@ -116,6 +119,34 @@ export default function ArticleScreen() {
           </View>
         </PressableScale>
       </Animated.View>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Bookmark button (fixed, mirrors the back button)                    */}
+      {/* ------------------------------------------------------------------ */}
+      {!!slug && (
+        <Animated.View
+          style={[styles.bookmarkBtn, { top: insets.top + spacing(3) }, backOpacityStyle]}
+        >
+          <PressableScale
+            onPress={() => {
+              haptics.tap();
+              toggleFavorite.mutate({ slug, favorited: isFavorited });
+            }}
+            style={styles.backPressable}
+            haptic={false}
+            accessibilityLabel={isFavorited ? 'Remove bookmark' : 'Save for later'}
+            accessibilityState={{ selected: isFavorited }}
+          >
+            <View style={styles.backPill}>
+              <Ionicons
+                name={isFavorited ? 'bookmark' : 'bookmark-outline'}
+                size={19}
+                color={isFavorited ? palette.accentBright : palette.text}
+              />
+            </View>
+          </PressableScale>
+        </Animated.View>
+      )}
 
       {/* ------------------------------------------------------------------ */}
       {/* Scrollable content                                                  */}
@@ -272,6 +303,11 @@ const styles = StyleSheet.create({
   backBtn: {
     position: 'absolute',
     left: spacing(5),
+    zIndex: 20,
+  },
+  bookmarkBtn: {
+    position: 'absolute',
+    right: spacing(5),
     zIndex: 20,
   },
   backPressable: {},
