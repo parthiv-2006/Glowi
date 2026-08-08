@@ -93,9 +93,7 @@ describe('Learn list bookmark toggle', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Save for later').props.accessibilityState.selected).toBe(
-        false,
-      );
+      expect(screen.getByLabelText('Save for later').props.accessibilityState.selected).toBe(false);
     });
   });
 });

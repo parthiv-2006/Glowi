@@ -91,9 +91,9 @@ export async function getArticle(slug: string): Promise<Article> {
 
 /** Slugs of every article the current user has bookmarked — presence is the fact. */
 export async function getLearnFavoriteSlugs(): Promise<string[]> {
-  const rows = unwrap(
-    await supabase.from('learn_favorites').select('article_slug'),
-  ) as { article_slug: string }[];
+  const rows = unwrap(await supabase.from('learn_favorites').select('article_slug')) as {
+    article_slug: string;
+  }[];
   return rows.map((r) => r.article_slug);
 }
 
