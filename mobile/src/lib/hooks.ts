@@ -61,6 +61,33 @@ export function useArticle(slug: string) {
   });
 }
 
+/** Slugs of the current user's bookmarked articles. */
+export function useLearnFavorites() {
+  return useQuery({ queryKey: qk.learnFavorites, queryFn: api.getLearnFavoriteSlugs });
+}
+
+/** Bookmark/unbookmark an article with an optimistic toggle and rollback on failure. */
+export function useToggleLearnFavorite() {
+  const qc = useQueryClient();
+  const userId = useAuth((s) => s.session?.user.id);
+  return useMutation({
+    mutationFn: ({ slug, favorited }: { slug: string; favorited: boolean }) =>
+      favorited ? api.removeLearnFavorite(slug) : api.addLearnFavorite(userId!, slug),
+    onMutate: async ({ slug, favorited }) => {
+      await qc.cancelQueries({ queryKey: qk.learnFavorites });
+      const snapshot = qc.getQueryData<string[]>(qk.learnFavorites);
+      qc.setQueryData<string[]>(qk.learnFavorites, (prev = []) =>
+        favorited ? prev.filter((s) => s !== slug) : [...prev, slug],
+      );
+      return { snapshot };
+    },
+    onError: (_err, _vars, ctx) => {
+      qc.setQueryData(qk.learnFavorites, ctx?.snapshot);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.learnFavorites }),
+  });
+}
+
 export function useScans() {
   return useQuery({ queryKey: qk.scans, queryFn: api.getScans });
 }
