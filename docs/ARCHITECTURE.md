@@ -92,7 +92,10 @@ Two families of tables (full DDL in `supabase/migrations/0001_core_tables.sql`):
   `ai_memories` row so every AI surface inherits the constraint — see
   [ADR-0009](adr/0009-reaction-log.md)),
   `push_tokens` (one row per device Expo push token, registered on sign-in, self-pruned
-  when Expo reports a dead device — see [ADR-0015](adr/0015-server-push-notifications.md)).
+  when Expo reports a dead device — see [ADR-0015](adr/0015-server-push-notifications.md)),
+  `learn_favorites` (Learn article bookmarks — presence of a row is the fact, no
+  read-tracking; `unique(user_id, article_slug)` makes the client's optimistic toggle
+  idempotent against a double-tap).
   `ai_memories` additionally carries a nullable pgvector `embedding vector(384)` used by
   semantic retrieval ([ADR-0016](adr/0016-semantic-memory-retrieval.md)).
 
