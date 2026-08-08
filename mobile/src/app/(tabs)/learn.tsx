@@ -15,7 +15,7 @@ import {
   Stagger,
   TextField,
 } from '@/components/ui';
-import { useArticles } from '@/lib/hooks';
+import { useArticles, useLearnFavorites, useToggleLearnFavorite } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
 import { fonts, gradientFor, palette, radii, spacing } from '@/theme';
 import type { Article } from '@/lib/types';
@@ -53,7 +53,17 @@ function CategoryChip({
 // ---------------------------------------------------------------------------
 // Article card
 // ---------------------------------------------------------------------------
-function ArticleCard({ article, onPress }: { article: Article; onPress: () => void }) {
+function ArticleCard({
+  article,
+  favorited,
+  onPress,
+  onToggleFavorite,
+}: {
+  article: Article;
+  favorited: boolean;
+  onPress: () => void;
+  onToggleFavorite: () => void;
+}) {
   const colors = gradientFor(article.hero_gradient);
 
   return (
@@ -75,6 +85,19 @@ function ArticleCard({ article, onPress }: { article: Article; onPress: () => vo
             {article.read_minutes} min
           </AppText>
         </View>
+        <PressableScale
+          onPress={onToggleFavorite}
+          haptic={false}
+          style={styles.cardBookmark}
+          accessibilityLabel={favorited ? 'Remove bookmark' : 'Save for later'}
+          accessibilityState={{ selected: favorited }}
+        >
+          <Ionicons
+            name={favorited ? 'bookmark' : 'bookmark-outline'}
+            size={15}
+            color={palette.textBody}
+          />
+        </PressableScale>
       </LinearGradient>
 
       {/* Text content below cover */}
@@ -96,7 +119,17 @@ function ArticleCard({ article, onPress }: { article: Article; onPress: () => vo
 }
 
 // Compact list row — 64px gradient thumbnail + Fraunces title + meta.
-function ArticleRow({ article, onPress }: { article: Article; onPress: () => void }) {
+function ArticleRow({
+  article,
+  favorited,
+  onPress,
+  onToggleFavorite,
+}: {
+  article: Article;
+  favorited: boolean;
+  onPress: () => void;
+  onToggleFavorite: () => void;
+}) {
   const colors = gradientFor(article.hero_gradient);
   return (
     <PressableScale onPress={onPress} style={styles.row}>
@@ -118,6 +151,19 @@ function ArticleRow({ article, onPress }: { article: Article; onPress: () => voi
           {`${article.read_minutes} min read · ${article.category}`}
         </AppText>
       </View>
+      <PressableScale
+        onPress={onToggleFavorite}
+        haptic={false}
+        style={styles.rowBookmark}
+        accessibilityLabel={favorited ? 'Remove bookmark' : 'Save for later'}
+        accessibilityState={{ selected: favorited }}
+      >
+        <Ionicons
+          name={favorited ? 'bookmark' : 'bookmark-outline'}
+          size={17}
+          color={favorited ? palette.clay : palette.textTertiary}
+        />
+      </PressableScale>
     </PressableScale>
   );
 }
@@ -146,27 +192,36 @@ function SkeletonCard() {
 export default function LearnScreen() {
   const router = useRouter();
   const { data: articles, isLoading, isError, refetch } = useArticles();
+  const { data: favoriteSlugs } = useLearnFavorites();
+  const toggleFavorite = useToggleLearnFavorite();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
-  // Derive unique categories
+  const favoriteSet = useMemo(() => new Set(favoriteSlugs ?? []), [favoriteSlugs]);
+
+  // Derive unique categories, with "Saved" pinned right after "All".
   const categories = useMemo(() => {
-    if (!articles) return ['All'];
+    if (!articles) return ['All', 'Saved'];
     const cats = Array.from(new Set(articles.map((a) => a.category))).sort();
-    return ['All', ...cats];
+    return ['All', 'Saved', ...cats];
   }, [articles]);
 
-  // Filter by category + search query
+  // Filter by category (or the "Saved" pseudo-category) + search query
   const filtered = useMemo(() => {
     if (!articles) return [];
     const q = query.toLowerCase().trim();
     return articles.filter((a) => {
-      const matchCat = activeCategory === 'All' || a.category === activeCategory;
+      const matchCat =
+        activeCategory === 'All'
+          ? true
+          : activeCategory === 'Saved'
+            ? favoriteSet.has(a.slug)
+            : a.category === activeCategory;
       const matchQuery =
         !q || a.title.toLowerCase().includes(q) || a.category.toLowerCase().includes(q);
       return matchCat && matchQuery;
     });
-  }, [articles, query, activeCategory]);
+  }, [articles, query, activeCategory, favoriteSet]);
 
   return (
     <Screen bottomInset={spacing(20)}>
@@ -229,11 +284,13 @@ export default function LearnScreen() {
           <ErrorState title="Couldn't load articles" onRetry={() => void refetch()} />
         ) : filtered.length === 0 ? (
           <EmptyState
-            title="No articles found"
+            title={activeCategory === 'Saved' ? 'No saved articles yet' : 'No articles found'}
             body={
-              query
-                ? `No results for "${query}". Try a different search.`
-                : 'No articles in this category yet.'
+              activeCategory === 'Saved'
+                ? 'Tap the bookmark on any article to save it here.'
+                : query
+                  ? `No results for "${query}". Try a different search.`
+                  : 'No articles in this category yet.'
             }
           />
         ) : (
@@ -241,14 +298,30 @@ export default function LearnScreen() {
             <View style={styles.cardGap}>
               <ArticleCard
                 article={filtered[0]}
+                favorited={favoriteSet.has(filtered[0].slug)}
                 onPress={() => router.push(`/article/${filtered[0].slug}`)}
+                onToggleFavorite={() => {
+                  haptics.tap();
+                  toggleFavorite.mutate({
+                    slug: filtered[0].slug,
+                    favorited: favoriteSet.has(filtered[0].slug),
+                  });
+                }}
               />
             </View>
             {filtered.slice(1).map((article) => (
               <View key={article.id} style={styles.rowGap}>
                 <ArticleRow
                   article={article}
+                  favorited={favoriteSet.has(article.slug)}
                   onPress={() => router.push(`/article/${article.slug}`)}
+                  onToggleFavorite={() => {
+                    haptics.tap();
+                    toggleFavorite.mutate({
+                      slug: article.slug,
+                      favorited: favoriteSet.has(article.slug),
+                    });
+                  }}
                 />
               </View>
             ))}
@@ -345,6 +418,17 @@ const styles = StyleSheet.create({
   readPillText: {
     fontSize: 11,
   },
+  cardBookmark: {
+    position: 'absolute',
+    bottom: spacing(3),
+    right: spacing(3.5),
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(7,9,11,0.6)',
+  },
   cardBody: {
     padding: spacing(4),
     gap: spacing(1.5),
@@ -386,6 +470,12 @@ const styles = StyleSheet.create({
   rowBody: { flex: 1, minWidth: 0, gap: spacing(1) },
   rowTitle: { fontFamily: fonts.display, fontSize: 14.5, lineHeight: 18 },
   rowMeta: { fontSize: 11.5 },
+  rowBookmark: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   // Skeleton
   skeletonWrap: {
