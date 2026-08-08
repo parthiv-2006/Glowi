@@ -228,12 +228,13 @@ a payload. The Profile → "Share usage analytics" opt-out is enforced at one ch
 ## Tests (E4) and E2E (E5)
 
 **Every push runs** (`.github/workflows/ci.yml`): mobile typecheck · lint · `format:check` ·
-205 Jest tests; edge functions `deno check` · 37 `deno test`s. Don't push red.
+207 Jest tests; edge functions `deno check` · 37 `deno test`s. Don't push red.
 
-The Jest suite now includes component tests (React Native Testing Library) for the four
+The Jest suite now includes component tests (React Native Testing Library) for the five
 flows whose failures would be silent: sign-up validation, the check-in card's optimistic
-upsert **and its rollback**, chat send **restoring the draft when it fails**, and the
-replenish route's `loading → error → empty → data` precedence. They mock Supabase at the
+upsert **and its rollback**, chat send **restoring the draft when it fails**, the
+replenish route's `loading → error → empty → data` precedence, and the Learn bookmark
+toggle's optimistic write **and its rollback**. They mock Supabase at the
 client boundary (`src/test/supabaseMock.ts`) so React Query, the mutation lifecycle and
 `api.ts` all execute for real — mocking `hooks.ts` instead would stub out the exact code
 those bugs lived in.
