@@ -101,6 +101,7 @@ export const qk = {
   tips: (slug: string) => ['tips', slug] as const,
   articles: ['articles'] as const,
   article: (slug: string) => ['article', slug] as const,
+  learnFavorites: ['learn-favorites'] as const,
   scans: ['scans'] as const,
   scan: (id: string) => ['scan', id] as const,
   sessions: ['chat-sessions'] as const,

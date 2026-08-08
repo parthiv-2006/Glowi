@@ -87,6 +87,31 @@ export async function getArticle(slug: string): Promise<Article> {
   return unwrap(await supabase.from('articles').select('*').eq('slug', slug).single());
 }
 
+// ─────────────── Learn Favorites ───────────────
+
+/** Slugs of every article the current user has bookmarked — presence is the fact. */
+export async function getLearnFavoriteSlugs(): Promise<string[]> {
+  const rows = unwrap(
+    await supabase.from('learn_favorites').select('article_slug'),
+  ) as { article_slug: string }[];
+  return rows.map((r) => r.article_slug);
+}
+
+export async function addLearnFavorite(userId: string, slug: string): Promise<void> {
+  const { error } = await supabase
+    .from('learn_favorites')
+    .upsert(
+      { user_id: userId, article_slug: slug },
+      { onConflict: 'user_id,article_slug', ignoreDuplicates: true },
+    );
+  if (error) throw new Error(error.message);
+}
+
+export async function removeLearnFavorite(slug: string): Promise<void> {
+  const { error } = await supabase.from('learn_favorites').delete().eq('article_slug', slug);
+  if (error) throw new Error(error.message);
+}
+
 // ─────────────── Scans ───────────────
 
 export async function getScans(): Promise<Scan[]> {
