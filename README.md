@@ -213,6 +213,8 @@ Glowi provides informational guidance only and is not a substitute for professio
 medical advice. For persistent, painful, or worsening conditions — or any concern about
 a mole or lesion — see a board-certified dermatologist.
 
+Thanks for Reading this Far!
+
 ## License
 
 MIT © 2026 Parthiv Paul
