@@ -142,7 +142,7 @@ The app supports two AI providers, toggled in settings:
 ```bash
 supabase functions deploy analyze-skin --project-id=your-project-id
 supabase functions deploy chat --project-id=your-project-id
-supabase functions functions deploy extract-memories --project-id=your-project-id
+supabase functions deploy extract-memories --project-id=your-project-id
 supabase functions deploy auth-signup --project-id=your-project-id
 ```
 
@@ -290,7 +290,7 @@ Mock mode is deterministic; if a test fails, check for:
 - **Code comments**: Functions describe their contracts at the top
 - **Supabase docs**: [docs.supabase.com](https://docs.supabase.com)
 - **Expo docs**: [docs.expo.dev](https://docs.expo.dev)
-- **Claude API**: [platform.openai.com](https://platform.anthropic.com/docs)
+- **Claude API**: [platform.anthropic.com](https://platform.anthropic.com/docs)
 
 ---
 
