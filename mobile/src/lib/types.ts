@@ -176,6 +176,8 @@ export interface RoutineStep {
   custom_name: string | null;
   instruction: string;
   frequency: 'daily' | 'every-other-day' | '2-3x-week' | 'weekly';
+  /** Freeform note attached independently of routine generation/editing (migration 0028). */
+  note?: string | null;
   /** Joined product row when present. */
   product?: Product | null;
 }
