@@ -262,6 +262,16 @@ export async function saveRoutine(
   }
 }
 
+/**
+ * Sets one routine step's note directly, independently of saveRoutine's
+ * full delete-and-reinsert — a note is meta-commentary, not part of the
+ * generated/edited step list, so it shouldn't require a full routine save.
+ */
+export async function updateRoutineStepNote(stepId: string, note: string | null): Promise<void> {
+  const { error } = await supabase.from('routine_steps').update({ note }).eq('id', stepId);
+  if (error) throw new Error(error.message);
+}
+
 export async function getCheckins(sinceISO: string): Promise<RoutineCheckin[]> {
   return unwrap(
     await supabase
