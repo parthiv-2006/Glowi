@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Linking, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,12 +24,19 @@ import {
 } from '@/components/ui';
 import { ProductCard } from '@/components/ProductCard';
 import { FaceZoneMap } from '@/components/FaceZoneMap';
+import { WhatHelpedCard } from '@/components/WhatHelpedCard';
+import { whatHelpedConcern } from '@/lib/concernHistory';
+import { correlateScanTrends } from '@/lib/correlation';
 import { zoneSeverities } from '@/lib/faceZones';
 import {
   useConcern,
+  useLifestyleLogs,
   useNutritionGuide,
   useProductsForConcern,
+  useReactionLogs,
   useScan,
+  useScans,
+  useShelfItems,
   useTips,
 } from '@/lib/hooks';
 import { DISCLAIMER, concernIcon } from '@/lib/constants';
@@ -72,6 +79,19 @@ export default function ConcernDetailScreen() {
   const { data: products, isLoading: productsLoading } = useProductsForConcern(slug);
   const { data: guide, isLoading: guideLoading } = useNutritionGuide(slug);
   const { data: tips, isLoading: tipsLoading } = useTips(slug);
+
+  // "What helped" — reuses the existing Progress-tab correlation engine,
+  // filtered down to this one concern (lib/concernHistory.ts).
+  const { data: allScans } = useScans();
+  const { data: shelfItems = [] } = useShelfItems();
+  const { data: reactions = [] } = useReactionLogs();
+  const { data: lifestyleLogs = [] } = useLifestyleLogs();
+  const helps = useMemo(() => {
+    const completed = (allScans ?? []).filter((s) => s.status === 'complete');
+    if (completed.length < 2) return [];
+    const insights = correlateScanTrends(completed, shelfItems, reactions, lifestyleLogs);
+    return whatHelpedConcern(slug, insights);
+  }, [allScans, shelfItems, reactions, lifestyleLogs, slug]);
 
   const [activeTab, setActiveTab] = useState<Tab>('Products');
 
@@ -147,6 +167,13 @@ export default function ConcernDetailScreen() {
           <GlassCard>
             <FaceZoneMap concerns={[scanConcern]} height={150} />
           </GlassCard>
+        </Animated.View>
+      ) : null}
+
+      {/* What helped — past events that measurably improved this concern. */}
+      {helps.length ? (
+        <Animated.View entering={FadeIn.delay(180).duration(340)} style={styles.helpedCard}>
+          <WhatHelpedCard helps={helps} />
         </Animated.View>
       ) : null}
 
@@ -557,6 +584,11 @@ const styles = StyleSheet.create({
 
   /* Face-zone map */
   mapCard: {
+    marginBottom: spacing(5),
+  },
+
+  /* What helped */
+  helpedCard: {
     marginBottom: spacing(5),
   },
 
