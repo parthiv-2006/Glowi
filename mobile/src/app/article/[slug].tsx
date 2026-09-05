@@ -10,6 +10,7 @@ import Animated, {
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,8 +24,10 @@ import {
   Skeleton,
 } from '@/components/ui';
 import { Markdown } from '@/components/Markdown';
+import { ReadingProgressBar } from '@/components/ReadingProgressBar';
 import { useArticle, useLearnFavorites, useToggleLearnFavorite } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
+import { readingProgress } from '@/lib/readingProgress';
 import { gradientFor, palette, radii, spacing } from '@/theme';
 
 // Height of the parallax hero gradient panel
@@ -58,6 +61,14 @@ export default function ArticleScreen() {
   const scrollHandler = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
   });
+
+  // Reading-progress bar — content/viewport heights tracked on the UI thread
+  // alongside scrollY so the bar never triggers a JS re-render while scrolling.
+  const contentHeight = useSharedValue(0);
+  const layoutHeight = useSharedValue(0);
+  const progress = useDerivedValue(() =>
+    readingProgress(scrollY.value, contentHeight.value, layoutHeight.value),
+  );
 
   // Parallax translate + subtle scale for hero
   const heroStyle = useAnimatedStyle(() => {
@@ -100,6 +111,13 @@ export default function ArticleScreen() {
           style={styles.heroGradient}
         />
       </Animated.View>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Reading-progress bar (fixed, top edge)                              */}
+      {/* ------------------------------------------------------------------ */}
+      <View style={[styles.progressBarWrap, { top: insets.top }]}>
+        <ReadingProgressBar progress={progress} />
+      </View>
 
       {/* ------------------------------------------------------------------ */}
       {/* Back button (fixed, always on top of hero)                          */}
@@ -154,6 +172,12 @@ export default function ArticleScreen() {
       <Animated.ScrollView
         onScroll={scrollHandler}
         scrollEventThrottle={16}
+        onContentSizeChange={(_width, height) => {
+          contentHeight.value = height;
+        }}
+        onLayout={(e) => {
+          layoutHeight.value = e.nativeEvent.layout.height;
+        }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
@@ -297,6 +321,14 @@ const styles = StyleSheet.create({
   },
   heroGradient: {
     flex: 1,
+  },
+
+  // Reading-progress bar
+  progressBarWrap: {
+    position: 'absolute',
+    left: spacing(5),
+    right: spacing(5),
+    zIndex: 21,
   },
 
   // Back button
