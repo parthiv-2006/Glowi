@@ -23,6 +23,7 @@ export type AnalyticsEvent =
   | 'checkin_logged'
   | 'report_opened'
   | 'replenishment_viewed'
+  | 'dupe_finder_viewed'
   | 'upgrade_completed';
 
 export interface AnalyticsSink {
