@@ -121,6 +121,15 @@ export function useRoutines() {
   return useQuery({ queryKey: qk.routines, queryFn: api.getRoutines });
 }
 
+export function useUpdateRoutineStepNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ stepId, note }: { stepId: string; note: string | null }) =>
+      api.updateRoutineStepNote(stepId, note),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.routines }),
+  });
+}
+
 /** Check-ins from the last 60 days — enough for the streak + grid. */
 export function useRecentCheckins() {
   return useQuery({
