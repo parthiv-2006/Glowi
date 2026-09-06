@@ -2,7 +2,7 @@
  * The Shelf — the user's product inventory. Surfaces expiry and low-stock
  * nudges, and routes into add / detail flows.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,12 +18,14 @@ import {
   Screen,
   Skeleton,
   Stagger,
+  TextField,
 } from '@/components/ui';
 import { ShelfItemCard } from '@/components/ShelfItemCard';
 import { useReactionLogs, useShelfItems } from '@/lib/hooks';
 import { haptics } from '@/lib/haptics';
 import { riskyShelfItems } from '@/lib/reactions';
 import { replenishmentTriggers } from '@/lib/replenishment';
+import { matchesShelfSearch } from '@/lib/shelfSearch';
 import { expiryStatus, stockStatus, summarizeShelf } from '@/lib/shelf';
 import type { ShelfItem } from '@/lib/types';
 import { palette, radii, spacing } from '@/theme';
@@ -42,10 +44,15 @@ export default function ShelfScreen() {
   const router = useRouter();
   const { data: items, isLoading, isError, refetch } = useShelfItems();
   const { data: reactions = [] } = useReactionLogs();
+  const [query, setQuery] = useState('');
 
   const sorted = useMemo(
     () => (items ? [...items].sort((a, b) => attentionRank(a) - attentionRank(b)) : []),
     [items],
+  );
+  const searched = useMemo(
+    () => sorted.filter((i) => matchesShelfSearch(i, query)),
+    [sorted, query],
   );
   const summary = useMemo(() => (items ? summarizeShelf(items) : null), [items]);
   const risks = useMemo(() => riskyShelfItems(reactions, items ?? []), [reactions, items]);
@@ -113,6 +120,18 @@ export default function ShelfScreen() {
             Your shelf
           </AppText>
 
+          <View style={styles.searchWrap}>
+            <TextField
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search your shelf…"
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+              clearButtonMode="while-editing"
+            />
+          </View>
+
           {risks.length ? (
             <GlassCard style={styles.nudge}>
               <Ionicons name="warning-outline" size={18} color={palette.danger} />
@@ -155,7 +174,7 @@ export default function ShelfScreen() {
 
           <View style={styles.list}>
             <Stagger delay={80} interval={60}>
-              {sorted.map((item) => (
+              {searched.map((item) => (
                 <ShelfItemCard
                   key={item.id}
                   item={item}
@@ -241,6 +260,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.accent,
   },
   title: { fontSize: 30 },
+  searchWrap: { marginTop: spacing(4), marginBottom: spacing(1) },
   subtitle: { marginTop: spacing(2), marginBottom: spacing(5) },
   nudge: {
     flexDirection: 'row',
