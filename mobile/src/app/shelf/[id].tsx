@@ -225,6 +225,14 @@ export default function ShelfItemDetail() {
           />
         ) : null}
         <GlowButton
+          label="Find a cheaper dupe"
+          variant="ghost"
+          onPress={() => {
+            haptics.press();
+            router.push({ pathname: '/shelf/dupes/[id]', params: { id: item.id } });
+          }}
+        />
+        <GlowButton
           label="Log a reaction to this"
           variant="ghost"
           onPress={() => {
