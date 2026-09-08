@@ -35,10 +35,17 @@ import {
   Stagger,
 } from '@/components/ui';
 import { RoutineTimeline } from '@/components/RoutineTimeline';
+import { StepNoteEditor } from '@/components/StepNoteEditor';
 import { CATEGORY_LABEL } from '@/lib/constants';
 import { getProductsForConcern, saveRoutine } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
-import { useCheckIn, useRecentCheckins, useRoutines, useScans } from '@/lib/hooks';
+import {
+  useCheckIn,
+  useRecentCheckins,
+  useRoutines,
+  useScans,
+  useUpdateRoutineStepNote,
+} from '@/lib/hooks';
 import { generateRoutineSteps } from '@/lib/routineGenerator';
 import { sequenceWarnings, waitAfter } from '@/lib/routineSequence';
 import { checkedInToday } from '@/lib/streak';
@@ -165,10 +172,14 @@ function StepRow({
   step,
   index,
   onRemove,
+  onSaveNote,
+  savingNote,
 }: {
   step: RoutineStep;
   index: number;
   onRemove: () => void;
+  onSaveNote: (note: string | null) => void;
+  savingNote: boolean;
 }) {
   const productName = step.product?.name ?? step.custom_name ?? 'Custom step';
   const productBrand = step.product?.brand ?? null;
@@ -207,6 +218,7 @@ function StepRow({
               <Badge label={FREQ_LABEL[step.frequency]} color={palette.accent} />
               {categoryLabel ? <Badge label={categoryLabel} color={palette.textTertiary} /> : null}
             </View>
+            <StepNoteEditor note={step.note} onSave={onSaveNote} saving={savingNote} />
           </View>
 
           {/* Remove */}
@@ -279,6 +291,7 @@ export default function RoutineScreen() {
   const { data: scans } = useScans();
   const { data: checkins = [] } = useRecentCheckins();
   const { mutate: checkIn, isPending: checkingIn } = useCheckIn();
+  const updateNote = useUpdateRoutineStepNote();
 
   const [period, setPeriod] = useState<Period>('am');
   const [generating, setGenerating] = useState(false);
@@ -453,6 +466,8 @@ export default function RoutineScreen() {
           onSaveChanges={handleSaveChanges}
           onRegenerate={handleGenerate}
           onCheckIn={handleCheckIn}
+          onSaveNote={(stepId, note) => updateNote.mutate({ stepId, note })}
+          savingNoteId={updateNote.isPending ? (updateNote.variables?.stepId ?? null) : null}
         />
       ) : latestScan ? (
         <GenerateFromScanCard generating={generating} onGenerate={handleGenerate} />
@@ -505,6 +520,8 @@ function RoutineContent({
   onSaveChanges,
   onRegenerate,
   onCheckIn,
+  onSaveNote,
+  savingNoteId,
 }: {
   steps: RoutineStep[];
   period: Period;
@@ -518,6 +535,8 @@ function RoutineContent({
   onSaveChanges: () => void;
   onRegenerate: () => void;
   onCheckIn: () => void;
+  onSaveNote: (stepId: string, note: string | null) => void;
+  savingNoteId: string | null;
 }) {
   const warnings = sequenceWarnings(steps, period);
 
@@ -560,7 +579,13 @@ function RoutineContent({
             const wait = waitAfter(step, steps[idx + 1]);
             return (
               <View key={step.id ?? `step-${idx}`} style={styles.stepSpacing}>
-                <StepRow step={step} index={idx} onRemove={() => onRemoveStep(idx)} />
+                <StepRow
+                  step={step}
+                  index={idx}
+                  onRemove={() => onRemoveStep(idx)}
+                  onSaveNote={(note) => onSaveNote(step.id, note)}
+                  savingNote={savingNoteId === step.id}
+                />
                 {wait ? <WaitConnector minutes={wait.minutes} note={wait.note} /> : null}
               </View>
             );
