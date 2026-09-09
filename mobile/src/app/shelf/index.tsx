@@ -27,6 +27,7 @@ import { haptics } from '@/lib/haptics';
 import { riskyShelfItems } from '@/lib/reactions';
 import { replenishmentTriggers } from '@/lib/replenishment';
 import { matchesShelfSearch } from '@/lib/shelfSearch';
+import { SHELF_SORT_OPTIONS, sortShelfItems, type ShelfSortKey } from '@/lib/shelfSort';
 import { expiryStatus, stockStatus, summarizeShelf } from '@/lib/shelf';
 import type { ShelfItem } from '@/lib/types';
 import { palette, radii, spacing } from '@/theme';
@@ -41,8 +42,8 @@ function attentionRank(item: ShelfItem): number {
   return 3;
 }
 
-/** A single category filter pill — "All" plus whatever categories are actually on the shelf. */
-function CategoryChip({
+/** A single filter/sort pill — reused for both the category row and the sort row. */
+function ShelfChip({
   label,
   selected,
   onPress,
@@ -93,6 +94,7 @@ export default function ShelfScreen() {
   const { data: reactions = [] } = useReactionLogs();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
+  const [sortKey, setSortKey] = useState<ShelfSortKey>('attention');
 
   const sorted = useMemo(
     () => (items ? [...items].sort((a, b) => attentionRank(a) - attentionRank(b)) : []),
@@ -110,6 +112,7 @@ export default function ShelfScreen() {
     () => (category === 'All' ? searched : searched.filter((i) => i.category === category)),
     [searched, category],
   );
+  const displayed = useMemo(() => sortShelfItems(filtered, sortKey), [filtered, sortKey]);
   const summary = useMemo(() => (items ? summarizeShelf(items) : null), [items]);
   const risks = useMemo(() => riskyShelfItems(reactions, items ?? []), [reactions, items]);
   const triggers = useMemo(() => (items ? replenishmentTriggers(items) : []), [items]);
@@ -196,13 +199,34 @@ export default function ShelfScreen() {
               style={styles.chipsScroll}
             >
               {categories.map((cat) => (
-                <CategoryChip
+                <ShelfChip
                   key={cat}
                   label={cat === 'All' ? 'All' : (CATEGORY_LABEL[cat] ?? cat)}
                   selected={category === cat}
                   onPress={() => {
                     haptics.tap();
                     setCategory(cat);
+                  }}
+                />
+              ))}
+            </ScrollView>
+          ) : null}
+
+          {items.length > 1 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsRow}
+              style={styles.chipsScroll}
+            >
+              {SHELF_SORT_OPTIONS.map((opt) => (
+                <ShelfChip
+                  key={opt.key}
+                  label={opt.label}
+                  selected={sortKey === opt.key}
+                  onPress={() => {
+                    haptics.tap();
+                    setSortKey(opt.key);
                   }}
                 />
               ))}
@@ -251,7 +275,7 @@ export default function ShelfScreen() {
 
           <View style={styles.list}>
             <Stagger delay={80} interval={60}>
-              {filtered.map((item) => (
+              {displayed.map((item) => (
                 <ShelfItemCard
                   key={item.id}
                   item={item}
