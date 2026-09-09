@@ -273,20 +273,46 @@ export default function ShelfScreen() {
             </PressableScale>
           ) : null}
 
-          <View style={styles.list}>
-            <Stagger delay={80} interval={60}>
-              {displayed.map((item) => (
-                <ShelfItemCard
-                  key={item.id}
-                  item={item}
-                  onPress={() => {
-                    haptics.tap();
-                    router.push(`/shelf/${item.id}`);
-                  }}
-                />
-              ))}
-            </Stagger>
-          </View>
+          {displayed.length === 0 ? (
+            <View style={styles.noMatches}>
+              <AppText
+                variant="subheading"
+                color={palette.textSecondary}
+                style={styles.noMatchesText}
+              >
+                {query.trim()
+                  ? `No results for "${query.trim()}".`
+                  : `No products in ${CATEGORY_LABEL[category] ?? category}.`}
+              </AppText>
+              <PressableScale
+                onPress={() => {
+                  haptics.tap();
+                  setQuery('');
+                  setCategory('All');
+                }}
+                haptic={false}
+              >
+                <AppText variant="subheading" color={palette.accentBright}>
+                  Clear filters
+                </AppText>
+              </PressableScale>
+            </View>
+          ) : (
+            <View style={styles.list}>
+              <Stagger delay={80} interval={60}>
+                {displayed.map((item) => (
+                  <ShelfItemCard
+                    key={item.id}
+                    item={item}
+                    onPress={() => {
+                      haptics.tap();
+                      router.push(`/shelf/${item.id}`);
+                    }}
+                  />
+                ))}
+              </Stagger>
+            </View>
+          )}
 
           <GlowButton
             label="Add another product"
@@ -376,4 +402,11 @@ const styles = StyleSheet.create({
   nudgeText: { flex: 1 },
   replenishLink: { marginBottom: spacing(5) },
   list: { marginBottom: spacing(4) },
+  noMatches: {
+    alignItems: 'center',
+    gap: spacing(3),
+    paddingVertical: spacing(10),
+    marginBottom: spacing(4),
+  },
+  noMatchesText: { textAlign: 'center' },
 });
