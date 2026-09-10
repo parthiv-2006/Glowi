@@ -79,7 +79,9 @@ Two families of tables (full DDL in `supabase/migrations/0001_core_tables.sql`):
   (+ `product_concerns` join with relevance/rationale), `nutrition_guides`, `tips`,
   `articles`.
 - **User-owned** (RLS: owner only): `profiles`, `scans`, `chat_sessions`,
-  `chat_messages`, `ai_memories`, `routines`, `routine_steps`, `routine_checkins`,
+  `chat_messages`, `ai_memories`, `routines`, `routine_steps` (gained a nullable `note`
+  column in migration 0028 — freeform commentary set via `updateRoutineStepNote`,
+  independent of `saveRoutine`'s delete-and-reinsert), `routine_checkins`,
   `reminder_settings`, `skin_forecasts` (one Skin Weather forecast per user per day),
   `shelf_items` (The Shelf — the products a user owns, incl. `key_ingredients` and an
   optional `price_usd` that powers the budget/cost-per-use screen),
