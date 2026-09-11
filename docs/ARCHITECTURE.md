@@ -114,6 +114,16 @@ one Claude call and caches results per `(user, trigger_item, product)` in
 `replenishment_copy` (migration 0025), so the deterministic ranking stays free and only
 the coach copy ever costs a token — and only once per pairing.
 
+**Dupe Finder** (`lib/dupes.ts`) is the same pure-client class again, with a different
+question: not "what should I replace this with" but "is there a cheaper version of what
+I already own." `findDupes` ranks same-category catalog products that cost strictly less
+than the source and share at least one key ingredient — the shared active is what makes
+it a "dupe" rather than just another product in the aisle — first by ingredient-overlap
+count, then by savings, and hard-excludes anything sharing an ingredient with a logged
+reaction (same `reactions.ts` "never again" rule as Replenishment). No new table:
+candidates come from `getCatalogProducts`. Surfaced from a shelf item's detail screen via
+"Find a cheaper dupe" into `/shelf/dupes/[id]`.
+
 **Weekly Glow Report** (`glow_reports`, migration 0016) reuses the `skin_forecasts`
 idempotent-cache pattern at weekly grain: one immutable row per user per completed week,
 unique `(user_id, week_start)`. There is no server cron on this project — generation is

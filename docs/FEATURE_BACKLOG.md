@@ -155,6 +155,19 @@ platform bets. All shipped to `main`, migrations 0017–0020 applied, functions 
 bounded by the curated seed catalog; #5 softens the ceiling, but widening the catalog
 itself is a content/data-operations effort.
 
+## Dupe Finder (shipped 2026-09-11)
+
+**What:** "Is there a cheaper version of what I already own?" From a shelf item's detail
+screen, ranks same-category catalog products that cost strictly less and share at least
+one key ingredient (`lib/dupes.ts` — pure client-side, zero AI calls, reaction-hard-
+excluded same as Replenishment). Surfaced at `/shelf/dupes/[id]`.
+
+**Why:** Replenishment answers "what to buy next" only once a shelf item is expiring or
+low. A user who just wants to know whether they're overpaying for an active they already
+own and aren't about to run out of had no equivalent answer. This closes that gap with
+the same trusted, reaction-aware ranking discipline as Replenishment, without waiting for
+a trigger.
+
 ## Deferred
 
 - **ML face alignment (react-native-vision-camera).** Real-time face-box tracking
