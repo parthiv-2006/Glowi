@@ -126,6 +126,13 @@ reaction (same `reactions.ts` "never again" rule as Replenishment). No new table
 candidates come from `getCatalogProducts`. Surfaced from a shelf item's detail screen via
 "Find a cheaper dupe" into `/shelf/dupes/[id]`.
 
+**Shelf Search, Filter & Sort** is UI-only — no new table, no new query. `lib/shelfSearch.ts`
+(`matchesShelfSearch`) does a case-insensitive substring match over name/brand/notes;
+`lib/shelfSort.ts` (`sortShelfItems`) orders by name, soonest-expiry, or cheapest-first,
+leaving the screen's existing attention-ranked order untouched for the `'attention'` key.
+Both run entirely client-side over the already-fetched shelf list on `/shelf`, so there is
+nothing to cache and nothing that can go stale.
+
 **Weekly Glow Report** (`glow_reports`, migration 0016) reuses the `skin_forecasts`
 idempotent-cache pattern at weekly grain: one immutable row per user per completed week,
 unique `(user_id, week_start)`. There is no server cron on this project — generation is
