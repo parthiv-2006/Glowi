@@ -112,6 +112,31 @@ export async function removeLearnFavorite(slug: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+// ─────────────── Product Wishlist ───────────────
+
+/** Ids of every catalog product the current user has wishlisted — presence is the fact. */
+export async function getWishlistProductIds(): Promise<string[]> {
+  const rows = unwrap(await supabase.from('product_wishlist').select('product_id')) as {
+    product_id: string;
+  }[];
+  return rows.map((r) => r.product_id);
+}
+
+export async function addToWishlist(userId: string, productId: string): Promise<void> {
+  const { error } = await supabase
+    .from('product_wishlist')
+    .upsert(
+      { user_id: userId, product_id: productId },
+      { onConflict: 'user_id,product_id', ignoreDuplicates: true },
+    );
+  if (error) throw new Error(error.message);
+}
+
+export async function removeFromWishlist(productId: string): Promise<void> {
+  const { error } = await supabase.from('product_wishlist').delete().eq('product_id', productId);
+  if (error) throw new Error(error.message);
+}
+
 // ─────────────── Scans ───────────────
 
 export async function getScans(): Promise<Scan[]> {
