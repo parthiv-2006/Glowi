@@ -13,9 +13,18 @@ interface ProductCardProps {
   rationale?: string | null;
   /** Compact variant for inline chat recommendations. */
   compact?: boolean;
+  /** Wishlist state — the heart toggle only renders when both are given. */
+  saved?: boolean;
+  onToggleSave?: () => void;
 }
 
-export function ProductCard({ product, rationale, compact }: ProductCardProps) {
+export function ProductCard({
+  product,
+  rationale,
+  compact,
+  saved,
+  onToggleSave,
+}: ProductCardProps) {
   const link = product.retailer_links[0];
   const [g0, g1] = brandGradient(product.brand);
 
@@ -48,6 +57,22 @@ export function ProductCard({ product, rationale, compact }: ProductCardProps) {
             )}
           </View>
         </View>
+
+        {onToggleSave ? (
+          <PressableScale
+            onPress={onToggleSave}
+            haptic={false}
+            style={styles.saveBtn}
+            accessibilityLabel={saved ? 'Remove from wishlist' : 'Save to wishlist'}
+            accessibilityState={{ selected: !!saved }}
+          >
+            <Ionicons
+              name={saved ? 'heart' : 'heart-outline'}
+              size={18}
+              color={saved ? palette.accentBright : palette.textTertiary}
+            />
+          </PressableScale>
+        ) : null}
       </View>
 
       {!compact && rationale ? (
@@ -91,6 +116,7 @@ const styles = StyleSheet.create({
   },
   thumbCompact: { width: 48, height: 48 },
   body: { flex: 1, gap: spacing(1) },
+  saveBtn: { padding: spacing(1), alignSelf: 'flex-start' },
   name: { fontSize: 16, lineHeight: 21 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2), marginTop: spacing(1) },
   rationale: { flexDirection: 'row', gap: spacing(2), alignItems: 'flex-start' },
