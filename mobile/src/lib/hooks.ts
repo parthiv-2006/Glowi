@@ -88,6 +88,33 @@ export function useToggleLearnFavorite() {
   });
 }
 
+/** Ids of the current user's wishlisted catalog products. */
+export function useWishlist() {
+  return useQuery({ queryKey: qk.wishlist, queryFn: api.getWishlistProductIds });
+}
+
+/** Wishlist/un-wishlist a product with an optimistic toggle and rollback on failure. */
+export function useToggleWishlist() {
+  const qc = useQueryClient();
+  const userId = useAuth((s) => s.session?.user.id);
+  return useMutation({
+    mutationFn: ({ productId, wishlisted }: { productId: string; wishlisted: boolean }) =>
+      wishlisted ? api.removeFromWishlist(productId) : api.addToWishlist(userId!, productId),
+    onMutate: async ({ productId, wishlisted }) => {
+      await qc.cancelQueries({ queryKey: qk.wishlist });
+      const snapshot = qc.getQueryData<string[]>(qk.wishlist);
+      qc.setQueryData<string[]>(qk.wishlist, (prev = []) =>
+        wishlisted ? prev.filter((id) => id !== productId) : [...prev, productId],
+      );
+      return { snapshot };
+    },
+    onError: (_err, _vars, ctx) => {
+      qc.setQueryData(qk.wishlist, ctx?.snapshot);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.wishlist }),
+  });
+}
+
 export function useScans() {
   return useQuery({ queryKey: qk.scans, queryFn: api.getScans });
 }
