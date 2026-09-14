@@ -97,7 +97,10 @@ Two families of tables (full DDL in `supabase/migrations/0001_core_tables.sql`):
   when Expo reports a dead device — see [ADR-0015](adr/0015-server-push-notifications.md)),
   `learn_favorites` (Learn article bookmarks — presence of a row is the fact, no
   read-tracking; `unique(user_id, article_slug)` makes the client's optimistic toggle
-  idempotent against a double-tap).
+  idempotent against a double-tap),
+  `product_wishlist` (catalog-product "save for later," same minimal shape and optimistic
+  toggle as `learn_favorites` — `unique(user_id, product_id)`; distinct from `shelf_items`,
+  which tracks products the user already owns rather than ones they're considering).
   `ai_memories` additionally carries a nullable pgvector `embedding vector(384)` used by
   semantic retrieval ([ADR-0016](adr/0016-semantic-memory-retrieval.md)).
 
