@@ -354,6 +354,14 @@ export default function ShelfScreen() {
               router.push('/compare');
             }}
           />
+          <GlowButton
+            label="Wishlist"
+            variant="ghost"
+            onPress={() => {
+              haptics.press();
+              router.push('/wishlist');
+            }}
+          />
         </>
       )}
     </Screen>
