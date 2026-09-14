@@ -38,6 +38,8 @@ import {
   useScans,
   useShelfItems,
   useTips,
+  useToggleWishlist,
+  useWishlist,
 } from '@/lib/hooks';
 import { DISCLAIMER, concernIcon } from '@/lib/constants';
 import { haptics } from '@/lib/haptics';
@@ -77,6 +79,9 @@ export default function ConcernDetailScreen() {
   } = useConcern(slug);
   const { data: scan, isLoading: scanLoading } = useScan(scanId);
   const { data: products, isLoading: productsLoading } = useProductsForConcern(slug);
+  const { data: wishlistIds = [] } = useWishlist();
+  const wishlistSet = useMemo(() => new Set(wishlistIds), [wishlistIds]);
+  const toggleWishlist = useToggleWishlist();
   const { data: guide, isLoading: guideLoading } = useNutritionGuide(slug);
   const { data: tips, isLoading: tipsLoading } = useTips(slug);
 
@@ -191,7 +196,15 @@ export default function ConcernDetailScreen() {
 
       {/* Tab content */}
       {activeTab === 'Products' && (
-        <ProductsTab products={products ?? []} isLoading={productsLoading} />
+        <ProductsTab
+          products={products ?? []}
+          isLoading={productsLoading}
+          wishlistIds={wishlistSet}
+          onToggleSave={(productId, wishlisted) => {
+            haptics.tap();
+            toggleWishlist.mutate({ productId, wishlisted });
+          }}
+        />
       )}
       {activeTab === 'Nutrition' && <NutritionTab guide={guide ?? null} isLoading={guideLoading} />}
       {activeTab === 'Tips' && <TipsTab tips={tips ?? []} isLoading={tipsLoading} />}
@@ -265,9 +278,13 @@ function SegmentedControl<T extends string>({
 function ProductsTab({
   products,
   isLoading,
+  wishlistIds,
+  onToggleSave,
 }: {
   products: ProductForConcern[];
   isLoading: boolean;
+  wishlistIds: Set<string>;
+  onToggleSave: (productId: string, wishlisted: boolean) => void;
 }) {
   if (isLoading) {
     return (
@@ -297,7 +314,12 @@ function ProductsTab({
       <Stagger delay={60} interval={70}>
         {products.map((p) => (
           <View key={p.id} style={{ marginBottom: spacing(4) }}>
-            <ProductCard product={p} rationale={p.rationale} />
+            <ProductCard
+              product={p}
+              rationale={p.rationale}
+              saved={wishlistIds.has(p.id)}
+              onToggleSave={() => onToggleSave(p.id, wishlistIds.has(p.id))}
+            />
           </View>
         ))}
       </Stagger>
