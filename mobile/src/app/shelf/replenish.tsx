@@ -32,6 +32,8 @@ import {
   useReplenishmentCopy,
   useScans,
   useShelfItems,
+  useToggleWishlist,
+  useWishlist,
 } from '@/lib/hooks';
 import { qk } from '@/lib/query';
 import {
@@ -70,6 +72,8 @@ interface ReplenishGroupProps {
   suggestions: ReplacementSuggestion[];
   askingItemId: string | null;
   onAskCoach: (trigger: ReplenishmentTrigger) => void;
+  wishlistIds: Set<string>;
+  onToggleSave: (productId: string, wishlisted: boolean) => void;
 }
 
 /**
@@ -77,7 +81,14 @@ interface ReplenishGroupProps {
  * the AI copy hook — scoped to this trigger's candidate ids — follows the
  * rules of hooks instead of running inside the outer .map().
  */
-function ReplenishGroup({ trigger, suggestions, askingItemId, onAskCoach }: ReplenishGroupProps) {
+function ReplenishGroup({
+  trigger,
+  suggestions,
+  askingItemId,
+  onAskCoach,
+  wishlistIds,
+  onToggleSave,
+}: ReplenishGroupProps) {
   const productIds = useMemo(() => suggestions.map((s) => s.product.id), [suggestions]);
   const { data: aiCopy } = useReplenishmentCopy(trigger.item.id, productIds);
 
@@ -97,6 +108,8 @@ function ReplenishGroup({ trigger, suggestions, askingItemId, onAskCoach }: Repl
               key={s.product.id}
               product={s.product}
               rationale={aiCopy?.[s.product.id] ?? s.why}
+              saved={wishlistIds.has(s.product.id)}
+              onToggleSave={() => onToggleSave(s.product.id, wishlistIds.has(s.product.id))}
             />
           ))}
         </View>
@@ -147,6 +160,9 @@ export default function ReplenishScreen() {
     isError: catalogError,
     refetch: refetchCatalog,
   } = useCatalogProducts();
+  const { data: wishlistIds = [] } = useWishlist();
+  const wishlistSet = useMemo(() => new Set(wishlistIds), [wishlistIds]);
+  const toggleWishlist = useToggleWishlist();
 
   const latestScan = useMemo(() => scans?.find((s) => s.status === 'complete') ?? null, [scans]);
   const triggers = useMemo(() => (shelf ? replenishmentTriggers(shelf) : []), [shelf]);
@@ -248,6 +264,11 @@ export default function ReplenishScreen() {
                 suggestions={suggestions}
                 askingItemId={askingItemId}
                 onAskCoach={(t) => void askCoach(t)}
+                wishlistIds={wishlistSet}
+                onToggleSave={(productId, wishlisted) => {
+                  haptics.tap();
+                  toggleWishlist.mutate({ productId, wishlisted });
+                }}
               />
             ))}
           </Stagger>
